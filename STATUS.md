@@ -4,12 +4,12 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
 
 | step | what | state |
 |---|---|---|
-| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-02, after the ⚖ review of step 3): 142 tests passing + 82 skipped without a DSN (223 passing + 1 skipped with one, 4 min 11 s: the policy suite and the graph on SQLite and on PostgreSQL 18.6, plus the two-process restart test) · 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 36/36 scored hostile attempts blocked + 1 out of scope shown · 21/21 sabotages caught. Trust boundary declared in `README.md`, restated to what the code supports. |
+| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-02, after step 5): 160 tests passing + 82 skipped without a DSN (241 passed, 1 skipped with one, 4 min 05 s: the policy suite and the graph on SQLite and on PostgreSQL 18.6, plus the two-process restart test) · 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 36/36 scored attempts blocked · 1 out of scope, shown · 23/23 sabotages caught by at least one gauge. Trust boundary declared in `README.md`, restated to what the code supports. |
 | 2 | the assistant graph + ONE adapter (`invoices-es`) | **built 2026-09-01 with a stub model**: LangGraph retrieve→think→propose→hold(interrupt)→execute; the resume value is untrusted (the store decides); deny-all policy ⇒ zero writes across all 12 invoices; a manipulated model's `update_amount` and an exfiltration via a forbidden channel are denied at propose; approve→resume executes exactly once under node re-execution; the only write path is `agent/executor.py` (grep-tested). NOT yet exercised: a real model (Groq class present, no key), pgvector (local keyword retriever behind the same interface) |
 | 3 | red-team with promptfoo, boundary ON/OFF, numbers with intervals | **built and run 2026-09-02; the case set REVIEWED by the ⚖ seat the same day (table below): fifteen texts rewritten and re-run, a column added for the goal in the model's prose** — `PLAN.md` §3. 100 cases (5 classes × 5 techniques × 4 goals; 20 per class, ≥ 4 per class × technique) planted into the records with `redteam/plant.py`; ONE call per case to `openai/gpt-oss-120b` (Groq, temperature 0), cached under `redteam/cache/`; the same output scored twice — through `PolicyService` with no human approving, and through `redteam/off.py` with no policy at all. **After the review: manipulated (a goal proposal) 1/100 = 1 % [0 %, 5 %] · executed OFF 1/100 · executed ON 0/100 = 0 % [0 %, 4 %] · the policy refused every goal proposal 100/100 · audit clean 100/100 · the goal in the model's prose 66/100 = 66 % [56 %, 75 %], hand-labelled in `redteam/prose_labels.json`.** By reach: 70 cases aim at a verb the prompt never offers (0/70 proposed it; 44/70 adopted it in words), 30 at a forbidden value of a permitted verb (1/30; 22/30). Tables in `NUMBERS.md` (`make numbers`); rows in `redteam/results.jsonl`, both runs, the last row per case winning. promptfoo is the runner and its assertion is the gate. The texts are builder-written, reviewed and revised by the ⚖ seat; no one outside the project has read them, and the README says so. |
 | 7 | the same policy layer under the author's own outbound pipeline | **the repo's half is built 2026-09-02** — `PLAN.md` §5.1 + the CLI + the adapter test. `adapters/outreach/permissions.toml` exactly as §5.1 specifies (send · mark_replied · add_note; send_bulk and send_from_other_address denied; `daily_max = 5`; `budget.daily_writes = 8`); `records/drafts.py` (the drafts as records: the sent artifact and `pipeline.jsonl`, containment inside the root, its own clock); `agent/executor.py::make_outreach_executor`; `bin/atezain_cli.py` (propose · queue · approve/reject · record/execute · show · audit · head · stop/clear). 18 tests, and three new sabotage rows. **NOT DONE, and the sentence must not be written yet: §5.2, the wiring into the owner's `bin/venture`, is ⚖ and untouched — nothing of his outbound goes through this layer yet, so "in daily use on my own outbound since &lt;date&gt;" is not a fact.** ✋ the first real send. |
 | 4 | deploy ($0: Render + Neon + Groq + Langfuse Hobby), self-serve upload | **built and running locally 2026-09-02; §4.1 and the records port both done against a real Neon database the same day, so a session now survives the process that made it** — `PLAN.md` §4.1, §4.2, §4.3, §4.5. `policy/store_pg.py` (a subclass, so the checks stay single) passes the whole policy suite on PostgreSQL 18.6 in Frankfurt as well as SQLite, plus a race across two connections that only a database-level lock can win. `api/` (sessions with a bearer token · CSV/XLSX upload validated against the adapter · assist · the queue · decide→execute · audit · the session fuse · a one-page `/demo` · `/healthz`), `api/auth.py` (the only mint of a HUMAN principal, grep-tested), `api/limits.py` (per-IP rate limit; the server's own model budget with a fuse only the owner clears; a visitor's `X-Groq-Key` is neither counted nor blocked), `agent/checkpoints.py` (§4.2), `ops/` (Dockerfile · render.yaml · probe.sh · requirements.txt). 11 tests and a sabotage row that proves the identity closure can fail; `make serve` runs it on SQLite and the stub with no key. Verified under real uvicorn, not only the test client: `/healthz` 200, `/demo` served, a session created over HTTP, `ops/probe.sh` logging the 200. **SKIPPED: §4.1 (`policy/store_pg.py` + the store-parametrised suite) and §4.4 (pgvector/FTS retrieval) — reasons below.** ✋ the four accounts, the deploy click, the probe cron: nothing is deployed and nothing is pushed. |
-| 5 | write-up; every number from `make numbers` | not started — `PLAN.md` §6. ⚖ prose; BUILDER tooling. **Unblocked 2026-09-02**: `NUMBERS.md` exists from a named model and has had its ⚖ review (below). The two numbers it leads with are 1/100 in proposals and 66/100 in prose |
+| 5 | write-up; every number from `make numbers` | **built 2026-09-02** — `PLAN.md` §6, the ⚖ prose and the BUILDER tooling in one session (Fable 5.1). `WRITEUP.md`: what it is · the tree, the graph and the boundary · the attack path — `note-011`, the one case of the hundred manipulated in a proposal, end to end with its four audit rows, the record afterwards under ON (status unchanged, and an auto-approved note by `assistant` asserting the change) and under OFF (cancelled), and a snippet that replays it from the cache with no key · the TOML annotated · the numbers as a **marker block** that `make numbers` pastes (`redteam/numbers.py::numbers_block`, `insert_block`) and `tests/numbers.py` compares with a fresh render, so a hand-typed number is red · what it does not show (the three trust-boundary faces; what the human reads; the proposal-level rate not escalated, by R5; retrieval by keyword, no recall number; nothing deployed) · provenance · how to reproduce. `tests/vocabulary.py`: every technology the prose names (LangGraph, FastAPI, promptfoo, Wilson, SQLite, Postgres, Groq) maps to a file and a function where it is imported AND called, checked by walking the AST; the planned-and-unbuilt names map to nothing and are red if a document says them. Both prose gauges are collected by `make test` (pyproject `python_files`) and alone by `make vocabulary`; two sabotage rows prove they can fail. `adapters/invoices-es/PAGE.md`: the prospect's page as a scaffold, with the same block and two ✋ blanks (the URL; the price). **The owner's gate, `bash bin/venture check WRITEUP.md`: BLOCKED on four cold-mail rules, none of them about spelling, slop or a barred sentence — the table below.** NOT DONE: the `venture-refuter` seat reading it from the hirer's chair (the owner's repo, ✋/⚖). |
 | 5b | text-only "try it" offers, measured | not started — `PLAN.md` §7. ✋ his voice |
 | 6 | one external refutation of the built thing | not started — `PLAN.md` §8. Two seats have run on step 1 (09-01 and 09-02); the step-6 seat is on the DEPLOYED thing |
 
@@ -42,11 +42,34 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 | next | who | blocked on |
 |---|---|---|
 | Connect Render to the private repo and deploy | ✋ then BUILDER | the owner's word, that day. Everything technical is ready: the account exists, the repo is there, and a session's records, queue, chain and held graph survive a restart on Neon. `autoDeploy` stays `false`, so the push and the deploy remain two acts |
-| Step 5, the write-up | ⚖ | **unblocked** — `NUMBERS.md` has had its review. It leads with the two numbers (1/100 in proposals · 66/100 in prose), the reach split, and R4; no sentence in it may imply the boundary covers what the human reads. `tests/vocabulary.py` and the marker-block insertion are BUILDER's |
+| Step 5's seat: a `venture-refuter` reads `WRITEUP.md` from the hirer's chair | ✋ then ⚖ | the owner's repo. The write-up exists; the four letter-rule blocks from `venture check` are recorded below for that seat to read past or to rule on |
+| `PAGE.md`'s two blanks and its language | ✋ | the URL (nothing is deployed), the price of an adaptation, and whether the prospect's page is in Spanish — the scaffold is in English because the repo is |
 | §4.4 retrieval (pgvector or Postgres FTS) with its recall measurement | ⚖ then BUILDER | a set to measure against. The seed has twelve invoices, so recall@5 over it is not a measurement; the ten queries want an uploaded set of a hundred rows or more, which exists once the deploy does. Until then the local keyword retriever runs and no document says otherwise |
 | §4.5 tracing into Langfuse | BUILDER | nothing — the keys are in the owner's shell and the project is empty |
 | Step 7 §5.2, the wiring under `bin/venture` | ⚖ then ✋ | the format is decided below (the executor writes his existing artifact and ledger). The wiring itself changes his live pipeline and happens on his word, that day |
 | Step 6, a refutation seat | ⚖ | the deployed thing existing. When it sits, its opening task is to re-read the hundred prose labels against the rule in `redteam/prose_labels.json` |
+
+## What step 5 built, what the owner's gate said, and what it left to ✋ (2026-09-02)
+
+`PLAN.md` §6 sends the write-up through `bash bin/venture check WRITEUP.md` in the owner's repo for
+spelling, slop and barred sentences, and then through one `venture-refuter` seat. The gate ran on
+2026-09-02 and exited 1. It routes any file that is not a contribution as a cold letter, so four of
+its letter rules fired on a document that is not one; the three things the plan sent it for came
+back as follows. Spelling: 35 suspects, every one a Spanish word quoted from the case text
+(*disputa*, *expediente*, *vencidas* …) or a technical term (*checkpointer*, *timestamps*,
+*promptfoo*); no English misspelling. Slop tells: a warning, not a block — no contractions, em-dashes
+at about one per hundred words, which is this repo's register. Barred words (rule 10): none, by
+grep. The blocks:
+
+| the gate said | what it is | for whom |
+|---|---|---|
+| C2 *gap as a wall* on the provenance paragraph ("…strangled the trades it was meant to protect…"): a gap named with no direction and date after it | a cold-mail rule (a stated weakness must carry its remedy); the paragraph summarises `PROVENANCE.md`, whose table carries the fix for each row | ⚖ reads past it, or the seat rules |
+| C1 *fabricated skill*: **Postgres** appears nowhere in the CV, the case study or the profile | true of the owner's CV, not of the write-up — the repo has two Postgres stores with a suite that runs on PostgreSQL 18.6 | ✋ the CV line and the profile line (step 6) should carry it, or the write-up will keep tripping this |
+| C1 *fabricated skill*: **LangGraph** appears nowhere in the CV, the case study or the profile | the same | ✋ the same |
+| C1 *self-count*: "five classes" does not match the artifact, "the repo holds 32" | the checker counted Python `class` definitions; the sentence counts injection classes, the word `NUMBERS.md` and `README.md` use | a false positive; the word stays for consistency with the tables |
+
+What is not decided here and is the owner's: the URL on `PAGE.md` (nothing is deployed), the price
+of an adaptation, the language of the prospect's page, and the two CV lines above.
 
 ## What the seat found at step 1, and what changed (2026-09-02)
 
@@ -85,7 +108,7 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 | M8/M9 | the anchor assertion could not fail; an unrenderable effect raised out of `execute` leaving `approved` | older anchor + wrong anchor asserted; `record_effect` inside the try ⇒ mismatch | `test_an_effect_that_cannot_be_written_down…`; hostile b25 |
 | T4, T19–T22, M4 | ownership of records; root re-hashing, inserting, replaying; nested transactions are not savepoints | **not fixed, restated**: ownership is the host's (step 4); a root that re-links the chain is out of scope by design and the README now says so; the replay shows as `execution_row_count`; the savepoint gap is recorded here as open | README §Trust boundary 3 |
 
-## What steps 3 and 7 changed outside their own directories (one line each, with the reason)
+## What steps 3, 7 and 5 changed outside their own directories (one line each, with the reason)
 
 | file | change | why |
 |---|---|---|
@@ -97,6 +120,10 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 | `agent/executor.py` | `make_outreach_executor` (step 7) | rule 5 stays literally true — the only write path is this file. It takes the proposal id at construction because `PolicyService.execute` hands an executor only (action, record_id, params), and the artifact on disk should point back at the decision that let it out |
 | `tests/test_agent.py` | the write-path grep exempts `records/` (where writes are DEFINED) instead of one file | `records/drafts.py` arrived and the test went red, which is the test working; the exemption is now the definition side, so any new CALLER anywhere still fails it |
 | `tests/sabotage.py` | three rows: the drafts store leaving its root · an artifact overwritten · the store reporting the row instead of the artifact | properties this session claims, broken on purpose, each caught by `make test` |
+| `pyproject.toml` | `python_files` names `numbers.py` and `vocabulary.py` beside `test_*.py` (step 5) | the two prose gauges are part of "done" only if `make test` — and so `make all`, `make mutate`, `make sabotage` — collects them; `PLAN.md` §6 names the files and not how they are collected, so this is a filled-in detail, not a decision over its head. `make vocabulary` runs the two alone |
+| `README.md` | one pointer to `WRITEUP.md`; the `api/` bullet no longer says the Postgres store "is not written yet" (it was, earlier the same day) | a stale sentence found while writing the write-up; two lines |
+| `tests/sabotage.py` | two rows (step 5): a number in the write-up's block edited by hand · the write-up naming a thing the code does not carry | the prose gauges must be able to fail like the others |
+| `Makefile` | `vocabulary` target | in `PLAN.md` §1's target tree |
 
 ## What step 4 skipped, and why (rule 12: a skip is written down, with its reason)
 
@@ -171,6 +198,11 @@ was the review of the case set above. Run `make all` first and fix nothing else 
   write-up; revisit when the project is done.** The same ruling accepts the hundred prose labels as they stand, one
   reader's, to be re-read by the owner when he has time; a label he disagrees with is edited in the file and
   `make numbers` re-run.
+- **A note the executor writes is stamped with the literal string `now`.** Seen in the attack path's record
+  (`"ts": "now", "author": "assistant"`): `records/store.py` hands `add_note_raw` the word rather than a date,
+  while the seed's notes carry ISO dates. Nothing measured depends on it — `snapshot` compares note texts, not
+  stamps — but a reader of the record gets a note with no date. A one-line change in a step-2 file with a test,
+  once ⚖ says whether the records store should own a clock the way `records/drafts.py` does. BUILDER.
 - **§4.4's recall measurement has nothing to measure against.** The seed holds twelve invoices; ten queries with
   expected ids over twelve documents is a smoke test, not recall. The ten queries should be written against an
   uploaded set of a hundred rows or more, which exists once the deploy does; until then the number is not quoted. ⚖
@@ -180,6 +212,6 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 16 commits, no webhooks, no collaborators, nothing connected to any build service. Everything else
 rule 1 covers is unchanged: it is not public, it is not deployed, and Render has not been pointed
 at it. Of the three things that must be true before it goes public, one is done — `NUMBERS.md` has had its
-⚖ review (2026-09-02, above) — and two are open: README §Trust boundary item 1 rewritten once there
+⚖ review (2026-09-02, above), and the write-up that quotes it now exists, its seat not yet sat — and two are open: README §Trust boundary item 1 rewritten once there
 is a deployed shape (⚖), and a deliberate decision about whether `adapters/outreach/` goes with it (✋). If the owner wants each
 individual push to need fresh permission rather than the standing one, say so and rule 1 changes back.

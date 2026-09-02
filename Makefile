@@ -4,7 +4,7 @@ PROMPTFOO := promptfoo@0.122.2
 REDTEAM_MODEL ?= stub
 REDTEAM_MODEL_ID ?= openai/gpt-oss-120b
 
-.PHONY: test mutate hostile sabotage all redteam numbers serve
+.PHONY: test mutate hostile sabotage all redteam numbers vocabulary serve
 
 # With ATEZAIN_TEST_DSN set, the policy suite runs TWICE — once on SQLite, once on that Postgres
 # (PLAN.md §4.1). That is ~3.5 minutes of network round-trips, so for the fast loop:
@@ -41,6 +41,12 @@ redteam:
 
 numbers:
 	$(PY) -m redteam.numbers
+
+# The prose gauges alone (they are also in `make test`): every percentage in README.md, WRITEUP.md
+# and PAGE.md is in NUMBERS.md and the pasted block is a fresh render; every technology the write-up
+# names is imported and called on the main path, and a name that maps to nothing is red.
+vocabulary:
+	$(PY) -m pytest -q -p no:cacheprovider tests/vocabulary.py tests/numbers.py
 
 # The deployed face, locally: SQLite under var/, the stub model, no key and no network.
 #   ATEZAIN_MODEL=groq make serve     to put the real model behind it

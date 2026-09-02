@@ -1,2 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# tests/numbers.py and tests/vocabulary.py are gauges over the PROSE (CLAUDE.md rule 3, PLAN.md §6);
+# naming them here makes `make test` — and so `make all`, `make mutate`, `make sabotage` — collect them
+python_files = ["test_*.py", "numbers.py", "vocabulary.py"]

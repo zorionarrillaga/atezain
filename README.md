@@ -12,7 +12,8 @@ attacked, in public, with injections planted in the very records it reads, and t
 **Status: steps 1, 2 and 3 of 6 — the policy layer, the assistant graph over it, and the red-team
 that measures it against a named model; step 7's adapter and CLI are built, its wiring is not;
 step 4's web face runs locally, and nothing is deployed.** See `STATUS.md` for what each of those
-means and for what step 4 deliberately skipped.
+means and for what step 4 deliberately skipped. `WRITEUP.md` is the ten-minute read: the
+architecture, one attack end to end with its audit rows, the policy as data, and the numbers.
 
 ## What is built
 
@@ -57,8 +58,8 @@ means and for what step 4 deliberately skipped.
   chain, its own fuse) opened by a bearer token; you upload a CSV of your own invoices, ask for an
   assist, see what it drafts and what it holds, decide, and read the chain. `api/auth.py` is the
   only place in the served application where a human principal is constructed, and a test greps the
-  package to keep it that way. Runs locally on SQLite and the stub model with `make serve`; it is
-  not deployed, and the Postgres store it would need on a free instance is not written yet.
+  package to keep it that way. Runs locally on SQLite and the stub model with `make serve`, and on
+  Postgres when `DATABASE_URL` names one; it is not deployed.
 - `adapters/outreach/` + `bin/atezain_cli.py` — the same layer over the author's own outbound
   letters: a draft is a record, `send` means *write down that this letter went out*, and there is
   no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
@@ -122,20 +123,20 @@ shapes were laundered by one legally appended row; the service's bindings could 
 store's fuse primitive still took a caller's time; the id check was a shape, not ownership, and
 matched non-ASCII digits; four hostile attempts passed for a reason other than their name; and six
 one-line sabotages of claimed properties went uncaught by every gauge. All of it is folded
-(`STATUS.md`, second table). After that, and after the ⚖ review of the red-team's case set the same day (2026-09-02, `make all`):
+(`STATUS.md`, second table). After that, after the ⚖ review of the red-team's case set, and after the write-up's own gauges joined the suite the same day (2026-09-02, `make all`):
 
 | gauge | result |
 |---|---|
-| `make test` | 142 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **223 passed, 1 skipped** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test, 4 min 11 s) |
+| `make test` | 160 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **241 passed, 1 skipped** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test, 4 min 05 s) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 21/21 sabotages caught by at least one gauge |
+| `make sabotage` | 23/23 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers twenty-one properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers twenty-three properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either.
 

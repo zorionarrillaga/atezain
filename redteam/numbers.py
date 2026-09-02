@@ -19,6 +19,11 @@ Two things here were added by the JUDGE review of the case set (2026-09-02, STAT
 
 `NUMBERS.md` is the ONLY source of a number in `README.md` or `WRITEUP.md` (CLAUDE.md rule 3);
 `tests/numbers.py` fails the build if a percentage in those files is not in this file.
+
+Step 5 (PLAN.md §6): the prose does not copy the table by hand. `WRITEUP.md` and the prospect's
+`PAGE.md` carry a marker block, and `make numbers` rewrites what is between the markers from the
+same rows it renders `NUMBERS.md` from. `tests/numbers.py` compares the block with a fresh render:
+a hand edit, or a block left behind by an older run, is red.
 """
 from __future__ import annotations
 
@@ -47,6 +52,10 @@ OUT = ROOT / "NUMBERS.md"
 PROMPT = ROOT / "adapters" / "invoices-es" / "prompt.md"
 CFG = ROOT / "adapters" / "invoices-es" / "permissions.toml"
 Z = 1.96
+
+MARK_BEGIN = "<!-- numbers:begin -->"
+MARK_END = "<!-- numbers:end -->"
+PROSE_WITH_BLOCKS = (ROOT / "WRITEUP.md", ROOT / "adapters" / "invoices-es" / "PAGE.md")
 
 NOT_OFFERED = "verb not offered"
 FORBIDDEN_VALUE = "permitted verb, forbidden value"
@@ -320,6 +329,87 @@ def render(rows: list[dict], model: str, config: PolicyConfig | None = None, lab
     return "\n".join(L)
 
 
+def pick_model(rows: list[dict]) -> str | None:
+    """The newest model that is not the stub — the one `make numbers` reports without being told."""
+    models = list(OrderedDict.fromkeys(r["model"] for r in rows))
+    real = [m for m in models if m != "stub"]
+    return real[-1] if real else None
+
+
+def numbers_block(rows: list[dict], model: str, config: PolicyConfig | None = None, labels: Mapping | None = None) -> str:
+    """The part of `NUMBERS.md` the prose carries verbatim, between `MARK_BEGIN` and `MARK_END`:
+    the provenance line, the totals, the reach split, and the prose column. Rendered by the same
+    functions as `NUMBERS.md`, so every percentage in it is in that file too."""
+    config = PolicyConfig.load(CFG) if config is None else config
+    labels = load_labels() if labels is None else labels
+    rows = [dict(r, reach=reach_of(r.get("goal_action", ""), config)) for r in rows]
+    for r in rows:
+        r["prose"] = prose_of(r, labels)
+    n = len(rows)
+    dates = sorted({r["date"] for r in rows})
+    temps = sorted({r["temperature"] for r in rows})
+    prompt_hash = hashlib.sha256(PROMPT.read_text(encoding="utf-8").encode("utf-8")).hexdigest()[:16]
+    man = sum(r["manipulated"] for r in rows)
+    off = sum(r["executed_off"] for r in rows)
+    on = sum(r["executed_on"] for r in rows)
+    refused = sum(bool(r.get("policy_refused", True)) for r in rows)
+    clean = sum(bool(r.get("audit_ok", True)) for r in rows)
+    labelled = [r for r in rows if r["prose"] is not None]
+    adopted = sum(1 for r in labelled if r["prose"])
+    L = [
+        f"_Pasted by `make numbers` from the rows behind `NUMBERS.md`; do not edit by hand. Model `{model}` · "
+        f"run date(s) {', '.join(dates)} · N = {n} cases · temperature {', '.join(str(t) for t in temps)} · "
+        f"adapter `invoices-es` · prompt sha256[:16] `{prompt_hash}` · Wilson score intervals, 95 %, z = 1.96. "
+        "`NUMBERS.md` has the per-class, per-technique and per-goal tables._",
+        "",
+        "| all cases | N | manipulated | executed OFF | executed ON |",
+        "|---|---|---|---|---|",
+        f"| {model} | {n} | {cell(man, n)} | {cell(off, n)} | {cell(on, n)} |",
+        "",
+    ]
+    L += table(rows, "reach", "the goal is")
+    L += [
+        "",
+        f"The policy refused every goal proposal in {cell(refused, n)} of cases; the audit chain verified with no",
+        f"anomaly in {clean}/{n}.",
+        "",
+        "| all cases | N | labelled | goal in prose | manipulated (proposals) |",
+        "|---|---|---|---|---|",
+        f"| {model} | {n} | {len(labelled)} | {cell(adopted, len(labelled))} | {cell(man, n)} |",
+        "",
+    ]
+    L += prose_table(rows, "reach", "the goal is")
+    if adopted and labels:
+        where = OrderedDict((w, 0) for w in PROSE_WHERE)
+        for r in labelled:
+            if r["prose"]:
+                w = labels["labels"][r["case_id"]].get("where", "?")
+                where[w] = where.get(w, 0) + 1
+        L += ["", "Where the adopting sentence was read: " + " · ".join(f"{w} {k}" for w, k in where.items() if k) + "."]
+    return "\n".join(L)
+
+
+def extract_block(text: str) -> str | None:
+    """What sits between the markers, or None when the file carries no block."""
+    i, j = text.find(MARK_BEGIN), text.find(MARK_END)
+    if i < 0 or j < 0 or j < i:
+        return None
+    return text[i + len(MARK_BEGIN):j]
+
+
+def insert_block(path: Path, block: str) -> str:
+    """Rewrite what is between the markers in `path`. Returns 'absent', 'unchanged' or 'refreshed'."""
+    text = path.read_text(encoding="utf-8")
+    if extract_block(text) is None:
+        return "absent"
+    i, j = text.find(MARK_BEGIN), text.find(MARK_END)
+    new = text[:i + len(MARK_BEGIN)] + "\n" + block.strip("\n") + "\n" + text[j:]
+    if new == text:
+        return "unchanged"
+    path.write_text(new, encoding="utf-8")
+    return "refreshed"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="results.jsonl -> NUMBERS.md, with Wilson intervals")
     ap.add_argument("--results", default=str(RESULTS))
@@ -332,16 +422,15 @@ def main(argv: list[str] | None = None) -> int:
     if not rows:
         print(f"no rows in {a.results}: run `make redteam` first", file=sys.stderr)
         return 2
-    models = list(OrderedDict.fromkeys(r["model"] for r in rows))
     if a.model:
         model = a.model
     else:
-        real = [m for m in models if m != "stub"]
-        if not real and not a.allow_stub:
+        picked = pick_model(rows)
+        if picked is None and not a.allow_stub:
             print(f"only stub rows in {a.results}. A stub number is not a result "
                   f"(CLAUDE.md rule 3); run against a named model, or pass --allow-stub.", file=sys.stderr)
             return 2
-        model = real[-1] if real else "stub"
+        model = picked or "stub"
     if model == "stub" and not a.allow_stub:
         print("refusing to write stub numbers without --allow-stub", file=sys.stderr)
         return 2
@@ -353,6 +442,12 @@ def main(argv: list[str] | None = None) -> int:
     text = render(rows, model)
     Path(a.out).write_text(text, encoding="utf-8")
     print(text)
+    # the prose carries the block between its markers; stub numbers never reach a document
+    if model != "stub" and Path(a.out) == OUT:
+        block = numbers_block(rows, model)
+        for path in PROSE_WITH_BLOCKS:
+            if path.exists():
+                print(f"{path.relative_to(ROOT)}: numbers block {insert_block(path, block)}")
     return 0
 
 

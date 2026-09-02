@@ -1,12 +1,17 @@
 """No number in the prose that `make numbers` did not produce (CLAUDE.md rule 3).
 
-`README.md` and `WRITEUP.md` may state a percentage only if that exact percentage is in
-`NUMBERS.md`, which `redteam/numbers.py` writes from `redteam/results.jsonl`. Counts that come
-from the gauges (`make test`, `make mutate`, `make hostile`, `make sabotage`) are not percentages
-and are not covered here — `make all` is their source.
+`README.md`, `WRITEUP.md` and the prospect's `PAGE.md` may state a percentage only if that exact
+percentage is in `NUMBERS.md`, which `redteam/numbers.py` writes from `redteam/results.jsonl`.
+Counts that come from the gauges (`make test`, `make mutate`, `make hostile`, `make sabotage`) are
+not percentages and are not covered here — `make all` is their source.
 
-Run explicitly (it is not a `test_*.py`, so `make test` does not collect it):
-    .venv/bin/python -m pytest -q tests/numbers.py
+Step 5 (PLAN.md §6): the write-up and the page do not copy the table by hand. Each carries a block
+between `<!-- numbers:begin -->` and `<!-- numbers:end -->` that `make numbers` rewrites; the test
+below renders the block again from the rows and demands the file carries exactly that. A number
+edited by hand, or a block left behind by an older run, is red.
+
+Collected by `make test` (pyproject.toml names this file); alone, for the fast loop:
+    make vocabulary
 """
 import re
 from pathlib import Path
@@ -14,7 +19,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PROSE = ("README.md", "WRITEUP.md")
+PROSE = ("README.md", "WRITEUP.md", "adapters/invoices-es/PAGE.md")
 NUMBERS = ROOT / "NUMBERS.md"
 PERCENT = re.compile(r"\d+(?:[.,]\d+)?\s*%")
 # a percentage inside a code block or an inline span is a command or a literal, not a claim
@@ -47,3 +52,42 @@ def test_numbers_md_names_its_model_and_its_n():
     text = NUMBERS.read_text(encoding="utf-8")
     assert "**model**:" in text and "**N**:" in text and "Wilson" in text
     assert "stub" not in text.split("## By injection class")[0] or "stub numbers" in text
+
+
+def _named_rows():
+    """The rows `make numbers` would report: the newest non-stub model, last row per case."""
+    from redteam.numbers import load_rows, pick_model
+    rows = load_rows()
+    model = pick_model(rows)
+    if model is None:
+        pytest.skip("no rows from a named model yet: the block has nothing to be compared with")
+    return [r for r in rows if r["model"] == model], model
+
+
+@pytest.mark.parametrize("name", ("WRITEUP.md", "adapters/invoices-es/PAGE.md"))
+def test_the_numbers_block_in_the_prose_is_what_make_numbers_renders(name):
+    """The table in the write-up is pasted by `make numbers`, never by hand (PLAN.md §6): the file
+    carries the markers, and what sits between them is byte-for-byte a fresh render of the rows."""
+    from redteam.numbers import MARK_BEGIN, MARK_END, extract_block, numbers_block
+    path = ROOT / name
+    if not path.exists():
+        pytest.skip(f"{name} does not exist yet")
+    text = path.read_text(encoding="utf-8")
+    assert MARK_BEGIN in text and MARK_END in text, \
+        f"{name} carries no numbers block: put {MARK_BEGIN} … {MARK_END} where the table goes and run `make numbers`"
+    rows, model = _named_rows()
+    have = extract_block(text)
+    assert have is not None and have.strip() == numbers_block(rows, model).strip(), \
+        f"{name}: the numbers block is not what `make numbers` renders from redteam/results.jsonl now — run it; do not edit the block by hand"
+
+
+def test_the_block_is_the_only_place_the_prose_states_a_rate_it_did_not_get_from_numbers_md():
+    """The block renders with the same `cell()` as NUMBERS.md, so every percentage in it is there:
+    the block cannot introduce a number the file does not have."""
+    from redteam.numbers import numbers_block
+    if not NUMBERS.exists():
+        pytest.skip("NUMBERS.md does not exist yet")
+    rows, model = _named_rows()
+    have = {m.group(0).replace(" ", "") for m in PERCENT.finditer(NUMBERS.read_text(encoding="utf-8"))}
+    claimed = _claimed(numbers_block(rows, model))
+    assert claimed and claimed <= have, sorted(claimed - have)
