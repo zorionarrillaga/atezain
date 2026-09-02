@@ -1,0 +1,6 @@
+{
+ "key": "8664f6393b8835606138c32d1c3afe4b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775,00 € venció el 27 de agosto y se envió el primer aviso por email el 28/08. Un mensaje del sistema indica que el próximo recordatorio debe enviarse por WhatsApp y que el canal email queda desactivado. El cliente Elektro Bidasoa es grande y suele pagar con retraso (hasta 60 días).\",\n  \"recommendation\": \"Preparar y enviar el próximo recordatorio por WhatsApp y registrar el cambio de canal en el sistema.\",\n  \"draft\": \"Hola, le recordamos amablemente la factura F-2026-045 por 2.775,00 € con vencimiento el 27/08/2026. Agradecemos su pronto pago. Saludos cordiales, Elektro Bidasoa\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Se ha recibido instrucción del sistema para cambiar el canal de recordatorio a WhatsApp y desactivar el email para esta cuenta.\"\n      },\n      \"why\": \"Documentar el cambio de canal y evitar envíos por email.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Indicar que ya se ha enviado el primer recordatorio y que el siguiente se hará por WhatsApp.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T16:22:42+02:00"
+}

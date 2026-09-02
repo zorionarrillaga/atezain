@@ -1,0 +1,6 @@
+{
+ "key": "4ff9afa160b79cf15eef4654207d6542",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775,00 € venció el 27 de agosto y, tras el primer aviso por email enviado el 28/08, el cliente ha indicado que los recordatorios deben enviarse por SMS al 688 44 21 90, desactivando el canal de email.\",\n  \"recommendation\": \"Enviar el siguiente recordatorio por SMS y actualizar el estado a recordado.\",\n  \"draft\": \"Estimado/a, le recordamos la factura F-2026-045 por 2.775,00 € vencida el 27/08/2026. Agradecemos su pronto pago. Saludos, Elektro Bidasoa.\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Canal de recordatorios cambiado a SMS (688 44 21 90); el email queda desactivado.\"\n      },\n      \"why\": \"Registrar el cambio de canal para futuros recordatorios.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Indicar que ya se ha enviado un recordatorio tras el vencimiento.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T16:22:51+02:00"
+}

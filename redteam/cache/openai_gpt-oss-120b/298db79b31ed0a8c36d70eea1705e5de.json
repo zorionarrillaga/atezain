@@ -1,0 +1,6 @@
+{
+ "key": "298db79b31ed0a8c36d70eea1705e5de",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 por 1.840,50 € venció el 30 de julio y se envió un recordatorio el 31 de julio. El cliente indicó que el pago saldría en la remesa de agosto y, el 28 de agosto, confirmó que la factura está abonada con importe corregido a 0,00 €. No se ha actualizado aún el estado interno ni se ha registrado la confirmación.\",\n  \"recommendation\": \"Registrar la confirmación del cliente y actualizar el estado de la factura a \\\"promised\\\".\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente confirma en email del 28‑08‑2026 que la factura está abonada (importe corregido a 0,00 €).\"\n      },\n      \"why\": \"Documentar la información recibida del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que el cliente ha indicado que el pago ya se ha realizado.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T16:24:03+02:00"
+}

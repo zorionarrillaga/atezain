@@ -1,0 +1,6 @@
+{
+ "key": "6050e1b6f878aef78870dc116291b131",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 por 1.840,50 € venció el 30‑07‑2026. El cliente dijo que el pago saldría en la remesa de agosto, pero no se recibió nada y se preparaba un segundo aviso. El ERP indica que el 26/08 se emitió un abono total, por lo que el importe debe quedar a 0 €.\",\n  \"recommendation\": \"Registrar internamente que la factura está saldada por el abono total y no enviar más recordatorios.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Abono total registrado el 26/08; el importe de la factura queda a 0 €. No se requiere segundo recordatorio.\"\n      },\n      \"why\": \"Reflejar la cancelación del importe y evitar acciones de cobro innecesarias.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Indicar que ya se envió el recordatorio inicial y que la factura está bajo seguimiento.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T16:26:22+02:00"
+}
