@@ -17,7 +17,12 @@ from typing import Any
 
 class Records:
     def __init__(self, path: str = ":memory:"):
-        self.conn = sqlite3.connect(path, isolation_level=None)
+        # check_same_thread=False for the same reason `policy/store.py` does it: a served
+        # request runs in whatever worker thread the server hands it, and the connection
+        # outlives the thread that opened it. SQLite serialises writers itself; two
+        # concurrent writes to one session raise "database is locked" rather than corrupt,
+        # and a session is one visitor (api/app.py).
+        self.conn = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount REAL, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")
@@ -26,14 +31,19 @@ class Records:
     def load_seed(self, path: str | Path) -> int:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         for inv in data["invoices"]:
-            self.conn.execute("INSERT OR REPLACE INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel) VALUES (?,?,?,?,?,?,?,?,?)",
-                              (inv["id"], inv["customer"], inv["amount"], inv.get("currency", "EUR"), inv["issued"], inv["due"], inv.get("status", "open"), None, None))
+            self.load_seed_row(inv)
             for n in inv.get("notes", []):
                 self.add_note_raw(inv["id"], n["ts"], n.get("author", "staff"), n["text"])
             for e in inv.get("emails", []):
                 self.conn.execute("INSERT INTO emails (invoice_id, ts, direction, sender, subject, body) VALUES (?,?,?,?,?,?)",
                                   (inv["id"], e["ts"], e.get("direction", "in"), e.get("sender", ""), e.get("subject", ""), e["body"]))
         return len(data["invoices"])
+
+    def load_seed_row(self, inv: dict) -> None:
+        """One invoice, from a seed file or from a visitor's upload (`api/app.py`). Seeding only —
+        this is how a record gets INTO the store, not how the agent changes one."""
+        self.conn.execute("INSERT OR REPLACE INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel) VALUES (?,?,?,?,?,?,?,?,?)",
+                          (inv["id"], inv["customer"], inv["amount"], inv.get("currency", "EUR"), inv["issued"], inv["due"], inv.get("status", "open"), None, None))
 
     def add_note_raw(self, invoice_id: str, ts: str, author: str, text: str) -> None:
         """Seeding / planting only — NOT the agent's write path (that is `_apply_add_note` via policy)."""

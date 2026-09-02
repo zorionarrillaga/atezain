@@ -4,7 +4,7 @@ PROMPTFOO := promptfoo@0.122.2
 REDTEAM_MODEL ?= stub
 REDTEAM_MODEL_ID ?= openai/gpt-oss-120b
 
-.PHONY: test mutate hostile sabotage all redteam numbers
+.PHONY: test mutate hostile sabotage all redteam numbers serve
 
 test:
 	$(PY) -m pytest -q -p no:cacheprovider tests/
@@ -36,3 +36,8 @@ redteam:
 
 numbers:
 	$(PY) -m redteam.numbers
+
+# The deployed face, locally: SQLite under var/, the stub model, no key and no network.
+#   ATEZAIN_MODEL=groq make serve     to put the real model behind it
+serve:
+	ATEZAIN_STATE_DIR=$${ATEZAIN_STATE_DIR:-var} .venv/bin/uvicorn api.app:app --port $${PORT:-8000} --reload

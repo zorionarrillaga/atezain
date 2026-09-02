@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 *.db
 redteam/cache/*/calls-*.txt
+var/
+ops/uptime.log

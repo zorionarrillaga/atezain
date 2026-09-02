@@ -62,6 +62,10 @@ SABOTAGES = [
     ("the drafts store reports the row, not the artifact", "records/drafts.py",
      "        art = self.artifact(draft_id) or {}\n",
      '        art = next((r for r in reversed(self.rows(draft_id)) if r.get("event") == "sent"), {})\n'),
+    # step 4: the served application's identity closure
+    ("a session id alone is its human", "api/auth.py",
+     "        if not secrets.compare_digest(row[0], _hash(token)):\n            return None\n",
+     "        if False:\n            return None\n"),
     ("the budget is not transactional", "policy/store.py",
      '        with self._lock:\n            depth = getattr(self._depth, "n", 0)\n',
      '        if True:\n            yield\n            return\n        with self._lock:\n            depth = getattr(self._depth, "n", 0)\n'),

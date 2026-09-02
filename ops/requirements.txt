@@ -1,0 +1,11 @@
+# What the deployed web service needs. The policy layer itself needs none of this: `policy/` is
+# standard library only, and `make test` runs with pytest + langgraph alone.
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.20
+openpyxl==3.1.5
+langgraph==1.2.11
+langgraph-checkpoint-sqlite==3.1.1
+# added when the Postgres store lands (PLAN.md §4.1/§4.2), not before:
+# psycopg[binary]==3.*
+# langgraph-checkpoint-postgres==*

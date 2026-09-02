@@ -1,0 +1,32 @@
+# Render blueprint, free plan (PLAN.md §4.5). NOT deployed: the account, the click and the keys are
+# the owner's, and rule 1 of CLAUDE.md says nothing is deployed until he says so, in writing, that
+# day. Every secret below is set in the dashboard and appears in no file in this repository.
+services:
+  - type: web
+    name: atezain
+    runtime: docker
+    plan: free
+    dockerfilePath: ./ops/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: ATEZAIN_ADAPTER
+        value: invoices-es
+      - key: ATEZAIN_STATE_DIR
+        value: /app/var
+      - key: ATEZAIN_MODEL
+        value: stub            # flip to `groq` once the key is set; a visitor may always bring
+                               # their own with the X-Groq-Key header
+      - key: DATABASE_URL      # Neon, free tier. Until PLAN.md §4.1 lands this is unread and the
+        sync: false            # service runs on its own disk-backed SQLite (which Render's free
+                               # plan does not persist across a spin-down — that is the reason §4.1 exists)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ATEZAIN_OWNER_TOKEN   # clears the SERVER's model budget fuse; nothing else
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_HOST
+        value: https://cloud.langfuse.com

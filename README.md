@@ -10,8 +10,9 @@ compares what the executor observed in the record afterwards with what was appro
 attacked, in public, with injections planted in the very records it reads, and the result is a number.
 
 **Status: steps 1, 2 and 3 of 6 — the policy layer, the assistant graph over it, and the red-team
-that measures it against a named model; step 7's adapter and CLI are built, its wiring is not.**
-Nothing here is deployed yet. See `STATUS.md`.
+that measures it against a named model; step 7's adapter and CLI are built, its wiring is not;
+step 4's web face runs locally, and nothing is deployed.** See `STATUS.md` for what each of those
+means and for what step 4 deliberately skipped.
 
 ## What is built
 
@@ -37,6 +38,12 @@ Nothing here is deployed yet. See `STATUS.md`.
   and through `redteam/off.py` — the control arm, an assistant wired the ordinary way with the
   layer removed. promptfoo is the runner and its assertion is the gate. `make numbers` turns the
   rows into `NUMBERS.md`, which is the only source of a number in this file.
+- `api/` — the same layer behind HTTP: a session is a namespace (its own records, its own audit
+  chain, its own fuse) opened by a bearer token; you upload a CSV of your own invoices, ask for an
+  assist, see what it drafts and what it holds, decide, and read the chain. `api/auth.py` is the
+  only place in the served application where a human principal is constructed, and a test greps the
+  package to keep it that way. Runs locally on SQLite and the stub model with `make serve`; it is
+  not deployed, and the Postgres store it would need on a free instance is not written yet.
 - `adapters/outreach/` + `bin/atezain_cli.py` — the same layer over the author's own outbound
   letters: a draft is a record, `send` means *write down that this letter went out*, and there is
   no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
@@ -63,6 +70,13 @@ of a case that has been run makes no network call and needs no key at all:
 make redteam                       # the harness end to end on the stub model, offline, $0
 make redteam REDTEAM_MODEL=groq    # the named model; ~22 min for 100 cases at 20 requests/minute
 make numbers                       # rewrites NUMBERS.md from redteam/results.jsonl
+```
+
+The web face, locally — SQLite under `var/`, the stub model, no key and no network:
+
+```
+.venv/bin/pip install -q fastapi uvicorn python-multipart openpyxl
+make serve                         # then open http://127.0.0.1:8000/demo
 ```
 
 The same layer over your own outbound drafts, with no model in it at all:
@@ -97,16 +111,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 126 passed (79 after the second repair; 29 came with step 3, 18 with step 7) |
-| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 26 crashing test(s) alongside assertion kills |
+| `make test` | 137 passed (79 after the second repair; 29 came with step 3, 18 with step 7, 11 with step 4) |
+| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 27 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 17/17 sabotages caught by at least one gauge |
+| `make sabotage` | 18/18 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers seventeen properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers eighteen properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either.
 
