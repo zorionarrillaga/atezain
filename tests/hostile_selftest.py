@@ -21,7 +21,7 @@ from policy import (AGENT, HUMAN, APPROVED, EXECUTED, HELD, DENIED,  # noqa: E40
 AGENT_P = Principal("assistant", AGENT)
 HUMAN_P = Principal("owner", HUMAN)
 FAKE_HUMAN = Principal("owner", AGENT)           # same id as the human, wrong kind
-T0 = 1_756_760_400.0
+T0 = 1_788_256_800.0
 
 
 class Clock:
@@ -133,10 +133,9 @@ def main() -> int:
         p.status = APPROVED
         svc.store.put_proposal(p)     # an attacker with store access — the audit chain must still show no DECISION
         svc.execute(p.id, lambda a, r, prm: w.append(prm) or {"applied": prm}, AGENT_P)
-        kinds = [r["kind"] for r in svc.store.audit_rows()]
-        # This one CAN write (store access is root access). What must hold: the audit shows an EXECUTED
-        # row with no DECISION row before it — detectable after the fact. Report, do not count as breach.
-        detectable = "DECISION" not in kinds and "EXECUTED" in kinds
+        # This one CAN write (store access is root access). What must hold: the audit chain shows an
+        # EXECUTED row with no DECISION behind it — detectable after the fact. Report, do not score.
+        detectable = svc.store.audit_orphans() == [p.id]
         print(f"  {'DETECT.'if detectable else 'MISSED '}  store-level forgery leaves an execution without a decision in the audit chain")
         return []
     results.append(attempt("(observed, not scored) forge approval with store access", a10))

@@ -13,7 +13,7 @@ AGENT_P = Principal("assistant", AGENT)
 HUMAN_P = Principal("zorion", HUMAN)
 
 DAY = 86400.0
-T0 = 1_756_760_400.0   # 2026-09-01 22:00 Europe/Madrid, a fixed instant
+T0 = 1_788_256_800.0   # 2026-09-01 12:00 Europe/Madrid (10:00 UTC), a fixed midday instant
 
 
 class Clock:
@@ -242,3 +242,48 @@ def test_every_path_leaves_an_audit_row():
     svc.execute(held.id, ok_executor, HUMAN_P)                                                 # executed
     svc.execute(held.id, ok_executor, HUMAN_P)                                                 # refused
     assert len(store.audit_rows()) - n0 == 6
+
+
+# ── the two checks the first mutation pass found could not fail, now exercised for real ──────
+def test_reentrant_execution_during_the_first_is_refused():
+    """exactly_once is claimed BEFORE the executor runs, so a second execute that starts while the
+    first is still inside the executor (a race, a retry, a callback) finds the slot taken."""
+    svc, store, _ = make()
+    p = svc.decide(svc.propose(AGENT_P, "update_status", "inv-1", {"status": "reminded"}).id, True, HUMAN_P)
+    inner_calls = []
+
+    def outer(action, record_id, params):
+        svc.execute(p.id, lambda a, r, prm: inner_calls.append(prm) or {"applied": prm}, HUMAN_P)
+        return {"applied": params}
+
+    q = svc.execute(p.id, outer, HUMAN_P)
+    assert q.status == EXECUTED
+    assert inner_calls == []
+    assert any(r["kind"] == "EXECUTION_REFUSED" and '"already_executed"' in r["detail"] for r in store.audit_rows())
+
+
+class PutFails(Store):
+    """Reachable (ping answers) but cannot record — a full disk, a read-only replica, a dropped
+    write. An approval that was never recorded must not be reported as an approval."""
+    def put_proposal(self, p):
+        raise RuntimeError("write failed")
+
+
+def test_a_proposal_that_cannot_be_recorded_is_denied():
+    cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml")
+    svc = PolicyService(cfg, PutFails(":memory:"), Clock())
+    p = svc.propose(AGENT_P, "add_note", "inv-1", {"note": "x"})
+    assert p.status == DENIED and p.reason.startswith("fail_closed:persist:")
+
+
+def test_forged_approval_with_store_access_is_detectable_afterwards():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "update_status", "inv-1", {"status": "reminded"})
+    p.status = APPROVED
+    store.put_proposal(p)                      # root access: the boundary cannot stop this
+    svc.execute(p.id, ok_executor, HUMAN_P)
+    assert store.audit_orphans() == [p.id]     # but it cannot hide it either
+    legit = svc.decide(svc.propose(AGENT_P, "update_status", "inv-2", {"status": "reminded"}).id, True, HUMAN_P)
+    svc.execute(legit.id, ok_executor, HUMAN_P)
+    assert store.audit_orphans() == [p.id]
+

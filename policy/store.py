@@ -123,6 +123,15 @@ class Store:
             prev = r["hash"]
         return True
 
+    def audit_orphans(self) -> list[str]:
+        """Proposal ids that EXECUTED without a DECISION row and were not auto-approved — the
+        signature of an approval forged with direct store access. Detectable after the fact; the
+        chain cannot prevent root, it can only refuse to hide it."""
+        rows = self.audit_rows()
+        decided = {r["proposal_id"] for r in rows if r["kind"] == "DECISION"}
+        auto = {r["proposal_id"] for r in rows if r["kind"] == "PROPOSAL" and json.loads(r["detail"]).get("status") == "approved"}
+        return [r["proposal_id"] for r in rows if r["kind"] == "EXECUTED" and r["proposal_id"] not in decided and r["proposal_id"] not in auto]
+
     @staticmethod
     def _hash(prev_hash: str, ts: float, kind: str, principal: str, proposal_id: str | None, detail_s: str) -> str:
         payload = json.dumps([prev_hash, ts, kind, principal, proposal_id, detail_s], sort_keys=True)

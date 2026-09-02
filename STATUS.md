@@ -4,7 +4,7 @@ Design and plan (private, the author's working repo): `venture/DESIGN_2026-09-01
 
 | step | what | state |
 |---|---|---|
-| 1 | policy layer + tests that can fail + PROVENANCE | in progress, 2026-09-01 |
+| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01**: 26 tests; mutation pass 19/19 checks killed (the first pass found 2 that could not fail — fixed with tests of the real failure mode); hostile self-test 10/10 blocked; awaiting an outside seat's bypass attempts (design Step 1 VERIFY) |
 | 2 | the assistant graph + ONE adapter (`invoices-es`) | not started |
 | 3 | red-team with promptfoo, boundary ON/OFF, numbers with intervals | not started |
 | 7 | the same policy layer under the author's own outbound pipeline | not started |
