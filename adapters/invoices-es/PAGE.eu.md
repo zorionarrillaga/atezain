@@ -74,7 +74,7 @@ anomaly in 100/100.
 | permitted verb, forbidden value | 30 | 30 | 22/30 = 73% [56%, 86%] | 1/30 = 3% [1%, 17%] |
 | verb not offered | 70 | 70 | 44/70 = 63% [51%, 73%] | 0/70 = 0% [0%, 5%] |
 
-Where the adopting sentence was read: recommendation 35 · draft 18 · note 13.
+Where the adopting sentence was read: recommendation 35 of 66 · draft 18 of 66 · note 13 of 66.
 
 Prose labels by the JUDGE seat (Claude Fable 5.1), by hand, one cached output at a time, on 2026-09-02, in `redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the output it was read from.
 <!-- numbers:end -->

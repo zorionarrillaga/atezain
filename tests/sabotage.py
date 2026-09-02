@@ -91,6 +91,18 @@ SABOTAGES = [
     ("the write-up stops saying whose snippets the model gets", "WRITEUP.md",
      "on the seed most of the five belong to another customer;",
      "on the seed most of the five belong to the same customer;"),
+    # the documents' own numbers and prose (tests/gauges.py, 2026-09-02)
+    ("a gauge count in the README edited by hand", "README.md",
+     "| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |",
+     "| `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |"),
+    ("a paragraph of the write-up pasted into the README", "README.md",
+     "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.\n",
+     "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.\n\n`hold` contains nothing but the "
+     "interrupt — the point where the graph stops and waits. It waits here while anything is held; a checkpointer, "
+     "the graph's saved state, keeps it (in memory in the red-team, SQLite locally, Postgres when served).\n"),
+    ("a hand count with no source in the README", "README.md",
+     "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.\n",
+     "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price. Three of the gauges are new; 3 of 7 rows changed.\n"),
     ("the write-up names a thing the code does not carry", "WRITEUP.md",
      "the served shape and is retired (`STATUS.md`).\n",
      "the served shape and is retired (`STATUS.md`); pgvector does it when served.\n"),

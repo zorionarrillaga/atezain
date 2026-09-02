@@ -297,7 +297,7 @@ def render(rows: list[dict], model: str, config: PolicyConfig | None = None, lab
             where[labels["labels"][r["case_id"]].get("where", "?")] = where.get(labels["labels"][r["case_id"]].get("where", "?"), 0) + 1
     if adopted:
         L += [
-            "Where the adopting sentence was read: " + " · ".join(f"{w} {k}" for w, k in where.items() if k) + ".",
+            "Where the adopting sentence was read: " + " · ".join(f"{w} {k} of {adopted}" for w, k in where.items() if k) + ".",
             "This adapter auto-approves `add_note` (`approval = \"none\"`), so a note the model proposed",
             "was written into the record with the boundary ON: where the adopting sentence is a note, the",
             "injected claim — restated in the assistant's own voice — is now an internal note that the",
@@ -391,7 +391,7 @@ def numbers_block(rows: list[dict], model: str, config: PolicyConfig | None = No
             if r["prose"]:
                 w = labels["labels"][r["case_id"]].get("where", "?")
                 where[w] = where.get(w, 0) + 1
-        L += ["", "Where the adopting sentence was read: " + " · ".join(f"{w} {k}" for w, k in where.items() if k) + "."]
+        L += ["", "Where the adopting sentence was read: " + " · ".join(f"{w} {k} of {adopted}" for w, k in where.items() if k) + "."]
     if labels:
         L += ["", f"Prose labels by {labels.get('labelled_by', 'a reader')}, on {labels.get('date', '?')}, in "
               "`redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the "

@@ -12,18 +12,21 @@ REDTEAM_MODEL_ID ?= openai/gpt-oss-120b
 # `make mutate` and `make sabotage` always drop the variable in the child they run: what they
 # measure is whether a check can fail, not which database it fails on.
 test:
-	$(PY) -m pytest -q -p no:cacheprovider tests/
+	$(PY) tests/gauge_record.py run test -- $(PY) -m pytest -q -p no:cacheprovider tests/
 
 mutate:
-	$(PY) tests/mutate.py
+	$(PY) tests/gauge_record.py run mutate -- $(PY) tests/mutate.py
 
 hostile:
-	$(PY) tests/hostile_selftest.py
+	$(PY) tests/gauge_record.py run hostile -- $(PY) tests/hostile_selftest.py
 
 sabotage:
-	$(PY) tests/sabotage.py
+	$(PY) tests/gauge_record.py run sabotage -- $(PY) tests/sabotage.py
 
+# `all` ends by writing GAUGES.md from the four lines just recorded and holding README, WRITEUP and
+# STATUS to it (tests/gauge_record.py): a count copied by hand that disagrees makes `all` red.
 all: test mutate hostile sabotage
+	$(PY) tests/gauge_record.py write
 
 # The red-team. promptfoo is the runner and its assertion is the gate: a planted injection whose
 # goal proposal reaches execution fails the eval and this target exits non-zero. The test list is
@@ -46,7 +49,7 @@ numbers:
 # and PAGE.md is in NUMBERS.md and the pasted block is a fresh render; every technology the write-up
 # names is imported and called on the main path, and a name that maps to nothing is red.
 vocabulary:
-	$(PY) -m pytest -q -p no:cacheprovider tests/vocabulary.py tests/numbers.py
+	$(PY) -m pytest -q -p no:cacheprovider tests/vocabulary.py tests/numbers.py tests/gauges.py
 
 # The deployed face, locally: SQLite under var/, the stub model, no key and no network.
 #   ATEZAIN_MODEL=groq make serve     to put the real model behind it

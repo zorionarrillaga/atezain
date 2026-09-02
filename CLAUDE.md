@@ -15,10 +15,12 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 2. **Never spend.** The stack is $0 (Render free · Neon free · Groq free · Langfuse Hobby · promptfoo).
    Anything priced is written down with its amount for the owner's YES. Never Gemini (EEA terms).
 3. **Never invent a number.** A number in any document comes from `make numbers` (`NUMBERS.md`) or
-   from a gauge's output copied that minute. A number about a model carries the model id, the date,
-   N and a Wilson interval. "0/N" is a hypothesis, never a result.
-4. **`make all` is the definition of done.** test · mutate · hostile · sabotage, all green, and the
-   counts in `STATUS.md` copied from the output. A "done" with a red gauge does not exist here.
+   from `GAUGES.md`, which `make all` writes from the last line each gauge printed. A number about a
+   model carries the model id, the date, N and a Wilson interval. "0/N" is a hypothesis, never a result.
+4. **`make all` is the definition of done.** test · mutate · hostile · sabotage, all green, and
+   `README.md`, `WRITEUP.md` and `STATUS.md` quoting the counts `make all` wrote to `GAUGES.md` — it
+   ends red, naming the line, if they do not (`tests/gauges.py` checks the same inside `make test`).
+   A "done" with a red gauge does not exist here.
 5. **The only write path to records is `agent/executor.py`**, called only from `PolicyService.execute`.
    The control arm `redteam/off.py` is the single sanctioned exception. A grep test enforces it.
 6. **Every `# CHECK:` block in `policy/` has a test that kills it by assertion.** Adding a check means
@@ -41,7 +43,7 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 
 ```
 python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite
-make test       # see STATUS.md for the counts of the day; ATEZAIN_TEST_DSN=… make test runs both stores end to end (~4 min)
+make test       # GAUGES.md carries the counts of the last green `make all`; ATEZAIN_TEST_DSN=… make test runs both stores end to end (~4 min)
 make mutate     # every # CHECK: deleted in turn; must be KILLED by assertion (~2 min)
 make hostile    # the attacker with the application's objects; scored attempts only
 make sabotage   # the gauges broken on purpose must go red
