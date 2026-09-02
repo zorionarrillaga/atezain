@@ -1,6 +1,7 @@
 # atezain
 
-*Atezain* is Basque for goalkeeper.
+*Atezain* is Basque for goalkeeper. Built in September 2026 by Zorion Arrillaga, mostly by
+directing coding models, on rules paid for by an earlier system of his own (`PROVENANCE.md`).
 
 An assistant over your records (invoices, orders, customers) that summarises, recommends the next
 action and drafts the message — and **cannot change anything on its own**. Every write it wants

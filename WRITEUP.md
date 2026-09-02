@@ -35,8 +35,8 @@ the invoice was not cancelled, and the record now says, in the assistant's own v
 The boundary acts on the proposal; the human acts on the words, and nothing in this layer stands
 between the human and those words.
 
-**Who built it.** The author, in September 2026, mostly by directing coding models — which is its
-own skill, and the one on show here: a cheaper model built to a written plan, and a model reserved
+**Who built it.** Zorion Arrillaga, in September 2026, mostly by directing coding models — which is
+its own skill, and the one on show here: a cheaper model built to a written plan, and a model reserved
 for the parts that need judgment reviewed, rewrote and ruled, with every claim gated by tests the
 author runs. The rules the policy enforces were paid for earlier, by an autonomous trading system
 the author ran against a real proprietary-firm evaluation account between May and August 2026
