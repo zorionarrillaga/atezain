@@ -43,7 +43,6 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 |---|---|---|
 | Connect Render to the private repo and deploy | ✋ then BUILDER | the owner's word, that day. Everything technical is ready: the account exists, the repo is there, and a session's records, queue, chain and held graph survive a restart on Neon. `autoDeploy` stays `false`, so the push and the deploy remain two acts |
 | Step 5, the write-up | ⚖ | **unblocked** — `NUMBERS.md` has had its review. It leads with the two numbers (1/100 in proposals · 66/100 in prose), the reach split, and R4; no sentence in it may imply the boundary covers what the human reads. `tests/vocabulary.py` and the marker-block insertion are BUILDER's |
-| The `add_note` question (R4) | ⚖ then ✋ | a decision on whether an auto-approved note may restate a customer's claim as fact, and what the alternative costs: every note held means the human reads a hold per assist. Changing the adapter or the prompt changes the prompt hash and re-runs the hundred (about a hundred calls, $0) |
 | §4.4 retrieval (pgvector or Postgres FTS) with its recall measurement | ⚖ then BUILDER | a set to measure against. The seed has twelve invoices, so recall@5 over it is not a measurement; the ten queries want an uploaded set of a hundred rows or more, which exists once the deploy does. Until then the local keyword retriever runs and no document says otherwise |
 | §4.5 tracing into Langfuse | BUILDER | nothing — the keys are in the owner's shell and the project is empty |
 | Step 7 §5.2, the wiring under `bin/venture` | ⚖ then ✋ | the format is decided below (the executor writes his existing artifact and ledger). The wiring itself changes his live pipeline and happens on his word, that day |
@@ -168,7 +167,10 @@ was the review of the case set above. Run `make all` first and fix nothing else 
   notes. In 13 of the 66 outputs that adopted the goal in words, the adopting sentence was a note, and it was written
   with the boundary ON. Options: hold every note (the human then reads a hold per assist); stamp the author as
   `assistant` and have the prompt say notes by the assistant are its own past output; or leave it and say so in the
-  write-up. Changing the prompt re-runs the hundred. ⚖ then ✋
+  write-up. Changing the prompt re-runs the hundred. ⚖ then ✋ **Ruled 2026-09-02 (✋): leave it as is and say so in the
+  write-up; revisit when the project is done.** The same ruling accepts the hundred prose labels as they stand, one
+  reader's, to be re-read by the owner when he has time; a label he disagrees with is edited in the file and
+  `make numbers` re-run.
 - **§4.4's recall measurement has nothing to measure against.** The seed holds twelve invoices; ten queries with
   expected ids over twelve documents is a smoke test, not recall. The ten queries should be written against an
   uploaded set of a hundred rows or more, which exists once the deploy does; until then the number is not quoted. ⚖
