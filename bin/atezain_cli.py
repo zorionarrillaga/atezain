@@ -34,8 +34,11 @@ from policy import (AGENT, APPROVED, EXECUTED, HELD, HUMAN, REJECTED, SYSTEM,  #
 from records.drafts import Drafts                                                 # noqa: E402
 
 ADAPTER = ROOT / "adapters" / "outreach" / "permissions.toml"
-DEFAULT_ROOT = "~/Desktop/FTMO/venture/outreach"
-DEFAULT_DB = "~/Desktop/FTMO/data/state/atezain_outreach.db"
+# Neutral defaults on purpose: this file ships in a repository and should not carry one machine's
+# layout. Point it at yours with ATEZAIN_OUTREACH_ROOT and ATEZAIN_OUTREACH_DB in your shell — the
+# same place the keys live — or with --root and --db.
+DEFAULT_ROOT = "./outreach"
+DEFAULT_DB = "./var/atezain_outreach.db"
 KINDS = {AGENT: AGENT, HUMAN: HUMAN, SYSTEM: SYSTEM}
 
 OK, REFUSED, USAGE = 0, 1, 2

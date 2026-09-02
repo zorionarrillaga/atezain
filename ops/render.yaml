@@ -9,6 +9,9 @@ services:
     dockerfilePath: ./ops/Dockerfile
     dockerContext: .
     healthCheckPath: /healthz
+    autoDeploy: false        # a push is not a deploy. CLAUDE.md rule 1 says a deploy needs the
+                             # owner's word, that day; with autoDeploy on, every commit would be
+                             # one. Deploys are triggered by hand from the dashboard.
     envVars:
       - key: ATEZAIN_ADAPTER
         value: invoices-es
