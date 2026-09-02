@@ -6,8 +6,12 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 
 ## The rules (they bind regardless of which model you are)
 
-1. **Never push, publish, deploy or create a public repo.** The owner says so in writing, that day, or it
-   does not happen. There is no remote configured on purpose.
+1. **Never publish, deploy, or make this public.** The owner says so in writing, that day, or it does
+   not happen. **As of 2026-09-02 there IS one remote**: `origin`, a PRIVATE repository at
+   `github.com/zorionarrillaga/atezain`, created on the owner's written say-so that day. Pushing to
+   THAT remote is ordinary work now. Making it public, adding any other remote, deploying it
+   anywhere, or connecting it to a build service each still needs his word, that day. `render.yaml`
+   carries `autoDeploy: false` so that a push cannot become a deploy by itself — leave it false.
 2. **Never spend.** The stack is $0 (Render free · Neon free · Groq free · Langfuse Hobby · promptfoo).
    Anything priced is written down with its amount for the owner's YES. Never Gemini (EEA terms).
 3. **Never invent a number.** A number in any document comes from `make numbers` (`NUMBERS.md`) or

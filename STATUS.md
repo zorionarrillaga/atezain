@@ -127,4 +127,11 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
   question (§4.1), not a SQLite one.
 - **promptfoo was kept** under the `PLAN.md` §3.4 K5 rule, not by default: its assertion is the gate that fails `make redteam` (proved by sabotaging the adapter), it owns the run record that `run.py --from-promptfoo` converts, and the test list is generated from the cases so the two cannot drift. It is pinned at `promptfoo@0.122.2`. If a future session finds `run.py` doing all the work again, the rule says delete the integration and the word.
 
-Nothing is pushed or public until the author says so.
+**2026-09-02: the code now has a home.** `origin` is a PRIVATE repository,
+`github.com/zorionarrillaga/atezain`, created and pushed on the owner's written say-so that day —
+16 commits, no webhooks, no collaborators, nothing connected to any build service. Everything else
+rule 1 covers is unchanged: it is not public, it is not deployed, and Render has not been pointed
+at it. The three things that must be true before it goes public are still open — `NUMBERS.md`
+reviewed (⚖), README §Trust boundary item 1 rewritten once there is a deployed shape (⚖), and a
+deliberate decision about whether `adapters/outreach/` goes with it (✋). If the owner wants each
+individual push to need fresh permission rather than the standing one, say so and rule 1 changes back.
