@@ -65,7 +65,7 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 | gauge | result |
 |---|---|
 | `make test` | 79 passed |
-| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 22 crashing test(s) alongside assertion kills |
+| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 23 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 14/14 sabotages caught by at least one gauge |
 
