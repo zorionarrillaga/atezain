@@ -35,29 +35,43 @@ def _hash(token: str) -> str:
 
 
 class Sessions:
-    """The session table: id → the sha256 of the token that owns it."""
+    """The session table: id → the sha256 of the token that owns it.
 
-    def __init__(self, path: str | Path = ":memory:"):
-        self.conn = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
-        self.conn.execute("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, created_at REAL NOT NULL)")
+    On Postgres when a DSN is given, because this table is the ACCESS to everything else: a
+    deployment whose records survive a spin-down but whose session table does not has handed the
+    visitor a link to data they can no longer open. SQLite otherwise, which is the local shape."""
+
+    def __init__(self, path: str | Path = ":memory:", dsn: str | None = None):
+        if dsn:
+            import psycopg
+            self._raw = psycopg.connect(dsn, autocommit=True, connect_timeout=20)
+            self._pg = True
+        else:
+            self._raw = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
+            self._pg = False
+        self._exec("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, "
+                   + ("created_at DOUBLE PRECISION NOT NULL)" if dsn else "created_at REAL NOT NULL)"))
+
+    def _exec(self, sql: str, params: tuple = ()):
+        return self._raw.execute(sql.replace("?", "%s") if self._pg else sql, params)
 
     def create(self, clock=time.time) -> tuple[str, str]:
         """A new session. The token is returned ONCE and never stored in the clear."""
         sid, token = secrets.token_hex(SESSION_ID_BYTES), secrets.token_urlsafe(TOKEN_BYTES)
-        self.conn.execute("INSERT INTO sessions (id, token_hash, created_at) VALUES (?,?,?)",
-                          (sid, _hash(token), clock()))
+        self._exec("INSERT INTO sessions (id, token_hash, created_at) VALUES (?,?,?)",
+                   (sid, _hash(token), clock()))
         return sid, token
 
     def exists(self, session_id: str) -> bool:
-        return self.conn.execute("SELECT 1 FROM sessions WHERE id = ?", (session_id,)).fetchone() is not None
+        return self._exec("SELECT 1 FROM sessions WHERE id = ?", (session_id,)).fetchone() is not None
 
     def ids(self) -> list[str]:
-        return [r[0] for r in self.conn.execute("SELECT id FROM sessions ORDER BY created_at")]
+        return [r[0] for r in self._exec("SELECT id FROM sessions ORDER BY created_at")]
 
     # ── the only mint in the served application ──────────────────────────────────────────────
     def principal(self, session_id: str, token: str | None) -> Principal | None:
         """The session's human, or None. Nothing else in `api/` may build one of these."""
-        row = self.conn.execute("SELECT token_hash FROM sessions WHERE id = ?", (session_id,)).fetchone()
+        row = self._exec("SELECT token_hash FROM sessions WHERE id = ?", (session_id,)).fetchone()
         if row is None or not token:
             return None
         if not secrets.compare_digest(row[0], _hash(token)):

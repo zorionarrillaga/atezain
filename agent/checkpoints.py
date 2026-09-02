@@ -27,7 +27,12 @@ def make_checkpointer(dsn: str | None = None, path: str | Path | None = None):
             raise RuntimeError(
                 "a DSN was given but langgraph-checkpoint-postgres is not installed; "
                 "install it or run without ATEZAIN_DSN (PLAN.md §4.2)") from e
-        saver = PostgresSaver.from_conn_string(dsn).__enter__()
+        import psycopg
+        # NOT `from_conn_string(...).__enter__()`: that returns the saver out of a context manager
+        # nobody holds, and the manager closes the connection the moment it is collected — which
+        # showed up as "the connection is closed" inside setup(). Own the connection instead.
+        conn = psycopg.connect(dsn, autocommit=True, connect_timeout=20)
+        saver = PostgresSaver(conn)
         saver.setup()
         return saver
     if path:

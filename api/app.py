@@ -48,24 +48,45 @@ EXTRAS = ("note", "email_subject", "email_body")
 
 app = FastAPI(title="atezain", description=__doc__.split("\n\n")[0])
 STATE.mkdir(parents=True, exist_ok=True)
-sessions = Sessions(STATE / "sessions.db")
+sessions = Sessions(STATE / "sessions.db", dsn=DSN or None)   # the token table outlives a spin-down too
 limits = Limits(state=STATE / "limits.json")
 config = PolicyConfig.load(ROOT / "adapters" / ADAPTER / "permissions.toml")
 _live: dict[str, "SessionState"] = {}
 _health: dict[str, Any] = {"at": 0.0, "body": None}
 
 
+def schema_of(sid: str) -> str:
+    """One session, one Postgres schema. The id is hex from `secrets.token_hex`, but this does not
+    take that on trust: anything that is not a lowercase word character is dropped before the name
+    reaches a `CREATE SCHEMA` that cannot be parameterised."""
+    return "s_" + "".join(ch for ch in sid.lower() if ch.isalnum() or ch == "_")[:48]
+
+
 class SessionState:
-    """One visitor's namespace: records, policy store, graph. Built once, kept in the process,
-    rebuilt from disk after a spin-down."""
+    """One visitor's namespace: records, policy store, graph.
+
+    With a DSN, all three are in Postgres and the records and the audit chain share ONE schema per
+    session — which is what makes the deployed thing real: a Render free instance has no persistent
+    disk and spins down when idle, so a visitor who comes back to their own link finds their
+    invoices, their queue and their chain still there. Without a DSN it is SQLite files under
+    `ATEZAIN_STATE_DIR`, which is the local shape and forgets nothing only because nothing spins
+    down."""
 
     def __init__(self, sid: str):
-        d = STATE / sid
-        d.mkdir(parents=True, exist_ok=True)
         self.sid = sid
-        self.records = Records(str(d / "records.db"))
-        self.policy = PolicyService(config, Store(str(d / "policy.db")))
-        self.checkpointer = make_checkpointer(DSN, None if DSN else d / "checkpoints.db")
+        if DSN:
+            from policy.store_pg import PgStore
+            from records.store_pg import PgRecords
+            schema = schema_of(sid)
+            self.records = PgRecords(DSN, schema=schema)
+            self.policy = PolicyService(config, PgStore(DSN, schema=schema))
+            self.checkpointer = make_checkpointer(DSN, None)
+        else:
+            d = STATE / sid
+            d.mkdir(parents=True, exist_ok=True)
+            self.records = Records(str(d / "records.db"))
+            self.policy = PolicyService(config, Store(str(d / "policy.db")))
+            self.checkpointer = make_checkpointer(None, d / "checkpoints.db")
 
     def graph(self, llm):
         return build_graph(self.records, self.policy, llm, AGENT_PRINCIPAL, ADAPTER, self.checkpointer)
@@ -289,7 +310,8 @@ def healthz() -> dict:
         store_ok = True
     except Exception:                                          # noqa: BLE001
         store_ok = False
-    body = {"store": store_ok, "model": MODEL if MODEL != "groq" else MODEL_ID,
+    body = {"store": store_ok, "backing": "postgres" if DSN else "sqlite",
+            "model": MODEL if MODEL != "groq" else MODEL_ID,
             "model_calls_today": limits.model_calls, "server_fuse": limits.fuse,
             "adapter": ADAPTER, "sessions": len(sessions.ids())}
     _health.update({"at": now, "body": body})

@@ -21,9 +21,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from policy import Store                       # noqa: E402
+from records import Records                    # noqa: E402
 from policy.store import GENESIS               # noqa: E402
 
 TABLES = "audit, proposals, executions, audit_head, fuse"
+RECORD_TABLES = "invoices, notes, emails"
 
 
 @pytest.fixture(scope="session")
@@ -63,3 +65,27 @@ def store_factory(request):
     yield factory
     for store in opened:
         store.close()
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def records_factory(request):
+    """The same, for the CUSTOMER's records: a callable returning a fresh, empty record store.
+    Shares the session's schema with the policy store — different tables, one namespace, which is
+    also the shape `api/app.py` gives a session."""
+    if request.param == "sqlite":
+        yield lambda: Records(":memory:")
+        return
+
+    dsn, schema = request.getfixturevalue("pg_schema")
+    from records.store_pg import PgRecords
+    opened: list = []
+
+    def factory():
+        records = PgRecords(dsn, schema=schema)
+        records.conn.execute(f"TRUNCATE {RECORD_TABLES}")
+        opened.append(records)
+        return records
+
+    yield factory
+    for records in opened:
+        records.close()

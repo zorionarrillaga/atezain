@@ -6,6 +6,5 @@ python-multipart==0.0.20
 openpyxl==3.1.5
 langgraph==1.2.11
 langgraph-checkpoint-sqlite==3.1.1
-psycopg[binary]==3.3.5          # the Postgres store (PLAN.md §4.1)
-# added when the graph's checkpointer moves to Postgres too (PLAN.md §4.2), not before:
-# langgraph-checkpoint-postgres==*
+psycopg[binary]==3.3.5                 # the policy store and the records store on Postgres
+langgraph-checkpoint-postgres==3.1.2   # where a held graph waits (PLAN.md §4.2)

@@ -4,6 +4,8 @@ matters; approve → resume executes exactly once even though LangGraph re-runs 
 import re
 from pathlib import Path
 
+import pytest
+
 from langgraph.types import Command
 
 from agent import StubLLM, INJECT_MARKER, build_graph
@@ -17,8 +19,21 @@ CFG = ROOT / "adapters" / "invoices-es" / "permissions.toml"
 SEED = ROOT / "adapters" / "invoices-es" / "seed.json"
 
 
+# Which record store `setup()` builds; `tests/conftest.py` parametrises it over SQLite and
+# Postgres and the autouse fixture binds it, exactly as `tests/test_policy.py` does for the store.
+RECORDS_FACTORY = lambda: Records(":memory:")      # noqa: E731 — the default, and what this file used to do
+
+
+@pytest.fixture(autouse=True)
+def _bind_records(records_factory):
+    global RECORDS_FACTORY
+    was, RECORDS_FACTORY = RECORDS_FACTORY, records_factory
+    yield
+    RECORDS_FACTORY = was
+
+
 def setup(deny_all=False):
-    records = Records(":memory:")
+    records = RECORDS_FACTORY()
     records.load_seed(SEED)
     cfg = PolicyConfig.load(CFG)
     if deny_all:
@@ -138,16 +153,25 @@ def test_a_write_to_a_record_that_does_not_exist_is_a_mismatch_not_an_execution(
     assert q.status == "executed_mismatch"
 
 
-class WritesMore(Records):
-    """A broken or hostile executor target: every status update also leaves a note."""
-    def _apply_update_status(self, invoice_id, status):
-        super()._apply_update_status(invoice_id, status)
-        self.add_note_raw(invoice_id, "now", "assistant", "también anoté esto")
+def writes_more():
+    """A broken or hostile executor target of whichever kind is under test: every status update
+    also leaves a note. Wrapping the instance rather than subclassing `Records` is what lets these
+    run against Postgres too."""
+    records = RECORDS_FACTORY()
+    records.load_seed(SEED)
+    updated = records._apply_update_status
+
+    def also_a_note(invoice_id, status):
+        updated(invoice_id, status)
+        records.add_note_raw(invoice_id, "now", "assistant", "también anoté esto")
+
+    records._apply_update_status = also_a_note
+    return records
 
 
 def test_an_executor_that_writes_more_than_approved_is_a_mismatch():
     from agent.executor import make_executor
-    records = WritesMore(":memory:"); records.load_seed(SEED)
+    records = writes_more()
     policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
     p = policy.decide(policy.propose(AGENT_P, "update_status", "F-2026-031", {"status": "reminded"}).id, True, HUMAN_P)
     q = policy.execute(p.id, make_executor(records), HUMAN_P)
@@ -155,15 +179,22 @@ def test_an_executor_that_writes_more_than_approved_is_a_mismatch():
     assert records.invoice("F-2026-031")["status"] == "reminded"        # the write happened; the layer SAID so
 
 
-class WritesTwice(Records):
-    def _apply_add_note(self, invoice_id, note):
-        super()._apply_add_note(invoice_id, note)
-        super()._apply_add_note(invoice_id, note)
+def writes_twice():
+    records = RECORDS_FACTORY()
+    records.load_seed(SEED)
+    noted = records._apply_add_note
+
+    def twice(invoice_id, note):
+        noted(invoice_id, note)
+        noted(invoice_id, note)
+
+    records._apply_add_note = twice
+    return records
 
 
 def test_an_executor_that_writes_twice_is_a_mismatch():
     from agent.executor import make_executor
-    records = WritesTwice(":memory:"); records.load_seed(SEED)
+    records = writes_twice()
     policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
     p = policy.propose(AGENT_P, "add_note", "F-2026-031", {"note": "una"})
     assert policy.execute(p.id, make_executor(records), HUMAN_P).status == "executed_mismatch"
