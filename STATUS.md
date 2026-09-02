@@ -348,6 +348,11 @@ assertion` (34/34) · `26/26` attempts blocked · `6/6` caught by a sabotage run
   while the seed's notes carry ISO dates. Nothing measured depends on it — `snapshot` compares note texts, not
   stamps — but a reader of the record gets a note with no date. A one-line change in a step-2 file with a test,
   once ⚖ says whether the records store should own a clock the way `records/drafts.py` does. BUILDER.
+  ⚖ **Ruled 2026-09-03: yes.** `Records` takes a clock at construction, defaulting to the wall clock, exactly as
+  `records/drafts.py` does; `_apply_add_note` stamps ISO dates from it; the tests inject a fixed one. The
+  red-team cache is untouched (the stamp is written after the model has answered) and `snapshot` still compares
+  texts, so no number moves. BUILDER, with the savepoint item above: the two small step-1/step-2 items an Opus
+  session can take together.
 - **The price of the page: none, deliberately, and that is the decision (✋, 2026-09-02).** In his words:
   the first thing is to be adopted by someone, even as a credential; let them try it free; think about a
   price when there are clients, and about paying for a better model when there is something to pay with.
