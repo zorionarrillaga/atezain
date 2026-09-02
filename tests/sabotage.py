@@ -66,6 +66,11 @@ def run(tree: Path, target: str) -> int:
 
 
 def main() -> int:
+    # the baseline must be GREEN, or every sabotage is "caught" by a failure that was already there —
+    # exactly what happened once on 2026-09-02 (14/14 printed over a suite with one red test)
+    if run(ROOT, "pytest") != 0 or run(ROOT, "tests/hostile_selftest.py") != 0:
+        print("BASELINE IS RED — a sabotage pass over a red baseline measures nothing; fix that first")
+        return 2
     failures = 0
     for name, rel, old, new in SABOTAGES:
         src = (ROOT / rel).read_text(encoding="utf-8")

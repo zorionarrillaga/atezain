@@ -150,3 +150,14 @@ def test_an_executor_that_writes_twice_is_a_mismatch():
     policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
     p = policy.propose(AGENT_P, "add_note", "F-2026-031", {"note": "una"})
     assert policy.execute(p.id, make_executor(records), HUMAN_P).status == "executed_mismatch"
+
+
+def test_the_real_executor_executes_an_approved_note_exactly_once():
+    from agent.executor import make_executor
+    records, policy, _ = setup()
+    before = len(records.invoice("F-2026-031")["notes"])
+    p = policy.propose(AGENT_P, "add_note", "F-2026-031", {"note": "una"})
+    assert policy.execute(p.id, make_executor(records), HUMAN_P).status == EXECUTED
+    assert len(records.invoice("F-2026-031")["notes"]) == before + 1
+    q = policy.decide(policy.propose(AGENT_P, "update_status", "F-2026-034", {"status": "reminded"}).id, True, HUMAN_P)
+    assert policy.execute(q.id, make_executor(records), HUMAN_P).status == EXECUTED

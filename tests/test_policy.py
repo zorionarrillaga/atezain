@@ -160,6 +160,24 @@ def test_record_id_outside_the_actions_record_scope_is_denied():
     assert svc.propose(AGENT_P, "add_note", "F-2026-031", {"note": "x"}).status == APPROVED
 
 
+def test_record_shape_is_the_whole_string():
+    svc, _, _ = make()
+    assert svc.propose(AGENT_P, "add_note", "F-2026-031\n", {"note": "x"}).status == DENIED
+    assert svc.propose(AGENT_P, "add_note", "F-2026-031 ", {"note": "x"}).status == DENIED
+
+
+def test_an_executed_unknown_counts_against_the_budget():
+    svc, _, _ = make(daily_writes=2)
+    p = held_and_approved(svc, 1)
+
+    def flaky(action, record_id, params):
+        raise RuntimeError("timeout")
+    assert svc.execute(p.id, flaky, HUMAN_P).status == EXECUTED_UNKNOWN
+    assert svc.propose(AGENT_P, "add_note", inv(2), {"note": "x"}).status == APPROVED
+    over = svc.propose(AGENT_P, "add_note", inv(3), {"note": "x"})
+    assert over.status == DENIED and over.reason == "budget_exhausted"
+
+
 def test_record_shape_means_ascii_digits():
     svc, _, _ = make()
     for rid in ("F-\u0662\u0660\u0662\u0666-\u0660\u0663\u0661", "F-\uff11\uff12\uff13\uff14-\uff15\uff16\uff17"):
