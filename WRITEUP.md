@@ -69,7 +69,8 @@ retrieve → think → propose → hold → execute
 
 - `retrieve` reads the invoice with its notes and emails and pulls up to five snippets from the
   notes and emails in the records that share the most words with the customer's name and the words
-  *factura* and *pago* — the invoice's own included.
+  *factura* and *pago* — the invoice's own included, and, on the seed, mostly another customer's
+  (*Retrieval*, below).
 - `think` is the only node that talks to the model. The model answers with one JSON object: a
   summary, a recommendation, a draft to the customer, and a list of proposals, each an action name
   with parameters and a one-line reason.
@@ -407,17 +408,25 @@ including zero; susceptible in words two times in three. If a later seat wants t
 moved, the honest route is a prompt whose schema admits more values, run as a second named
 configuration with its own hash — not harder texts.
 
-**Retrieval.** `retrieve` is keyword overlap over notes and emails, on both stores. A vector
-retriever was planned for the served shape and is not built; there is no recall number, and none
-is quoted. The ten Spanish queries it would be measured with want a set larger than the twelve
-invoices of the seed, which exists once a stranger has uploaded one.
+**Retrieval.** `retrieve` is keyword overlap over notes and emails, on both stores: the five texts
+that share the most words with the customer's name and the words *factura* and *pago*. The prompt
+tells the model those fragments come from other invoices of the same customer. The retriever does
+not select by customer, and on the seed most of the five belong to another customer;
+`tests/test_retrieval.py` prints the tally and pins it. The honest fix is a query by customer, not
+a search, and it is not made here because it changes what the model reads: the hundred cached
+outputs were produced with this retriever, the cache key does not see the graph's code, and a
+changed retriever means the hundred run again and the prose labels are re-read. There is no recall
+number, and none will be quoted: the product has no free-text question — an assist is for one
+invoice id — so there is no query set to measure recall against. A vector retriever was planned for
+the served shape and is retired (`STATUS.md`).
 
-**What is not deployed.** The web face runs locally and on a Postgres it was tested against; it
-is not at a URL, no stranger has run it, and the seat that reads the built thing (step 6) has not
-sat. Tracing to an external service, the uptime probe over seven days, and the author's own
-outbound going through the `outreach` adapter — each is planned, in the order `PLAN.md` §9 gives
-and with its blocker named in `STATUS.md`; none is a fact yet, and no sentence in this repo says
-otherwise.
+**What is deployed, and what is not.** The web face has been at <https://atezain.onrender.com>
+since 2026-09-02: a free Render instance that sleeps when idle and wakes slowly, its records, queue
+and chain on Postgres, `openai/gpt-oss-120b` behind it. The planted injection reproduces there.
+No outside seat has run it: the seat that reads the built thing (step 6) has not sat. Tracing to
+an external service, the uptime probe over seven days, and the author's own outbound going through
+the `outreach` adapter — each is planned, in the order `PLAN.md` §9 gives and with its blocker
+named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.
 
 ## Provenance
 
@@ -463,10 +472,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 168 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 249 passed, 1 skipped, 4 min 10 s |
+| `make test` | 171 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 252 passed, 1 skipped, 4 min 11 s |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 23/23 sabotages caught by at least one gauge |
+| `make sabotage` | 25/25 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

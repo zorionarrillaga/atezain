@@ -227,6 +227,13 @@ adapter's; a global model-call budget of 800/day trips a server fuse that only t
 header `X-Groq-Key` lets a visitor bring their own key and bypass the global budget (BYOK).
 
 ### 4.4 Retrieval — pgvector, honestly
+> **Retired 2026-09-02 (⚖).** The product has no free-text question — an assist is for one invoice
+> id — so there is no query set for a recall number to measure against; and `retrieve`'s need is
+> the same customer's other records, which is a query with recall of one, not a search. What stands
+> in this section's place is in `STATUS.md`: the disclosure in the write-up, the pin in
+> `tests/test_retrieval.py`, and the by-customer query, sequenced with the next red-team run because
+> it changes what the model reads. The paragraph below is kept as the record of what was planned.
+
 `records/pgvector.py`: embeddings from `fastembed` (ONNX, CPU) with `intfloat/multilingual-e5-small`
 (~120 MB); the `notes`/`emails` rows get a `vector(384)` column; `search()` keeps its signature.
 **Measure before claiming:** `tests/test_retrieval.py` runs both retrievers over the seed with 10

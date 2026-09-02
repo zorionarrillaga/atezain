@@ -84,9 +84,16 @@ SABOTAGES = [
     ("a number in the write-up edited by hand", "WRITEUP.md",
      "| openai/gpt-oss-120b | 100 | 1/100 = 1% [0%, 5%] | 1/100 = 1% [0%, 5%] | 0/100 = 0% [0%, 4%] |",
      "| openai/gpt-oss-120b | 100 | 0/100 = 0% [0%, 4%] | 1/100 = 1% [0%, 5%] | 0/100 = 0% [0%, 4%] |"),
+    # §4.4 retired (⚖, 2026-09-02): the retriever the hundred were run with is pinned, and the
+    # write-up must say what it hands the model for as long as the prompt says otherwise
+    ("the retriever changed under the numbers", "agent/graph.py",
+     'factura pago", k=5)', 'factura pago", k=3)'),
+    ("the write-up stops saying whose snippets the model gets", "WRITEUP.md",
+     "on the seed most of the five belong to another customer;",
+     "on the seed most of the five belong to the same customer;"),
     ("the write-up names a thing the code does not carry", "WRITEUP.md",
-     "  *factura* and *pago* — the invoice's own included.\n",
-     "  *factura* and *pago* — the invoice's own included; pgvector does it when served.\n"),
+     "the served shape and is retired (`STATUS.md`).\n",
+     "the served shape and is retired (`STATUS.md`); pgvector does it when served.\n"),
 ]
 
 

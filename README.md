@@ -10,10 +10,11 @@ allowed to exist; a human approves the ones that matter; the layer executes exac
 compares what the executor observed in the record afterwards with what was approved. Then it is
 attacked, in public, with injections planted in the very records it reads, and the result is a number.
 
-**Status: steps 1, 2 and 3 of 6 — the policy layer, the assistant graph over it, and the red-team
-that measures it against a named model; step 7's adapter and CLI are built, its wiring is not;
-step 4's web face runs locally, and nothing is deployed.** See `STATUS.md` for what each of those
-means and for what step 4 deliberately skipped. `WRITEUP.md` is the one read: the
+**Status: steps 1 to 5 of 6 — the policy layer, the assistant graph over it, the red-team that
+measures it against a named model, the deploy, and the write-up; step 7's adapter and CLI are
+built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
+below); the outside seat that reads the built thing, step 6, has not sat.** See `STATUS.md` for
+what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
 result up front, the architecture, one attack end to end with its audit rows, the policy as data.
 
 ## What is built
@@ -60,13 +61,26 @@ result up front, the architecture, one attack end to end with its audit rows, th
   assist, see what it drafts and what it holds, decide, and read the chain. `api/auth.py` is the
   only place in the served application where a human principal is constructed, and a test greps the
   package to keep it that way. Runs locally on SQLite and the stub model with `make serve`, and on
-  Postgres when `DATABASE_URL` names one; it is not deployed.
+  Postgres when `DATABASE_URL` names one — the served shape, live since 2026-09-02 (*Try it*).
 - `adapters/outreach/` + `bin/atezain_cli.py` — the same layer over the author's own outbound
   letters: a draft is a record, `send` means *write down that this letter went out*, and there is
   no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
   the approval himself; the CLI holds the proposal until he does, records what the store observed
   afterwards, and prints the audit head for the day. The wiring into his own pipeline is not done.
 - `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.
+
+## Try it
+
+<https://atezain.onrender.com/demo> — a free Render instance that sleeps when idle, so a
+request after a quiet spell wakes it and takes a while. The page has four parts: your records, what the
+assistant says, what it is not allowed to do on its own, and the chain. Open a session (the token
+is shown once; whoever holds it is that session's human — *Trust boundary*, item 1), upload a CSV
+or XLSX of invoices with the columns `id, customer, amount, currency, issued, due, status` and,
+to plant something for the assistant to read, `note`, `email_subject`, `email_body`; ask for an
+assist on one invoice; approve or reject what it holds; read the audit rows and the head. The
+model is `openai/gpt-oss-120b`, on the server's own key under a daily budget with a fuse, or on
+yours with an `X-Groq-Key` header. Each session is its own Postgres schema — its records, its
+queue, its chain, its fuse — and outlives the instance's sleep. `/healthz` says what is behind it.
 
 ## Run it
 
@@ -128,16 +142,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 168 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **249 passed, 1 skipped, 4 min 10 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 171 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **252 passed, 1 skipped, 4 min 11 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 23/23 sabotages caught by at least one gauge |
+| `make sabotage` | 25/25 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers twenty-three properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers twenty-five properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either.
 
@@ -213,10 +227,15 @@ do not cover them.
 
 1. **Identity.** A `Principal` says whether it is a human. The layer believes it. Whoever can
    construct `Principal("owner", HUMAN)` can approve their own proposal, and the chain will show a
-   clean human decision. In the deployed shape (step 4) principals are minted by the authenticated
-   API surface only, and the agent process never holds a `HUMAN` principal; until then,
-   `make hostile` shows exactly this write going through, unscored, in its output. The service's own
-   bindings (`config`, `store`, `clock`, `fuse`) cannot be swapped by whoever holds it; whoever
+   clean human decision. In the served application (`api/`, at the URL since 2026-09-02) the only
+   place a `HUMAN` principal is constructed is `api/auth.py`, from a bearer token issued once per
+   session and kept only as a hash; a test greps the package and fails if the word appears anywhere
+   else, and the agent's principal is a module constant no request can choose. What that closes is
+   the mint, not identity: the token *is* the identity — whoever holds a session's token is its
+   human, the way whoever holds the shell is the human at the CLI — and there is no account behind
+   it. In a process that holds the objects, as this repo's tests do, the mint is one line, and
+   `make hostile` shows exactly that write going through, unscored, in its output. The service's
+   own bindings (`config`, `store`, `clock`, `fuse`) cannot be swapped by whoever holds it; whoever
    holds the **store** is root (item 3).
 2. **The executor.** The layer compares what the executor *reports* with what was approved, as
    canonical JSON. The executor this repo ships reports a before/after diff of the record it was
@@ -239,13 +258,17 @@ do not cover them.
    earlier than the one before it, and fuse state that disagrees with the chain. The `principal`
    string on a row is whatever the writer wrote — at the store it is unauthenticated, which is why
    none of those checks rest on it alone. In this repo the graph holds the `PolicyService` — and so
-   its store — which is the shape the hostile self-test attacks. Step 4 puts the service behind an
-   API so the agent process holds `propose` and nothing else.
+   its store — which is the shape the hostile self-test attacks. The served application is one
+   process that holds the store, the service and the graph; what the API puts behind a token is the
+   visitor, not the model. The model holds nothing: its only channel into the system is the JSON it
+   returns to `think`, which becomes calls to `propose` and nothing else. Whoever runs the process
+   is root over the store, and that is the host.
 
 ## What it does not claim
 
 Not the first of its kind (CaMeL, APort, OpenAPPA and others enforce boundaries of this shape);
 not a guardrail framework; not a benchmark. Numbers about the model appear only when they have been
 measured, with the model's name, the date, the interval and the N — one model, on one date, over
-one adapter's hundred cases, is what `NUMBERS.md` holds and all it holds. It is not deployed, no
-stranger has run it, and the seat that reads the built thing (step 6) has not sat yet.
+one adapter's hundred cases, is what `NUMBERS.md` holds and all it holds. It runs on a free instance
+at one URL; no outside seat has run it, and the seat that reads the built thing (step 6) has not
+sat yet.
