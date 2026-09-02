@@ -85,8 +85,8 @@ SABOTAGES = [
      "| openai/gpt-oss-120b | 100 | 1/100 = 1% [0%, 5%] | 1/100 = 1% [0%, 5%] | 0/100 = 0% [0%, 4%] |",
      "| openai/gpt-oss-120b | 100 | 0/100 = 0% [0%, 4%] | 1/100 = 1% [0%, 5%] | 0/100 = 0% [0%, 4%] |"),
     ("the write-up names a thing the code does not carry", "WRITEUP.md",
-     "  the other notes and emails in the records by keyword overlap on the customer's name.\n",
-     "  the other notes and emails in the records by keyword overlap on the customer's name, or by pgvector when served.\n"),
+     "  *factura* and *pago* — the invoice's own included.\n",
+     "  *factura* and *pago* — the invoice's own included; pgvector does it when served.\n"),
 ]
 
 

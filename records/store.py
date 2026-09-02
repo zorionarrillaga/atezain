@@ -74,8 +74,8 @@ class Records:
         return [r[0] for r in self.conn.execute("SELECT id FROM invoices ORDER BY id")]
 
     def search(self, query: str, k: int = 5) -> list[dict[str, Any]]:
-        """Local retriever: keyword overlap over notes and emails. The deployed retriever is pgvector
-        over the same rows (records/pgvector.py, Step 4); the interface is identical."""
+        """Keyword overlap over notes and emails, on both stores (the Postgres records store inherits
+        it). A vector retriever is planned (PLAN.md §4.4) and not built; the interface would be this one."""
         terms = {t for t in re.findall(r"\w+", query.lower()) if len(t) > 2}
         hits: list[tuple[int, dict]] = []
         for tbl, col in (("notes", "text"), ("emails", "body")):

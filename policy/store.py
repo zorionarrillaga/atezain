@@ -19,8 +19,8 @@ COUNT of rows per proposal, which an appended row cannot repair, rather than abo
 Every count-then-write the policy service does runs inside `transaction()` (a process lock plus
 `BEGIN IMMEDIATE`), so a budget cannot be raced past by concurrent proposals.
 
-A Postgres implementation with the same methods replaces this for deployment (the LangGraph
-checkpointer and pgvector need Postgres anyway); the policy service never touches SQL directly.
+A Postgres implementation with the same methods (`store_pg.py`, a subclass) serves the deployed
+shape, where the LangGraph checkpointer needs Postgres anyway; the policy service never touches SQL directly.
 """
 from __future__ import annotations
 

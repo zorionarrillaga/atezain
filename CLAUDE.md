@@ -41,7 +41,7 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 
 ```
 python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite
-make test       # 142 + 82 skipped (09-02); ATEZAIN_TEST_DSN=… make test → 223 + 1 skipped, both stores end to end
+make test       # see STATUS.md for the counts of the day; ATEZAIN_TEST_DSN=… make test runs both stores end to end (~4 min)
 make mutate     # every # CHECK: deleted in turn; must be KILLED by assertion (~2 min)
 make hostile    # the attacker with the application's objects; scored attempts only
 make sabotage   # the gauges broken on purpose must go red

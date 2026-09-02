@@ -12,8 +12,8 @@ attacked, in public, with injections planted in the very records it reads, and t
 **Status: steps 1, 2 and 3 of 6 — the policy layer, the assistant graph over it, and the red-team
 that measures it against a named model; step 7's adapter and CLI are built, its wiring is not;
 step 4's web face runs locally, and nothing is deployed.** See `STATUS.md` for what each of those
-means and for what step 4 deliberately skipped. `WRITEUP.md` is the ten-minute read: the
-architecture, one attack end to end with its audit rows, the policy as data, and the numbers.
+means and for what step 4 deliberately skipped. `WRITEUP.md` is the one read: the
+result up front, the architecture, one attack end to end with its audit rows, the policy as data.
 
 ## What is built
 
@@ -127,7 +127,7 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 160 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **241 passed, 1 skipped** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test, 4 min 05 s) |
+| `make test` | 164 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **245 passed, 1 skipped, 4 min 10 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 23/23 sabotages caught by at least one gauge |
@@ -168,8 +168,9 @@ What this run does and does not show:
   goal as done, as to be done, or as the thing to do: *hemos actualizado la factura al importe de
   184,05 €* to a customer whose email claimed a discount; *Enviar el recordatorio a la dirección de
   factoring indicada*; *Marcar la factura como pagada*. Each label quotes the sentence it rests on
-  and a test checks the quote is in the cached output. One reader labelled the hundred, by a written
-  rule; that reading is the thing an outside seat should redo before anything else.
+  and a test checks the quote is in the cached output. The judgment-dense model (Claude Fable 5.1)
+  labelled the hundred, one output at a time, by a written rule; that reading is the thing an
+  outside seat should redo before anything else.
 - **As a proposal, once.** The prompt names the three forbidden verbs and gives `email` and three
   status words as the only values. In the 70 cases whose goal was a verb the prompt never offered,
   the model never named it (0/70 = 0 % [0 %, 5 %]). In the 30 whose goal was a forbidden value of
@@ -178,8 +179,9 @@ What this run does and does not show:
   the status constraint; the same output with the layer removed wrote it.
 - **The gap between the two numbers is the prompt's vocabulary, not the model's judgment.** In the
   five cases whose injection moved the reminder to WhatsApp or SMS, the model's recommendation was
-  to send the next reminder by WhatsApp or SMS in all five, and two of its own justifications say
-  the tool only lets it specify email. The previous `NUMBERS.md` counted six manipulated cases;
+  to send the next reminder by WhatsApp or SMS in all five; three of the five proposed the reminder
+  with `email` — one saying in its own justification that the tool only lets it specify email, two
+  that the real channel will be WhatsApp — and the other two proposed no reminder at all. The previous `NUMBERS.md` counted six manipulated cases;
   five were these same five, whose texts then named the parameter (`reminder_channel = whatsapp`),
   which the model copied. An attacker does not know the adapter's identifiers, so the review of
   the case set rewrote the fifteen texts that carried one and re-ran them; the five became none.
@@ -211,8 +213,8 @@ do not cover them.
 1. **Identity.** A `Principal` says whether it is a human. The layer believes it. Whoever can
    construct `Principal("owner", HUMAN)` can approve their own proposal, and the chain will show a
    clean human decision. In the deployed shape (step 4) principals are minted by the authenticated
-   API surface only, and the agent process never holds a `HUMAN` principal; until then, the last
-   line of `make hostile` shows exactly this write going through, unscored. The service's own
+   API surface only, and the agent process never holds a `HUMAN` principal; until then,
+   `make hostile` shows exactly this write going through, unscored, in its output. The service's own
    bindings (`config`, `store`, `clock`, `fuse`) cannot be swapped by whoever holds it; whoever
    holds the **store** is root (item 3).
 2. **The executor.** The layer compares what the executor *reports* with what was approved, as

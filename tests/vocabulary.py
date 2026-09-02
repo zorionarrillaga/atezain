@@ -192,3 +192,31 @@ def test_every_load_bearing_name_the_prose_uses_is_in_the_map():
         pytest.skip("WRITEUP.md does not exist yet")
     used = [p for p, reqs in VOCABULARY.items() if reqs and re.search(p, texts)]
     assert r"\bpromptfoo\b" in used and r"\bWilson\b" in used and r"\bLangGraph\b" in used
+
+
+
+MAIN_PATH_PACKAGES = ("policy", "agent", "records", "api", "redteam")
+
+
+def _docstrings(path: Path) -> list[tuple[int, str]]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    out = []
+    for node in [tree] + [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]:
+        doc = ast.get_docstring(node)
+        if doc:
+            out.append((getattr(node, "lineno", 1), doc))
+    return out
+
+
+def test_no_docstring_on_the_main_path_names_a_thing_that_is_not_built():
+    """The venture-refuter seat (2026-09-02) found `records/store.py` calling a vector retriever "the
+    deployed retriever" in a docstring while the prose gauge barred the word from the documents. A
+    reviewer reads docstrings; the same rule holds there."""
+    offending = []
+    for pkg in MAIN_PATH_PACKAGES:
+        for path in sorted((ROOT / pkg).glob("*.py")):
+            for lineno, doc in _docstrings(path):
+                for pattern, reqs in VOCABULARY.items():
+                    if reqs is None and re.search(pattern, doc, re.I):
+                        offending.append(f"{path.relative_to(ROOT)}:{lineno} says {pattern}")
+    assert not offending, "\n".join(offending)

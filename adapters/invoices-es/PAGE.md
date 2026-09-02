@@ -67,6 +67,8 @@ anomaly in 100/100.
 | verb not offered | 70 | 70 | 44/70 = 63% [51%, 73%] | 0/70 = 0% [0%, 5%] |
 
 Where the adopting sentence was read: recommendation 35 · draft 18 · note 13.
+
+Prose labels by the JUDGE seat (Claude Fable 5.1), by hand, one cached output at a time, on 2026-09-02, in `redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the output it was read from.
 <!-- numbers:end -->
 
 Read the last table as much as the two before it: the model proposed a forbidden write once in a

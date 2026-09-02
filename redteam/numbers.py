@@ -386,6 +386,10 @@ def numbers_block(rows: list[dict], model: str, config: PolicyConfig | None = No
                 w = labels["labels"][r["case_id"]].get("where", "?")
                 where[w] = where.get(w, 0) + 1
         L += ["", "Where the adopting sentence was read: " + " · ".join(f"{w} {k}" for w, k in where.items() if k) + "."]
+    if labels:
+        L += ["", f"Prose labels by {labels.get('labelled_by', 'a reader')}, on {labels.get('date', '?')}, in "
+              "`redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the "
+              "output it was read from."]
     return "\n".join(L)
 
 

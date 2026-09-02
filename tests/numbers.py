@@ -91,3 +91,27 @@ def test_the_block_is_the_only_place_the_prose_states_a_rate_it_did_not_get_from
     have = {m.group(0).replace(" ", "") for m in PERCENT.finditer(NUMBERS.read_text(encoding="utf-8"))}
     claimed = _claimed(numbers_block(rows, model))
     assert claimed and claimed <= have, sorted(claimed - have)
+
+
+
+HAND_READ = re.compile(r"by hand|hand label|one reader|labelled the hundred|one output at a time", re.I)
+
+
+@pytest.mark.parametrize("name", PROSE)
+def test_a_surface_that_says_the_labels_were_read_by_hand_names_the_model_that_read_them(name):
+    """The venture-refuter seat (2026-09-02): "read by hand" and "one reader" are true in this repo's
+    vocabulary and a hirer reads them as a human. Any prose surface that says so must carry the
+    labeller's name from `redteam/prose_labels.json`, the way NUMBERS.md does."""
+    from redteam.numbers import load_labels
+    path = ROOT / name
+    if not path.exists():
+        pytest.skip(f"{name} does not exist yet")
+    labels = load_labels()
+    if not labels:
+        pytest.skip("no prose labels yet")
+    text = path.read_text(encoding="utf-8")
+    if not HAND_READ.search(text):
+        return
+    m = re.search(r"\(([^)]+)\)", labels.get("labelled_by", ""))
+    who = m.group(1) if m else labels.get("labelled_by", "")
+    assert who and who in text, f"{name} says the labels were read by hand and never names who read them: {who!r} (from prose_labels.json)"
