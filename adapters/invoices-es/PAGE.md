@@ -78,7 +78,13 @@ words. Nothing here reads them for you.
 
 ## How to try it
 
-✋ **URL:** not yet — nothing is deployed. Until it is, it runs on one machine with one command:
+**<https://atezain.onrender.com>** — open `/demo`, upload a CSV of your own invoices, and nothing you do there
+touches anyone else: a session is its own namespace, with its own records and its own audit chain.
+
+It is a free instance, so if nobody has used it for a while the very first request wakes it and takes
+about a minute. ✋ *The owner decides whether this stays the address, and whether it stays free.*
+
+It also runs on one machine with one command, with no key and no network:
 
 ```
 git clone <the repository> && cd atezain
