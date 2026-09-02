@@ -64,7 +64,7 @@ tests/       test_*.py mutate.py hostile_selftest.py sabotage.py numbers.py voca
 The assistant is a LangGraph graph — a directed graph of steps with a saved state — of five nodes:
 
 ```
-retrieve → think → propose → hold → execute
+retrieve → think → propose → execute → hold → execute
 ```
 
 - `retrieve` reads the invoice with its notes and emails and pulls up to five snippets from the
@@ -76,10 +76,16 @@ retrieve → think → propose → hold → execute
   with parameters and a one-line reason.
 - `propose` is the only node that talks to the policy: one `PolicyService.propose` per raw
   proposal. What comes back is a status — denied, held or approved — and a reason.
+- `execute`, before the hold, executes what the policy approved with no human — in this adapter a
+  note — so that a write needing no decision does not wait on an unrelated one. Until 2026-09-03 the
+  graph executed only after the hold, and the served application, which never resumes the graph,
+  left such a note approved and unwritten whenever a sibling was held; the seat that read the
+  deployed thing found it (`STATUS.md`).
 - `hold` contains nothing but the interrupt — the point where the graph stops and waits. It waits
   here while anything is held; a checkpointer, the graph's saved state, keeps it (in memory in the
   red-team, SQLite locally, Postgres when served).
-- `execute` reads each proposal's status from the policy store, never from the graph state and
+- `execute`, again after the hold, executes what a human approved before the resume. Both passes
+  read each proposal's status from the policy store, never from the graph state and
   never from the value a client passes on resume — that value is untrusted input, and a human's
   decision reaches the store only through `PolicyService.decide`.
 
@@ -330,6 +336,8 @@ anomaly in 100/100.
 Where the adopting sentence was read: recommendation 35 of 66 · draft 18 of 66 · note 13 of 66.
 
 Prose labels by the JUDGE seat (Claude Fable 5.1), by hand, one cached output at a time, on 2026-09-02, in `redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the output it was read from.
+
+Re-read by the step-6 refutation seat (Claude Fable 5.1, a fresh session in a clone of the repository — the same model as the labeller, which the seat flagged itself) on 2026-09-03: would move 2 of 100 labels (field-003, mail-012), which leaves the rate inside its interval; the labels stand as labelled, and a reader who agrees with the seat edits the label and runs `make numbers`.
 <!-- numbers:end -->
 
 How to read them:
@@ -423,7 +431,9 @@ the served shape and is retired (`STATUS.md`).
 **What is deployed, and what is not.** The web face has been at <https://atezain.onrender.com>
 since 2026-09-02: a free Render instance that sleeps when idle and wakes slowly, its records, queue
 and chain on Postgres, `openai/gpt-oss-120b` behind it. The planted injection reproduces there.
-No outside seat has run it: the seat that reads the built thing (step 6) has not sat. Tracing to
+An outside seat ran it on 2026-09-03 — one model call, a planted injection, nothing forbidden
+through, the chain clean — and refuted it narrowly on the execute path described above; the fold is
+in `STATUS.md`. Tracing to
 an external service, the uptime probe over seven days, and the author's own outbound going through
 the `outreach` adapter — each is planned, in the order `PLAN.md` §9 gives and with its blocker
 named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.
@@ -472,10 +482,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 186 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 267 passed, 1 skipped, 4 min 12 s |
+| `make test` | 189 passed, 83 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 271 passed, 1 skipped, 4 min 14 s |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 28/28 sabotages caught by at least one gauge |
+| `make sabotage` | 29/29 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

@@ -91,6 +91,10 @@ SABOTAGES = [
     ("the write-up stops saying whose snippets the model gets", "WRITEUP.md",
      "on the seed most of the five belong to another customer;",
      "on the seed most of the five belong to the same customer;"),
+    # the step-6 seat's finding (2026-09-03): a write that needs no human must not wait for one
+    ("the graph waits for a human before writing what needs none", "agent/graph.py",
+     '    g.add_node("execute", execute)                 # what needs no human, before anyone is asked\n',
+     '    g.add_node("execute", lambda state: {})        # what needs no human, before anyone is asked\n'),
     # the documents' own numbers and prose (tests/gauges.py, 2026-09-02)
     ("a gauge count in the README edited by hand", "README.md",
      "| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |",

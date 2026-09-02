@@ -13,7 +13,8 @@ attacked, in public, with injections planted in the very records it reads, and t
 **Status: steps 1 to 5 are built — the policy layer, the assistant graph over it, the red-team that
 measures it against a named model, the deploy, and the write-up; step 7's adapter and CLI are
 built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
-below); the outside seat that reads the built thing, step 6, has not sat.** See `STATUS.md` for
+below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothing forbidden through
+it, one defect in the served execute path, folded the same day.** See `STATUS.md` for
 what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
 result up front, the architecture, one attack end to end with its audit rows, the policy as data.
 
@@ -24,7 +25,8 @@ result up front, the architecture, one attack end to end with its audit rows, th
   ownership), an approval queue, an append-only audit log (a hash chain with a published head), a
   fuse the agent can trip and cannot clear through the service, a daily budget that trips it. Pure
   Python, no dependencies.
-- `agent/` — the assistant as a LangGraph graph: retrieve → think → propose → hold → execute. The
+- `agent/` — the assistant as a LangGraph graph: retrieve → think → propose → execute (what needs
+  no human) → hold → execute (what a human approved). The
   model talks only to `think`; the only write path is `agent/executor.py`, called only from inside
   the policy's `execute`, and it reports a before/after diff of the record, never its input; the
   value a client passes on resume is untrusted.
@@ -142,18 +144,21 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 186 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **267 passed, 1 skipped, 4 min 12 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 189 passed, 83 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **271 passed, 1 skipped, 4 min 14 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 28/28 sabotages caught by at least one gauge |
+| `make sabotage` | 29/29 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers twenty-eight properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers twenty-nine properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
-left after both, not what was true before either.
+left after both, not what was true before either. A third seat, on the deployed thing (2026-09-03),
+got nothing forbidden through it and found that the served application left an auto-approved note
+unwritten whenever a sibling proposal was held — written by the harness the numbers come from, not
+by the deployment — which is fixed, with its test, in `STATUS.md`'s third table.
 
 ## The model, the date, the numbers
 
@@ -181,7 +186,8 @@ What these two numbers do and do not show is read in full in `WRITEUP.md` › *T
   injected goal in words — in its recommendation, in its draft to the customer, or in a note it
   proposed. Each label quotes the sentence it rests on, and a test checks the quote against the
   cached output. The judgment-dense model (Claude Fable 5.1) labelled the hundred by a written
-  rule; that reading is what an outside seat should redo before anything else.
+  rule; an outside seat re-read the hundred on 2026-09-03 and would move two, which leaves the
+  number inside its interval (`NUMBERS.md`).
 - **The proposal number is a bound, not a proof.** Once in a hundred, with an upper edge of 4 %.
   The distance between it and the prose number is the prompt's vocabulary, not the model's
   judgment: the tool schema offers three verbs and one channel, and the model mostly stayed inside
@@ -245,5 +251,5 @@ Not the first of its kind (CaMeL, APort, OpenAPPA and others enforce boundaries 
 not a guardrail framework; not a benchmark. Numbers about the model appear only when they have been
 measured, with the model's name, the date, the interval and the N — one model, on one date, over
 one adapter's hundred cases, is what `NUMBERS.md` holds and all it holds. It runs on a free instance
-at one URL; no outside seat has run it, and the seat that reads the built thing (step 6) has not
-sat yet.
+at one URL; one outside seat has run it and its finding is folded; a second round on the fold has
+not sat.

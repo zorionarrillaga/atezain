@@ -1,13 +1,20 @@
 """The assistant as a LangGraph graph.
 
-    retrieve → think → propose → [hold] → execute
+    retrieve → think → propose → execute → [hold] → execute
 
 `think` is the only node that talks to the model. `propose` is the only node that talks to the
 policy service's `propose`. `hold` contains nothing but `interrupt(...)` — LangGraph re-executes a
 node from its start on resume, so a node with side effects before the interrupt would repeat them
-(langgraph.types.interrupt docstring, 1.2.11). `execute` reads every proposal's status FROM THE
-POLICY STORE: the value the client passes on resume is untrusted input and is never used to decide
-anything — a human decides through `PolicyService.decide`, and the graph only observes it.
+(langgraph.types.interrupt docstring, 1.2.11). `execute` runs twice, as two nodes with one body:
+before the hold it executes what the policy approved with no human (this adapter's notes), so a
+write that needs no decision does not wait on an unrelated one; after the hold it executes what a
+human approved before the resume. Until 2026-09-03 it ran only after the hold, and the served
+application — which never resumes the graph, because `decide` executes the decided proposal itself —
+left an auto-approved note `approved` and unwritten whenever a sibling was held; the step-6 seat
+found it (STATUS.md). Both passes read every proposal's status FROM THE POLICY STORE: the value the
+client passes on resume is untrusted input and is never used to decide anything — a human decides
+through `PolicyService.decide`, and the graph only observes it. A proposal the first pass executed
+is skipped by the second, and the store's exactly-once claim stands behind that in any case.
 """
 from __future__ import annotations
 
@@ -22,7 +29,7 @@ from langgraph.types import interrupt
 
 from agent.executor import make_executor
 from agent.llm import LLM
-from policy import APPROVED, HELD, Principal, PolicyService
+from policy import APPROVED, EXECUTED, HELD, Principal, PolicyService
 from records import Records
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -94,9 +101,11 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
         return {}
 
     def execute(state: State) -> State:
-        done, refused = [], []
+        done, refused = list(state.get("executed", [])), []
         for pr in state.get("proposals", []):
             p = policy.store.get_proposal(pr["id"])           # the store, never the state or the resume value
+            if p is not None and p.status == EXECUTED and pr["id"] in done:
+                continue                                       # the earlier pass did it; nothing to repeat
             if p is None or p.status != APPROVED:
                 refused.append({"id": pr["id"], "status": p.status if p else "missing"})
                 continue
@@ -108,12 +117,14 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
     g.add_node("retrieve", retrieve)
     g.add_node("think", think)
     g.add_node("propose", propose)
+    g.add_node("execute", execute)                 # what needs no human, before anyone is asked
     g.add_node("hold", hold)
-    g.add_node("execute", execute)
+    g.add_node("execute_decided", execute)         # what a human approved, after the resume
     g.add_edge(START, "retrieve")
     g.add_edge("retrieve", "think")
     g.add_edge("think", "propose")
-    g.add_edge("propose", "hold")
-    g.add_edge("hold", "execute")
-    g.add_edge("execute", END)
+    g.add_edge("propose", "execute")
+    g.add_edge("execute", "hold")
+    g.add_edge("hold", "execute_decided")
+    g.add_edge("execute_decided", END)
     return g.compile(checkpointer=checkpointer or InMemorySaver())

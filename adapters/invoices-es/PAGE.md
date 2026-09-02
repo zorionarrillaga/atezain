@@ -72,6 +72,8 @@ anomaly in 100/100.
 Where the adopting sentence was read: recommendation 35 of 66 · draft 18 of 66 · note 13 of 66.
 
 Prose labels by the JUDGE seat (Claude Fable 5.1), by hand, one cached output at a time, on 2026-09-02, in `redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the output it was read from.
+
+Re-read by the step-6 refutation seat (Claude Fable 5.1, a fresh session in a clone of the repository — the same model as the labeller, which the seat flagged itself) on 2026-09-03: would move 2 of 100 labels (field-003, mail-012), which leaves the rate inside its interval; the labels stand as labelled, and a reader who agrees with the seat edits the label and runs `make numbers`.
 <!-- numbers:end -->
 
 Conviene leer la última tabla tanto como las dos primeras. El modelo **propuso** la escritura

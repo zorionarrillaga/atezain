@@ -194,3 +194,50 @@ def test_the_demo_page_and_the_health_check_answer_without_a_token(client):
     assert page.status_code == 200 and "atezain" in page.text and "<script>" in page.text
     h = client.get("/healthz").json()
     assert h["store"] is True and h["adapter"] == "invoices-es" and "model" in h
+
+
+# ── the step-6 seat (2026-09-03) ─────────────────────────────────────────────────────────────
+class _NoteAndHold:
+    """A model output with a write that needs no human beside one that does — the shape the seat
+    measured in most of the hundred cached outputs."""
+
+    def complete(self, system: str, user: str) -> str:
+        import json
+        return json.dumps({"summary": "s", "recommendation": "r", "draft": "d", "proposals": [
+            {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"},
+            {"action": "update_status", "params": {"status": "reminded"}, "why": "w"}]})
+
+
+def test_the_served_path_writes_an_auto_approved_note_even_when_a_sibling_is_held(client, monkeypatch):
+    """The seat's decisive finding, through the API: the note used to sit `approved` and never
+    written, because `decide` executes only the decided proposal and nothing resumes the graph."""
+    monkeypatch.setattr(apimod, "model_for", lambda byok: (_NoteAndHold(), "stub", False))
+    sid, h = session(client)
+    assert upload(client, sid, h).status_code == 200
+    a = assist(client, sid, h).json()
+    assert {p["action"]: p["status"] for p in a["proposals"]} == {"add_note": "executed", "update_status": "held"}
+    st = apimod.state_of(sid)
+    assert st.records.invoice("F-2026-031")["notes"][-1]["text"] == "nota del asistente"
+    held = next(p for p in a["proposals"] if p["status"] == "held")
+    d = client.post(f"/sessions/{sid}/proposals/{held['id']}/decide", json={"approve": True, "note": ""}, headers=h).json()
+    assert d["executed"] is True
+    q = {p["action"]: p["status"] for p in client.get(f"/sessions/{sid}/proposals", headers=h).json()}
+    assert q == {"add_note": "executed", "update_status": "executed"}
+    rows = client.get(f"/sessions/{sid}/audit", headers=h).json()["rows"]
+    assert sum(1 for r in rows if r["kind"] == "EXECUTED") == 2
+    assert assist(client, sid, h).json()["cached"] is True
+    assert sum(1 for n in st.records.invoice("F-2026-031")["notes"] if n["text"] == "nota del asistente") == 1
+
+
+def test_one_sessions_token_opens_no_other_session(client):
+    """Owed by the seat: isolation had been shown with wrong or absent tokens only. A valid token
+    of one session is a wrong token on every route of another."""
+    a_sid, a_h = session(client)
+    b_sid, b_h = session(client)
+    assert upload(client, b_sid, b_h).status_code == 200
+    assert client.get(f"/sessions/{b_sid}/proposals", headers=a_h).status_code == 401
+    assert client.get(f"/sessions/{b_sid}/audit", headers=a_h).status_code == 401
+    assert client.post(f"/sessions/{b_sid}/assist/F-2026-031", headers=a_h).status_code == 401
+    assert client.post(f"/sessions/{b_sid}/proposals/x/decide", json={"approve": True, "note": ""}, headers=a_h).status_code == 401
+    assert client.post(f"/sessions/{b_sid}/fuse/clear", headers=a_h).status_code == 401
+    assert upload(client, b_sid, a_h).status_code == 401

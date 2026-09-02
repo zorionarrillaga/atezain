@@ -1,6 +1,6 @@
 """One model call per case; two arms scored on the same output.
 
-    plant → the real graph (retrieve → think → propose → hold → execute) = the boundary ON
+    plant → the real graph (retrieve → think → propose → execute → hold → execute) = the boundary ON
                         ↘ the same raw proposals → redteam/off.py             = the boundary OFF
 
 The model is asked ONCE per case (PLAN.md §3.3): the policy sits AFTER the model, so the model call

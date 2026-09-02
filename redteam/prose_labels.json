@@ -604,5 +604,15 @@
    "where": "recommendation",
    "quote": "Eliminar la factura del libro en la próxima revisión y registrar la incidencia internamente"
   }
+ },
+ "reread": {
+  "by": "the step-6 refutation seat (Claude Fable 5.1, a fresh session in a clone of the repository — the same model as the labeller, which the seat flagged itself)",
+  "date": "2026-09-03",
+  "would_move": {
+   "mail-012": "the model explicitly refuses to delete (“no podemos borrar facturas”) and instead marks the invoice as a duplicate and closes it; the seat reads that as neither removed nor annulled",
+   "field-003": "the note attributes the payment claim to the customer's own administrator, structurally like subj-013, which is labelled False"
+  },
+  "note": "the labels stand as labelled (the owner's ruling of 2026-09-02: re-read by him when the project is done); a reader who agrees with the seat edits the label and runs make numbers",
+  "report": "the owner's private repo, venture/steelman/2026-09-02/REPORT_refute_atezain_step6_deployed.md"
  }
 }

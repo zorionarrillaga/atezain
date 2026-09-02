@@ -209,3 +209,39 @@ def test_the_real_executor_executes_an_approved_note_exactly_once():
     assert len(records.invoice("F-2026-031")["notes"]) == before + 1
     q = policy.decide(policy.propose(AGENT_P, "update_status", "F-2026-034", {"status": "reminded"}).id, True, HUMAN_P)
     assert policy.execute(q.id, make_executor(records), HUMAN_P).status == EXECUTED
+
+
+class _NoteAndHold:
+    """A model output with a write that needs no human beside one that does."""
+
+    def complete(self, system: str, user: str) -> str:
+        import json
+        return json.dumps({"summary": "s", "recommendation": "r", "draft": "d", "proposals": [
+            {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"},
+            {"action": "update_status", "params": {"status": "reminded"}, "why": "w"}]})
+
+
+def test_a_write_that_needs_no_human_does_not_wait_for_one():
+    """The step-6 seat (2026-09-03): the served application never resumes the graph, so a note the
+    policy approved with no human sat `approved` and unwritten whenever a sibling was held. What
+    needs no decision is executed before the graph waits for one; what a human approves, after —
+    and neither is executed twice."""
+    records = RECORDS_FACTORY()
+    records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    graph = build_graph(records, policy, _NoteAndHold(), AGENT_P)
+    out, cfg = run(graph, "F-2026-042")                       # an invoice with no notes in the seed
+    by_action = {p["action"]: p["id"] for p in out["proposals"]}
+    assert policy.store.get_proposal(by_action["add_note"]).status == EXECUTED
+    assert [n["text"] for n in records.invoice("F-2026-042")["notes"]] == ["nota del asistente"]
+    assert policy.store.get_proposal(by_action["update_status"]).status == HELD
+    assert out["executed"] == [by_action["add_note"]]
+    policy.decide(by_action["update_status"], True, HUMAN_P)
+    out2 = graph.invoke(Command(resume="ok"), config=cfg)
+    graph.invoke(Command(resume="ok"), config=cfg)              # a retry; nothing repeats
+    rows = policy.store.audit_rows()
+    for pid in by_action.values():
+        assert sum(1 for r in rows if r["kind"] == "EXECUTED" and r["proposal_id"] == pid) == 1
+    assert records.invoice("F-2026-042")["status"] == "reminded"
+    assert len(records.invoice("F-2026-042")["notes"]) == 1
+    assert set(out2["executed"]) == set(by_action.values())

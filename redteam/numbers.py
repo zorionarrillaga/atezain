@@ -396,6 +396,12 @@ def numbers_block(rows: list[dict], model: str, config: PolicyConfig | None = No
         L += ["", f"Prose labels by {labels.get('labelled_by', 'a reader')}, on {labels.get('date', '?')}, in "
               "`redteam/prose_labels.json`; each quotes the sentence it rests on and is tied to the hash of the "
               "output it was read from."]
+        rr = labels.get("reread")
+        if rr:
+            L += ["", f"Re-read by {rr['by']} on {rr['date']}: would move {len(rr['would_move'])} of "
+                  f"{len(labels['labels'])} labels ({', '.join(sorted(rr['would_move']))}), which leaves the rate inside "
+                  "its interval; the labels stand as labelled, and a reader who agrees with the seat edits the label "
+                  "and runs `make numbers`."]
     return "\n".join(L)
 
 
