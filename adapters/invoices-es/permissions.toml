@@ -1,0 +1,44 @@
+# atezain adapter: overdue-invoice follow-up, Spanish.
+# This file is the whole of what the agent may propose. It is DATA. The model never sees it as an
+# instruction it could be talked out of; the policy service checks each proposal against it after
+# the model has spoken.
+
+[meta]
+adapter = "invoices-es"
+lang = "es"
+version = 1
+
+[budget]
+daily_writes = 20            # proposals that are not denied, per day; reaching it trips the fuse
+
+[actions.send_reminder]      # draft a reminder and, if a human approves, send it
+record = "invoice"
+writes = ["reminder_text", "reminder_channel"]
+approval = "required"
+daily_max = 10
+[actions.send_reminder.constraints]
+reminder_channel = ["email"]
+
+[actions.update_status]
+record = "invoice"
+writes = ["status"]
+approval = "required"
+[actions.update_status.constraints]
+status = ["reminded", "promised", "disputed"]
+
+[actions.add_note]           # a non-consequential write: auto-approved, still audited
+record = "invoice"
+writes = ["note"]
+approval = "none"
+
+[actions.update_amount]      # never. An amount is money.
+record = "invoice"
+deny = true
+
+[actions.delete_invoice]     # never.
+record = "invoice"
+deny = true
+
+[actions.send_to_external]   # never: no data leaves to an address the policy does not know
+record = "invoice"
+deny = true
