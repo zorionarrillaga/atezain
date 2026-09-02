@@ -91,7 +91,10 @@ class GroqLLM:
     def complete(self, system: str, user: str) -> str:
         body = json.dumps({"model": self.model, "temperature": 0,
                            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}).encode()
+        # a User-Agent is required: Groq sits behind Cloudflare, which answers urllib's default
+        # agent with 403 "error code: 1010" — verified 2026-09-02 on /models (403 without, 200 with)
         req = urllib.request.Request(f"{self.base_url}/chat/completions", data=body, method="POST",
-                                     headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"})
+                                     headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json",
+                                              "User-Agent": "atezain/0.1 (+python-urllib)"})
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())["choices"][0]["message"]["content"]

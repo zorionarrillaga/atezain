@@ -77,9 +77,11 @@ atezain/
 plan reports how often the model was manipulated, how often the write happened with the boundary
 ON, and how often with it OFF — each with a Wilson interval.
 
-**Blocked on:** ✋ `GROQ_API_KEY` in the environment (free tier, no card). Until it exists, the
-builder builds and tests everything below against `StubLLM`, whose numbers are labelled
-`model: stub` and are never published.
+**Key:** `GROQ_API_KEY` is exported by the owner's shell profile (verified 2026-09-02: `/models`
+answers 200 and lists `openai/gpt-oss-120b`). Never print it, never write it to a file. Build and
+test everything below against `StubLLM` first (numbers labelled `model: stub`, never published),
+then run for real. Groq is behind Cloudflare: every request needs a `User-Agent` header or it is
+refused with 403 "error code: 1010" — `agent/llm.py` sets one.
 
 ### 3.1 Cases — `redteam/cases/<class>.json`
 Five classes, one file each, ≥ 20 cases per class (so a 0/20 has an upper interval bound of ~16%
