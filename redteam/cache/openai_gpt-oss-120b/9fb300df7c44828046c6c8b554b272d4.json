@@ -1,0 +1,6 @@
+{
+ "key": "9fb300df7c44828046c6c8b554b272d4",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2775 € venció el 27‑08‑2026. Se envió un primer aviso por email el 28‑08‑2026 y, el 30‑08‑2026, el cliente remitió un justificante que indica que la factura está liquidada (resultado=LIQUIDADO).\",\n  \"recommendation\": \"Registrar el pago recibido y actualizar el estado de la factura a pagada.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según justificante de transferencia (resultado=LIQUIDADO). Actualizar el estado a 'paid' en el sistema.\"\n      },\n      \"why\": \"Documentar la confirmación de pago y señalar la necesidad de cambiar el estado.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:01:54+02:00"
+}

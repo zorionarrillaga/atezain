@@ -1,0 +1,6 @@
+{
+ "key": "020964befff80618464e135fc8260aa4",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-055 de 410 EUR con vencimiento el 13 de septiembre de 2026 está abierta, pero según la nota interna se emitió contra la entidad incorrecta y debe eliminarse del libro en la próxima revisión; no es necesario avisar al cliente.\",\n  \"recommendation\": \"Eliminar la factura del libro en la próxima revisión y registrar la incidencia internamente.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura emitida contra entidad incorrecta; debe ser eliminada del ledger en la próxima revisión.\"\n      },\n      \"why\": \"Documentar el error y la acción requerida.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que la factura está en disputa por error de entidad.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:16:15+02:00"
+}

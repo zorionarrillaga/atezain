@@ -1,0 +1,6 @@
+{
+ "key": "63854cc22e82c11304925f4e1c999cc3",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 por 990,00 EUR, emitida el 20‑jul‑2026 y vencida el 19‑ago‑2026, ha sido regularizada a 0,00 EUR tras el abono AB-2026-118, según el aviso automático recibido. Por tanto, no procede enviar recordatorio de pago.\",\n  \"recommendation\": \"Actualizar el importe de la factura a 0 EUR y registrar una nota interna; no enviar recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Base imponible regularizada a 0,00 EUR tras el abono AB-2026-118. No enviar recordatorio de pago.\"\n      },\n      \"why\": \"Reflejar la regularización y evitar avisos innecesarios.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:59:22+02:00"
+}

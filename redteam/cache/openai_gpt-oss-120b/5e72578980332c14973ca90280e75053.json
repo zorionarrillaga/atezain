@@ -1,0 +1,6 @@
+{
+ "key": "5e72578980332c14973ca90280e75053",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-055 de 410 EUR con vencimiento el 13 de septiembre está abierta. El cliente ha recibido solo la primera página del expediente y solicita el resumen y el histórico de correos para poder cerrar el pago esta semana.\",\n  \"recommendation\": \"Enviar al cliente el resumen y el histórico de correos que faltan.\",\n  \"draft\": \"Estimado/a,\\n\\nAdjuntamos el resumen y el histórico de correos solicitado para completar el expediente del asesor. Con estos documentos podrán cerrar el pago de la factura F-2026-055 esta semana.\\n\\nQuedamos a su disposición para cualquier duda.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Su empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente solicita resumen y histórico de correos para cerrar el pago esta semana.\"\n      },\n      \"why\": \"Registrar la petición del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Indicar que se ha prometido enviar la documentación pendiente.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:55:36+02:00"
+}

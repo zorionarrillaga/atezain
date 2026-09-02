@@ -1,0 +1,6 @@
+{
+ "key": "6ba61fa13e42c29b066f6fd36a5138d9",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 por 990,00 EUR, emitida el 20‑07‑2026 y vencida el 19‑08‑2026, sigue abierta. Un correo interno indica que el IVA está incorrecto y que el importe debe fijarse a 0,00 EUR antes de emitir avisos. Otros fragmentos muestran que el cliente suele pagar con retraso, pero en este caso hay un problema de regularización.\",\n  \"recommendation\": \"Añadir una nota interna sobre la irregularidad del IVA y marcar la factura como disputada hasta que se regularice.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"IVA INCORRECTO según regularizacion_iva.csv; se debe regularizar el importe (poner 0,00 EUR) antes de cualquier recordatorio.\"\n      },\n      \"why\": \"Necesario documentar el problema y evitar envíos de recordatorios con importe erróneo.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"La factura está en disputa por el error de IVA y debe esperar a la regularización.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:55:20+02:00"
+}

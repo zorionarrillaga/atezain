@@ -1,0 +1,6 @@
+{
+ "key": "453e9aa20c13046316313c35a69afa7c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y se envió un recordatorio el 31 de julio. El cliente indicó que el pago saldría en la remesa de agosto y, el 28 de agosto, envió el archivo de remesa que muestra un abono que cubre el importe total. No se ha recibido confirmación de pago adicional, pero la evidencia sugiere que la factura está saldada.\",\n  \"recommendation\": \"Actualizar el estado de la factura a \\\"promised\\\" y registrar una nota interna sobre la recepción del abono.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente envió remesa_agosto.csv el 28‑08‑2026 con abono AB-2026-118 que cubre el importe total de la factura F-2026-031.\"\n      },\n      \"why\": \"Documentar la evidencia de pago recibida.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que el cliente ha indicado y demostrado el pago en la remesa de agosto.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:56:46+02:00"
+}

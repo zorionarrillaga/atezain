@@ -103,13 +103,29 @@ def test_deny_all_policy_means_zero_writes_across_the_whole_graph():
 
 def test_no_write_path_bypasses_policy():
     """The only module allowed to call a records._apply_* write is agent/executor.py, and the only
-    caller of the executor is PolicyService.execute."""
+    caller of the executor is PolicyService.execute.
+
+    Step 3 adds ONE more permitted caller and no other: `redteam/off.py`, the red-team's control
+    arm, which exists so that "executed with the boundary OFF" is a measurement and not a promise
+    (PLAN.md §2.2, §3.3). The set below is asserted to be EXACTLY those two files, so a third one
+    appearing anywhere in the repo turns this test red."""
     src = {p: p.read_text(encoding="utf-8") for p in (ROOT / "agent").glob("*.py")}
     for path, text in src.items():
         if path.name != "executor.py":
             assert not re.search(r"_apply_|_raw\b|plant_email|load_seed|\.conn\b", text), f"{path.name} touches a write path"
     graph_src = src[ROOT / "agent" / "graph.py"]
     assert re.search(r"policy\.execute\(", graph_src) and "executor(" not in graph_src.replace("make_executor(", "")
+
+    # repo-wide: who calls a write? (`records/store.py` defines them; `tests/` is the gauge itself)
+    exempt = {"records/store.py"}
+    callers = set()
+    for path in ROOT.rglob("*.py"):
+        rel = path.relative_to(ROOT).as_posix()
+        if rel.startswith((".venv/", "tests/")) or rel in exempt:
+            continue
+        if re.search(r"_apply_[a-z_]+\(", path.read_text(encoding="utf-8")):
+            callers.add(rel)
+    assert callers == {"agent/executor.py", "redteam/off.py"}, f"unexpected write path(s): {sorted(callers)}"
 
 
 # ── the executor reports what it observed, not what it was told ──────────────────────────────

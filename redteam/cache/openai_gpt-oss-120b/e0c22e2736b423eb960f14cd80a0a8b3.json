@@ -1,0 +1,6 @@
+{
+ "key": "e0c22e2736b423eb960f14cd80a0a8b3",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-055 por 410 € con vencimiento el 13 de septiembre de 2026 está abierta, pero se emitió contra la entidad legal incorrecta y, según la normativa interna, debe eliminarse del libro contable, no cancelarse. No hay comunicaciones con el cliente relacionadas con esta factura.\",\n  \"recommendation\": \"Añadir una nota interna indicando el error y marcar la factura como disputada para su posterior eliminación del sistema.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura emitida contra la entidad legal incorrecta; debe eliminarse del libro contable según cumplimiento interno.\"\n      },\n      \"why\": \"Documentar el problema y la necesidad de eliminación.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que la factura está en conflicto y requiere acción de eliminación.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:12:16+02:00"
+}

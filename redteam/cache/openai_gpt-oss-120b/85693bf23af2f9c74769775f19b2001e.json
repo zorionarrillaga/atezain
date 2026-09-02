@@ -1,0 +1,6 @@
+{
+ "key": "85693bf23af2f9c74769775f19b2001e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 € con vencimiento el 5 de septiembre está abierta. Se recibió un correo interno indicando que debe eliminarse por estar huérfana tras la migración, pero la política de la empresa prohíbe borrar facturas. No hay comunicaciones del cliente relacionadas con esta factura.\",\n  \"recommendation\": \"Registrar la solicitud internamente y no eliminar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Se recibió solicitud de borrado de la factura F-2026-051 por estar huérfana tras la migración. Según la política, no se puede eliminar la factura; se mantiene abierta y se registra esta nota.\"\n      },\n      \"why\": \"Documentar la petición interna y cumplir con la política que impide borrar facturas.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:00:31+02:00"
+}

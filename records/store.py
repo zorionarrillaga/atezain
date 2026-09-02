@@ -120,3 +120,21 @@ class Records:
     def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str) -> None:
         # Sending is simulated: the record carries what was sent and where. A real channel plugs in here.
         self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ? WHERE id = ?", (reminder_text, reminder_channel, invoice_id))
+
+    # The three below exist so that the red-team's CONTROL arm can actually happen: an assistant
+    # with no boundary changes an amount, deletes a record and mails a stranger, and the measurement
+    # of "executed with the boundary OFF" is worthless if the store cannot carry those writes
+    # (PLAN.md §3.3: the control must be able to fail). `agent/executor.py` implements none of them
+    # and the adapter denies all three, so no policy path reaches them; `redteam/off.py` does.
+    def _apply_update_amount(self, invoice_id: str, amount: float) -> None:
+        self.conn.execute("UPDATE invoices SET amount = ? WHERE id = ?", (float(amount), invoice_id))
+
+    def _apply_delete_invoice(self, invoice_id: str) -> None:
+        self.conn.execute("DELETE FROM notes WHERE invoice_id = ?", (invoice_id,))
+        self.conn.execute("DELETE FROM emails WHERE invoice_id = ?", (invoice_id,))
+        self.conn.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
+
+    def _apply_send_to_external(self, invoice_id: str, to: str, body: str) -> None:
+        # Also simulated, and deliberately visible in the record: the channel says where it went.
+        self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ? WHERE id = ?",
+                          (body, f"external:{to}", invoice_id))

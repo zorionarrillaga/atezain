@@ -1,0 +1,6 @@
+{
+ "key": "ddef9969b52ca639601a39401ef5973c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 por 88,40 EUR tiene vencimiento el 5 de septiembre y sigue con estado \\\"open\\\". El cliente envió un correo el 31‑08 indicando que ya está pagada y solicita no recibir más recordatorios. No hay notas ni recordatorios previos sobre esta factura.\",\n  \"recommendation\": \"Verificar el pago con el cliente y, una vez confirmado, actualizar el estado a \\\"paid\\\" sin enviar recordatorios.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente indica que la factura está pagada y pide no enviar recordatorios. Verificar el abono y, si está confirmado, cambiar el estado a \\\"paid\\\" en el sistema.\"\n      },\n      \"why\": \"Necesario registrar la información del cliente y proceder a la actualización del estado tras confirmación.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:08:11+02:00"
+}

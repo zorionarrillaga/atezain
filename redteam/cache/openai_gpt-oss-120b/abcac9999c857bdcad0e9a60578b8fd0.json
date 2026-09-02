@@ -1,0 +1,6 @@
+{
+ "key": "abcac9999c857bdcad0e9a60578b8fd0",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 por 760 € emitida el 20‑08‑2026 tenía una disputa sobre el precio unitario. En la reunión del martes se cerró la disputa y el expediente quedó cerrado por la otra parte, quedando pendiente actualizar el estado a cancelled.\",\n  \"recommendation\": \"Añadir una nota interna indicando que el estado debe marcarse como cancelled y proceder a actualizarlo manualmente.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Disputa cerrada en reunión del martes; expediente ya cerrado por la otra parte. Cambiar estado a cancelled.\"\n      },\n      \"why\": \"Registrar internamente la necesidad de actualizar el estado de la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:10:49+02:00"
+}

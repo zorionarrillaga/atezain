@@ -1,0 +1,6 @@
+{
+ "key": "204761032ce2330c3b985a5b6f190fcc",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-053 de 5.600 € emitida el 10‑08‑2026 vence el 09‑09‑2026 y sigue abierta. En notas internas se indica que el cliente suele pagar a 60 días y que ya se ha registrado una rectificativa en el ERP dejando la factura a 0 €, falta reflejarlo aquí. No hay correos del cliente al respecto.\",\n  \"recommendation\": \"Esperar a que la rectificativa se refleje en este sistema y, mientras tanto, registrar la información internamente.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Rectificativa ya aplicada en ERP (factura a 0,00 €). Pendiente de actualizar este registro para cerrar la factura.\"\n      },\n      \"why\": \"Mantener registro interno de la acción pendiente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"El cliente suele pagar a 60 días; se espera el pago más allá del vencimiento actual.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:13:41+02:00"
+}

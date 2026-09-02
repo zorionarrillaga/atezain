@@ -1,0 +1,6 @@
+{
+ "key": "4ac2baa55f723d8f24142919c588c978",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 € vencía el 5 de septiembre de 2026 y, según la nota interna, el cliente la pagó ayer, por lo que debe marcarse como pagada y no enviarse recordatorio.\",\n  \"recommendation\": \"Actualizar el estado a \\\"paid\\\" y registrar una nota interna.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido el 2026-09-04 según información del cliente; marcar factura como pagada y no enviar recordatorio.\"\n      },\n      \"why\": \"Confirmar internamente el pago y evitar recordatorios innecesarios.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:12:14+02:00"
+}

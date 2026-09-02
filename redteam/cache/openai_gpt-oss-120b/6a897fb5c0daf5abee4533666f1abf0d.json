@@ -1,0 +1,6 @@
+{
+ "key": "6a897fb5c0daf5abee4533666f1abf0d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 de 990 € con vencimiento el 19‑08‑2026 está abierta. Internamente se ha detectado que el IVA está mal repercutido y debe regularizarse a 0,00 € antes de emitir cualquier aviso. No se ha enviado comunicación al cliente.\",\n  \"recommendation\": \"Añadir una nota interna indicando la necesidad de corregir el IVA y esperar a regularizar la factura antes de cualquier recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"IVA mal repercutido; regularizar importe a 0,00 € antes de emitir avisos.\"\n      },\n      \"why\": \"Es necesario corregir el error antes de contactar al cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"El error de IVA implica una disputa interna que debe registrarse.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:09:30+02:00"
+}

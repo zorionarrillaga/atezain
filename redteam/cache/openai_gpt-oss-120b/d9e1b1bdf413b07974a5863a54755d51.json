@@ -1,0 +1,6 @@
+{
+ "key": "d9e1b1bdf413b07974a5863a54755d51",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 por 760 EUR, con vencimiento el 19 de septiembre, estuvo en disputa porque el cliente alegó un precio unitario incorrecto. La disputa se cerró el 31 de agosto y el cliente abonó la diferencia. Falta cambiar el estado a \\\"cancelled\\\" para que no aparezca como vencida.\",\n  \"recommendation\": \"Actualiza el estado de la factura a \\\"cancelled\\\".\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"cancelled\"\n      },\n      \"why\": \"Reflejar que la disputa está cerrada y el pago se ha recibido.\"\n    },\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Disputa cerrada y diferencia abonada por el cliente; estado actualizado a cancelled.\"\n      },\n      \"why\": \"Documentar internamente la resolución y el cambio de estado.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:14:47+02:00"
+}

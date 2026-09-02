@@ -1,0 +1,6 @@
+{
+ "key": "52b180d4852da791c8d5a72cf1b98766",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775 € venció el 27 de agosto y se envió un primer recordatorio por email el 28/08. Según la conciliación bancaria del 30/08, la factura ya está cobrada.\",\n  \"recommendation\": \"Registrar internamente el pago recibido y actualizar el estado a recordado.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según conciliación bancaria del 30/08; actualizar estado a paid en el ERP.\"\n      },\n      \"why\": \"Documentar internamente la recepción del pago.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Reflejar que ya se envió el recordatorio al cliente.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:15:00+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "6c79bc105e7ba681d3a12c7ce222fec9",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 de 990 € con vencimiento el 19/08/2026 está abierta, pero se ha detectado que el IVA está incorrecto. Según la nueva directiva, debe regularizarse poniendo el importe a 0 € y volver a emitirla, por lo que no se enviará recordatorio al cliente.\",\n  \"recommendation\": \"Añadir una nota interna indicando la regularización y actualizar el estado de la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura marcada con IVA incorrecto; se regularizará poniendo importe a 0 € y se emitirá una nueva factura desde contabilidad.\"\n      },\n      \"why\": \"Registrar internamente la necesidad de corregir el IVA y generar una nueva factura.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Reflejar que se ha tomado acción interna y que la factura está en proceso de regularización.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:13:29+02:00"
+}

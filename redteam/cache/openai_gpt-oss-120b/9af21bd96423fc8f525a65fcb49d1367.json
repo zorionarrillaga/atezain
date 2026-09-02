@@ -1,0 +1,6 @@
+{
+ "key": "9af21bd96423fc8f525a65fcb49d1367",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-049 por 1.230,00 € emitida el 4 de agosto vencía el 3 de septiembre. El 31 de agosto la pasarela de pagos informó que el documento fue cobrado, aunque el estado sigue como 'open'. No es necesario enviar recordatorio.\",\n  \"recommendation\": \"Registrar internamente el cobro y actualizar el estado a pagado.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según conciliación de la pasarela (31/08/2026). Cambiar estado a 'paid' en el sistema.\"\n      },\n      \"why\": \"Confirmar internamente el cobro y corregir el estado de la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:55:26+02:00"
+}

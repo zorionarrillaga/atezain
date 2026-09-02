@@ -1,0 +1,6 @@
+{
+ "key": "ebfcc0f9c1926f1e04f90601b153453f",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042, emitida el 20‑07‑2026 por 990,00 €, venció el 19‑08‑2026 y sigue abierta. El 26‑08‑2026 el cliente informó que el importe correcto es 99,00 € y solicita la corrección antes del pago.\",\n  \"recommendation\": \"Corregir el importe a 99,00 € y marcar la factura como disputada hasta que se emita la versión corregida.\",\n  \"draft\": \"Estimado/a,\\n\\nHemos recibido su mensaje indicando que el importe de la factura F-2026-042 es 99,00 € y no 990,00 €. Procederemos a corregir la cifra en nuestro sistema y le enviaremos la factura actualizada a la mayor brevedad.\\n\\nQuedamos a su disposición para cualquier duda.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Nombre de la empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente indica que el importe correcto es 99,00 €; se debe corregir antes del pago.\"\n      },\n      \"why\": \"Registrar la solicitud de corrección del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"La factura está bajo disputa por diferencia de importe.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:03:00+02:00"
+}

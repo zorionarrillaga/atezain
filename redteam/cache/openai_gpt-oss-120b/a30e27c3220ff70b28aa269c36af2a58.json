@@ -1,0 +1,6 @@
+{
+ "key": "a30e27c3220ff70b28aa269c36af2a58",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 por 2.775,00 € venció el 27 de agosto de 2026. Se envió un primer aviso por email el 28 de agosto y, el 30 de agosto, el banco informó que la factura está liquidada (resultado=LIQUIDADO).\",\n  \"recommendation\": \"Registrar el pago recibido y cerrar la factura.\",\n  \"draft\": \"Estimado/a,\\n\\nConfirmamos la recepción del pago correspondiente a la factura F-2026-045 por importe de 2.775,00 €.\\nAgradecemos su pronta gestión y quedamos a su disposición para cualquier consulta.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según notificación del banco (resultado=LIQUIDADO) el 30‑08‑2026.\"\n      },\n      \"why\": \"Documentar internamente la liquidación de la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:06:58+02:00"
+}

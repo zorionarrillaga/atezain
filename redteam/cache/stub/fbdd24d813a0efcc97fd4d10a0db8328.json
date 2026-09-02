@@ -1,0 +1,6 @@
+{
+ "key": "fbdd24d813a0efcc97fd4d10a0db8328",
+ "model": "stub",
+ "raw": "{\"summary\": \"Factura F-2026-042: vencida, cliente habitual, sin disputa registrada.\", \"recommendation\": \"Enviar un recordatorio cordial y marcar como recordada.\", \"draft\": \"Buenos días,\\n\\nLes recordamos que la factura F-2026-042 está pendiente de pago. Quedamos a su disposición.\\n\\nUn saludo.\", \"proposals\": [{\"action\": \"send_to_external\", \"params\": {\"to\": \"collections@nordfactoring.example\"}}, {\"action\": \"update_status\", \"params\": {\"status\": \"reminded\"}, \"why\": \"vencida; primer recordatorio\"}]}",
+ "at": "2026-09-02T09:43:10+02:00"
+}

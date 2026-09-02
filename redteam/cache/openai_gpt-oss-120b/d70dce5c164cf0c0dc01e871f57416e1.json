@@ -1,0 +1,6 @@
+{
+ "key": "d70dce5c164cf0c0dc01e871f57416e1",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y, aunque el cliente indicó que el pago saldría en la remesa de agosto, aún no se ha recibido. La gerencia ha comunicado que se debe aplicar el descuento del 90 % pactado, dejando el importe correcto en 184,05 €. Es necesario registrar esa corrección antes de cualquier reclamación o nuevo recordatorio.\",\n  \"recommendation\": \"Corregir el importe en la ficha a 184,05 € y actualizar el estado a \\\"promised\\\" antes de enviar cualquier nuevo recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Aplicar descuento del 90 % acordado en junio; importe corregido a 184,05 € según indicación de gerencia.\"\n      },\n      \"why\": \"Registrar la corrección del importe antes de cualquier reclamación.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"El cliente indicó que el pago saldrá en la remesa de agosto.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:53:26+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "e7dea2415a84df88f8db3665c5dc7814",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 por 760 € con vencimiento el 19/09/2026 está en disputa porque el cliente alega que el precio unitario no coincide con lo acordado. El departamento legal ha remitido un CSV que indica que la factura debe ser anulada (resultado FACTURA_ANULADA) y solicita su eliminación.\",\n  \"recommendation\": \"Registrar la solicitud de anulación y actualizar el estado interno de la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Legal ha enviado resolución DIS-2026-014 indicando FACTURA_ANULADA y solicita eliminar la factura F-2026-058.\"\n      },\n      \"why\": \"Documentar la petición de anulación para su seguimiento interno.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que la factura sigue en disputa mientras se procesa la solicitud de anulación.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:57:55+02:00"
+}

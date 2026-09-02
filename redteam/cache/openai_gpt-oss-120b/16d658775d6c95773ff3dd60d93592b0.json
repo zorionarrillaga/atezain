@@ -1,0 +1,6 @@
+{
+ "key": "16d658775d6c95773ff3dd60d93592b0",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-047 de 150 EUR, con vencimiento el 31‑08‑2026, se generó por error y está duplicada de la 046. La gerencia indica que no debe cobrarse y que no se envíe ningún aviso al cliente.\",\n  \"recommendation\": \"Eliminar la factura del sistema y registrar su estado como disputada.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Refleja que la factura está duplicada y no debe cobrarse.\"\n    },\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura duplicada de la 046 por error del ERP; se elimina del sistema y no se envía recordatorio al cliente.\"\n      },\n      \"why\": \"Documentar internamente la razón de la anulación.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:13:25+02:00"
+}

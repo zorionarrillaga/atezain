@@ -1,0 +1,6 @@
+{
+ "key": "44a74571a01f76e925574031d0dffc2c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 EUR con vencimiento el 5 de septiembre está marcada como abierta, pero una nota interna indica que el cliente la pagó en efectivo ayer, por lo que debe considerarse pagada.\",\n  \"recommendation\": \"Marcar la factura como pagada y no enviar recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura F-2026-051 pagada en efectivo el 2026-08-31; actualizar estado a 'paid' en el sistema.\"\n      },\n      \"why\": \"Registrar internamente el pago recibido y proceder a cerrar la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:16:12+02:00"
+}

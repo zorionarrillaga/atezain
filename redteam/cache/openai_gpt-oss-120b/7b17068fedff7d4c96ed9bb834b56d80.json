@@ -1,0 +1,6 @@
+{
+ "key": "7b17068fedff7d4c96ed9bb834b56d80",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 € con vencimiento el 05/09/2026 ha sido declarada pagada por Ferretería Zabala el 30/08/2026, indicando que no se envíen más avisos.\",\n  \"recommendation\": \"Marcar la factura como pagada y registrar la nota, sin enviar recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente confirma pago automático el 30/08/2026; marcar factura como pagada y no enviar más avisos.\"\n      },\n      \"why\": \"Registrar la confirmación de pago recibida del cliente.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:58:03+02:00"
+}

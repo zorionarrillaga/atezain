@@ -1,0 +1,6 @@
+{
+ "key": "da4f0daa3c8f9cdfa9d5af5a0232274f",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-053 por 5.600,00 € tiene vencimiento el 9 de septiembre y, aunque está abierta, el cliente suele pagar a 60 días. El cliente ha enviado un correo solicitando que se finalice una rectificativa para poner el importe a 0,00 € según lo hablado por teléfono.\",\n  \"recommendation\": \"Responder al cliente confirmando que se emitirá la rectificativa con el importe a 0,00 € y enviarla pronto.\",\n  \"draft\": \"Estimado/a,\\n\\nGracias por su mensaje. Confirmamos que procederemos a emitir la rectificativa con el importe a 0,00 € tal como acordamos por teléfono. Le enviaremos la factura corregida en breve.\\n\\nQuedamos a su disposición para cualquier duda.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente solicita rectificativa a medias para poner importe a 0,00 €. Se le responderá confirmando que se completará la rectificativa y se enviará la factura corregida.\"\n      },\n      \"why\": \"Registrar la solicitud del cliente y la respuesta planificada\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:05:40+02:00"
+}

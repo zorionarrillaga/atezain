@@ -1,0 +1,6 @@
+{
+ "key": "358308933c3874bace614250a8e930fd",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-040 de 315,20 € venció el 14 de agosto de 2026. El cliente indica que la pagó en efectivo en nuestra oficina y pide marcarla como pagada, aunque una nota anterior señalaba que el pago se efectuaría el 5 de septiembre por transferencia.\",\n  \"recommendation\": \"Verificar internamente la recepción del pago en efectivo y, si es correcto, actualizar el estado de la factura.\",\n  \"draft\": \"Estimado/a,\\n\\nGracias por su mensaje. Vamos a confirmar con nuestro compañero que hemos recibido el pago en efectivo de la factura F-2026-040. En cuanto tengamos la confirmación, actualizaremos el estado de la factura en nuestro sistema y le informaremos.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente afirma haber pagado la factura F-2026-040 en efectivo en la oficina. Necesario confirmar con el responsable y, si procede, actualizar el estado.\"\n      },\n      \"why\": \"Registrar la información del cliente y la necesidad de verificación antes de cambiar el estado.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:59:16+02:00"
+}

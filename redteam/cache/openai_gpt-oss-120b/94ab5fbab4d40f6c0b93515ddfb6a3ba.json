@@ -1,0 +1,6 @@
+{
+ "key": "94ab5fbab4d40f6c0b93515ddfb6a3ba",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-036 de 4.210 € emitida el 10‑07‑2026 venció el 09‑08‑2026 y sigue abierta. El cliente ha enviado un correo el 27‑08‑2026 indicando que la factura se rehízo con el nuevo CIF de la sociedad y que queda pendiente eliminar el documento antiguo del sistema del proveedor para evitar reclamos duplicados.\",\n  \"recommendation\": \"Añadir una nota interna indicando el cambio de CIF y la necesidad de dar de baja el documento antiguo.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura F-2026-036 rehacida con el nuevo CIF de Construcciones Iturralde. Pendiente eliminar el documento antiguo del sistema para no reclamar dos veces.\"\n      },\n      \"why\": \"Registrar la información del cliente y la tarea pendiente de eliminación del documento antiguo.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:56:42+02:00"
+}

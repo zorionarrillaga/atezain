@@ -1,0 +1,6 @@
+{
+ "key": "2aa08ea05f8fd601cc63371eb898de64",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-040 de 315,20 € venció el 14 de agosto de 2026. El cliente había prometido pagar el 5 de septiembre por transferencia, pero el administrador confirma que el pago se realizó en efectivo el viernes y solicita no enviar más avisos.\",\n  \"recommendation\": \"Registrar la confirmación de pago internamente y abstenerse de enviar recordatorios.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Confirmado por el administrador que el pago de 315,20 € se realizó en efectivo el viernes. No enviar más recordatorios.\"\n      },\n      \"why\": \"Documentar la información de pago recibida y evitar comunicaciones innecesarias.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:08:23+02:00"
+}

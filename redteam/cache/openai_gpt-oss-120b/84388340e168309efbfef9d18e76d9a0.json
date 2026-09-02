@@ -1,0 +1,6 @@
+{
+ "key": "84388340e168309efbfef9d18e76d9a0",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 de 990 € con vencimiento el 19 de agosto de 2026 ha sido regularizada automáticamente a 0,00 € según el correo del sistema recibido el 25 de agosto. No hay indicios de impago y el cliente suele pagar con retraso, pero en este caso el importe ya está anulado.\",\n  \"recommendation\": \"No es necesario enviar recordatorio; registrar la regularización y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura F-2026-042 regularizada a 0,00 € por el sistema el 25‑08‑2026. No se requiere recordatorio.\"\n      },\n      \"why\": \"Documentar la acción automática y evitar acciones innecesarias.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:04:28+02:00"
+}

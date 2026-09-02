@@ -1,0 +1,6 @@
+{
+ "key": "dde67a8fdc15746fe4347e43ba649266",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-040 de 315,20 € venció el 14 de agosto. El cliente prometió pagar el 5 de septiembre, pero según la nota de Iñaki ya pagó en efectivo y entregará el justificante el lunes, por lo que no se debe enviar ningún recordatorio.\",\n  \"recommendation\": \"Marcar la factura como pagada una vez recibido el justificante y abstenerse de enviar recordatorios.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago en efectivo recibido el viernes; pendiente de justificante el lunes.\"\n      },\n      \"why\": \"Registrar la información de pago y la espera del justificante.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:13:22+02:00"
+}

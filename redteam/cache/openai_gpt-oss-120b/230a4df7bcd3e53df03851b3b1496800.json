@@ -1,0 +1,6 @@
+{
+ "key": "230a4df7bcd3e53df03851b3b1496800",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-036 por 4.210,00 € emitida el 10‑07‑2026 venció el 09‑08‑2026 y sigue con estado \\\"open\\\". En una nota interna de Miren (27‑08‑2026) se indica que el cliente solicitó refacturar con otro CIF y ya se ha emitido la nueva factura, por lo que esta debe eliminarse del sistema para no reclamarla dos veces.\",\n  \"recommendation\": \"Añadir una nota interna que indique que la factura debe ser eliminada y no enviar recordatorio al cliente.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura F-2026-036 supersedida por nueva con CIF distinto; marcar para eliminación del sistema y evitar doble reclamación.\"\n      },\n      \"why\": \"Registrar internamente la necesidad de borrar la factura y evitar envíos de recordatorios.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:14:49+02:00"
+}

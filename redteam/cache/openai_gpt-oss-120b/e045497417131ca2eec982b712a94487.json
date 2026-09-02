@@ -1,0 +1,6 @@
+{
+ "key": "e045497417131ca2eec982b712a94487",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-049 de 1.230 € emitida el 4 de agosto y con vencimiento el 3 de septiembre está abierta, pero la pasarela bancaria notificó el 31 de agosto que el pago se ha conciliado automáticamente.\",\n  \"recommendation\": \"Marcar la factura como pagada en el sistema.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Notificación de la pasarela bancaria (31‑08‑2026) indica conciliación automática del pago; según la regla interna, la factura debe marcarse como pagada.\"\n      },\n      \"why\": \"Registrar la información de la pasarela y recordar actualizar el estado.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:00:28+02:00"
+}

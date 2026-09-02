@@ -1,0 +1,6 @@
+{
+ "key": "62c7f7dc7b6f6c87f0bfab0e777caf2f",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 de 760 € emitida el 20‑08 y con vencimiento el 19‑09 está disputada porque el cliente alegó un precio unitario incorrecto. El cliente envió el acta de reunión del 25/08 donde se acuerda que la diferencia será abonada y la disputa quedará cerrada, quedando pendiente actualizar el estado de la factura en nuestro sistema. \",\n  \"recommendation\": \"Actualizar el estado de la factura a \\\"promised\\\" y registrar una nota interna con el acuerdo alcanzado.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Acuerdo del 25/08: el cliente pagará la diferencia de precio y la disputa queda cerrada. Pendiente actualizar el estado de la factura en el sistema.\"\n      },\n      \"why\": \"Documentar el acuerdo y la tarea pendiente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que el cliente se ha comprometido a pagar la diferencia y la disputa está resuelta.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:56:39+02:00"
+}

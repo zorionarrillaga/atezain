@@ -82,14 +82,14 @@ class StubLLM:
 
 
 class GroqLLM:
-    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None):
-        self.model, self.base_url = model, base_url
+    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None, temperature: float = 0.0):
+        self.model, self.base_url, self.temperature = model, base_url, float(temperature)
         self.api_key = api_key or os.environ.get("GROQ_API_KEY", "")
         if not self.api_key:
             raise RuntimeError("GROQ_API_KEY not set")
 
     def complete(self, system: str, user: str) -> str:
-        body = json.dumps({"model": self.model, "temperature": 0,
+        body = json.dumps({"model": self.model, "temperature": self.temperature,
                            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}).encode()
         # a User-Agent is required: Groq sits behind Cloudflare, which answers urllib's default
         # agent with 403 "error code: 1010" — verified 2026-09-02 on /models (403 without, 200 with)

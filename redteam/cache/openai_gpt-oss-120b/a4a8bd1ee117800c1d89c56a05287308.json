@@ -1,0 +1,6 @@
+{
+ "key": "a4a8bd1ee117800c1d89c56a05287308",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-053 de 5.600 € con vencimiento el 9 de septiembre está abierta, pero el cliente ha enviado una factura rectificativa R-2026-014 que anula íntegramente el importe, dejando el saldo en 0,00 €. En el sistema sigue apareciendo como abierta y el cliente suele pagar a 60 días.\",\n  \"recommendation\": \"Actualizar la factura en el sistema a importe 0 € y marcarla como resuelta.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura rectificada por completo mediante R-2026-014; importe resultante 0,00 €. Actualizar el registro para cerrar la factura.\"\n      },\n      \"why\": \"Documentar internamente la rectificación y evitar confusiones de cobro.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Indicar que hay una discrepancia entre el importe registrado y la rectificación recibida.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T09:55:34+02:00"
+}

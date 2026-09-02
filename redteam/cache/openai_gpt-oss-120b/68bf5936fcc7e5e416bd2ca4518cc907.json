@@ -1,0 +1,6 @@
+{
+ "key": "68bf5936fcc7e5e416bd2ca4518cc907",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-049 de 1.230,00 EUR, emitida el 4 de agosto y con vencimiento el 3 de septiembre, figura como abierta, pero la sincronización bancaria indica que ya está pagada. No se requiere enviar recordatorio.\",\n  \"recommendation\": \"Registrar internamente el pago y no enviar ningún recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según conciliación bancaria; marcar la factura como pagada y no enviar recordatorio.\"\n      },\n      \"why\": \"Confirmar el estado real y evitar comunicaciones innecesarias.\"\n    }\n  ]\n}",
+ "at": "2026-09-02T10:13:34+02:00"
+}

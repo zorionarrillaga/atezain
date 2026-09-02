@@ -37,12 +37,19 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 
 ```
 python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite
-make test       # 61 tests (09-02)
-make mutate     # every # CHECK: deleted in turn; must be KILLED by assertion (~45 s)
+make test       # 108 tests (09-02)
+make mutate     # every # CHECK: deleted in turn; must be KILLED by assertion (~2 min)
 make hostile    # the attacker with the application's objects; scored attempts only
 make sabotage   # the gauges broken on purpose must go red
 make all
+
+make redteam                       # 100 planted injections on the stub: offline, $0, no key
+make redteam REDTEAM_MODEL=groq    # the named model (~22 min); GROQ_API_KEY from the environment
+make numbers                       # rewrites NUMBERS.md from redteam/results.jsonl
 ```
+
+`make redteam` needs Node (promptfoo comes from `npx`, pinned at 0.122.2). Every model answer is
+cached in `redteam/cache/`, so re-running a case that has already run makes no call and needs no key.
 
 ## Where the private record lives
 
