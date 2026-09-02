@@ -116,12 +116,13 @@ def test_no_write_path_bypasses_policy():
     graph_src = src[ROOT / "agent" / "graph.py"]
     assert re.search(r"policy\.execute\(", graph_src) and "executor(" not in graph_src.replace("make_executor(", "")
 
-    # repo-wide: who calls a write? (`records/store.py` defines them; `tests/` is the gauge itself)
-    exempt = {"records/store.py"}
+    # repo-wide: who CALLS a write? `records/` is where they are defined (`store.py` for the
+    # customer's invoices, `drafts.py` for the owner's outbound letters, step 7) and `tests/` is
+    # this gauge itself; everything else in the repo is a caller and must be one of the two.
     callers = set()
     for path in ROOT.rglob("*.py"):
         rel = path.relative_to(ROOT).as_posix()
-        if rel.startswith((".venv/", "tests/")) or rel in exempt:
+        if rel.startswith((".venv/", "tests/", "records/")):
             continue
         if re.search(r"_apply_[a-z_]+\(", path.read_text(encoding="utf-8")):
             callers.add(rel)

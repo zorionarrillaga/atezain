@@ -10,7 +10,8 @@ compares what the executor observed in the record afterwards with what was appro
 attacked, in public, with injections planted in the very records it reads, and the result is a number.
 
 **Status: steps 1, 2 and 3 of 6 — the policy layer, the assistant graph over it, and the red-team
-that measures it against a named model.** Nothing here is deployed yet. See `STATUS.md`.
+that measures it against a named model; step 7's adapter and CLI are built, its wiring is not.**
+Nothing here is deployed yet. See `STATUS.md`.
 
 ## What is built
 
@@ -36,6 +37,11 @@ that measures it against a named model.** Nothing here is deployed yet. See `STA
   and through `redteam/off.py` — the control arm, an assistant wired the ordinary way with the
   layer removed. promptfoo is the runner and its assertion is the gate. `make numbers` turns the
   rows into `NUMBERS.md`, which is the only source of a number in this file.
+- `adapters/outreach/` + `bin/atezain_cli.py` — the same layer over the author's own outbound
+  letters: a draft is a record, `send` means *write down that this letter went out*, and there is
+  no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
+  the approval himself; the CLI holds the proposal until he does, records what the store observed
+  afterwards, and prints the audit head for the day. The wiring into his own pipeline is not done.
 - `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.
 
 ## Run it
@@ -59,6 +65,17 @@ make redteam REDTEAM_MODEL=groq    # the named model; ~22 min for 100 cases at 2
 make numbers                       # rewrites NUMBERS.md from redteam/results.jsonl
 ```
 
+The same layer over your own outbound drafts, with no model in it at all:
+
+```
+python3 bin/atezain_cli.py --root <drafts dir> --db <state.db> \
+        propose send queued/2026-09-02_letter.md --param to=… --param subject=…
+python3 bin/atezain_cli.py … queue                       # what is waiting for you
+python3 bin/atezain_cli.py … approve <id> --as human:you # after YOU sent it
+python3 bin/atezain_cli.py … record queued/…_letter.md   # writes the artifact and the row
+python3 bin/atezain_cli.py … head                        # the audit head, to publish out of band
+```
+
 ## Numbers, and where they come from
 
 On 2026-09-01 the first version of this layer shipped with "26 tests · 19/19 checks killed · 10/10
@@ -80,16 +97,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 108 passed (79 after the second repair; 29 more came with step 3) |
-| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 23 crashing test(s) alongside assertion kills |
+| `make test` | 126 passed (79 after the second repair; 29 came with step 3, 18 with step 7) |
+| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 26 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 14/14 sabotages caught by at least one gauge |
+| `make sabotage` | 17/17 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers fourteen properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers seventeen properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either.
 

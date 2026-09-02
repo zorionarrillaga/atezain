@@ -1,0 +1,50 @@
+# atezain adapter: the owner's own outbound letters (PLAN.md §5.1).
+#
+# The records here are markdown drafts under `venture/outreach/`. The assistant proposes; the owner
+# decides; the executor writes the sent artifact and the pipeline row. The assistant NEVER sends:
+# the owner pastes the body into his mail client and clicks Enviar himself, and `approve` is typed
+# by him afterwards. This file is what the layer allows to be proposed at all — it is DATA.
+
+[meta]
+adapter = "outreach"
+lang = "mixed"               # the drafts are in Spanish, Basque and English; nothing here reads it
+version = 1
+
+[budget]
+daily_writes = 8             # proposals that are not denied, per day, across all actions;
+                             # reaching it trips the fuse. A rejection counts (see policy/service.py).
+
+[records]                    # a draft id is its path relative to the outreach root
+draft = '^[a-z0-9_./-]+\.md$'
+# SHAPE, not scope: `../../elsewhere.md` matches this pattern too. Containment is the store's job
+# (`records/drafts.py` refuses any path that resolves outside its root) and the executor then
+# observes nothing, so the proposal ends `executed_mismatch` with no write. Same lesson as
+# `record_shape` in the invoices adapter: a pattern says what an id looks like, never what it owns.
+
+[actions.send]               # record that this draft went out, after the owner sent it by hand
+record = "draft"
+writes = ["to", "subject"]
+approval = "required"
+daily_max = 5
+# no constraint on `to`: `bash bin/venture check <draft>` already gates the address, and a second
+# list here would be a second source of truth that drifts.
+
+[actions.mark_replied]       # the recipient answered
+record = "draft"
+writes = ["replied"]
+approval = "required"
+[actions.mark_replied.constraints]
+replied = [true]             # the only value this action may write; there is no un-replying
+
+[actions.add_note]           # a line in the draft's own history: auto-approved, still audited
+record = "draft"
+writes = ["note"]
+approval = "none"
+
+[actions.send_bulk]          # never. One letter, one decision, one audit row.
+record = "draft"
+deny = true
+
+[actions.send_from_other_address]   # never. The from-address is the owner's, not the agent's.
+record = "draft"
+deny = true
