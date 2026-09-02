@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import os
 import subprocess
 import sys
 import tempfile
@@ -47,7 +48,10 @@ def mutate(path: Path, block_src: str) -> str:
 
 
 def run_suite(tree: Path) -> tuple[int, str]:
-    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", "tests/"],
+    # without the DSN: what this pass measures is whether a check can fail, not which database it
+    # fails on, and 43 mutations over a network round-trip would be minutes of nothing (PLAN.md §4.1)
+    env = {k: v for k, v in os.environ.items() if k != "ATEZAIN_TEST_DSN"}
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", "tests/"], env=env,
                        cwd=tree, capture_output=True, text=True)
     return r.returncode, r.stdout + r.stderr
 

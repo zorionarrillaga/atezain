@@ -39,11 +39,25 @@ class Clock:
         self.t += seconds
 
 
+# Which store `make()` builds. `tests/conftest.py` parametrises it over SQLite and Postgres and
+# the autouse fixture below binds it for every test in this module, so all 68 run on both without
+# 68 signature changes. Nothing else in the suite depends on the backend.
+STORE_FACTORY = lambda: Store(":memory:")      # noqa: E731 — the default, and what the file used to do
+
+
+@pytest.fixture(autouse=True)
+def _bind_store(store_factory):
+    global STORE_FACTORY
+    was, STORE_FACTORY = STORE_FACTORY, store_factory
+    yield
+    STORE_FACTORY = was
+
+
 def make(daily_writes=None):
     cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml")
     if daily_writes is not None:
         cfg = cfg.replace(daily_writes=daily_writes)
-    store = Store(":memory:")
+    store = STORE_FACTORY()
     clock = Clock()
     return PolicyService(cfg, store, clock), store, clock
 
@@ -474,25 +488,30 @@ def test_concurrent_proposals_cannot_race_past_the_budget():
     assert results.count(APPROVED) == 2 and results.count(DENIED) == 4
 
 
-class CountThenPause(Store):
-    """Counts, then lets another thread in before writing — the interleaving that defeats a
-    read-then-write budget unless the count and the write are one transaction."""
-    def __init__(self):
-        super().__init__(":memory:")
-        self.gate = threading.Event()
-        self.paused = False
+def count_then_pause():
+    """A store of whichever kind is under test that counts, then lets another thread in before
+    writing — the interleaving that defeats a read-then-write budget unless the count and the write
+    are one transaction. Wrapping the instance rather than subclassing `Store` is what lets this
+    run against Postgres too (PLAN.md §4.1 names this test)."""
+    store = STORE_FACTORY()
+    store.gate = threading.Event()
+    store.paused = False
+    counted = store.count_proposals_since
 
-    def count_proposals_since(self, *a, **kw):
-        n = super().count_proposals_since(*a, **kw)
-        if not self.paused:
-            self.paused = True
-            self.gate.wait(timeout=2)
+    def count_proposals_since(*a, **kw):
+        n = counted(*a, **kw)
+        if not store.paused:
+            store.paused = True
+            store.gate.wait(timeout=2)
         return n
+
+    store.count_proposals_since = count_proposals_since
+    return store
 
 
 def test_the_budget_count_and_the_write_are_one_transaction():
     cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml").replace(daily_writes=1)
-    store = CountThenPause()
+    store = count_then_pause()
     svc = PolicyService(cfg, store, Clock())
     statuses = []
     a = threading.Thread(target=lambda: statuses.append(svc.propose(AGENT_P, "add_note", inv(1), {"note": "a"}).status))
@@ -767,3 +786,36 @@ def test_a_clean_run_has_no_anomalies():
     older = (2, store.audit_rows()[1]["hash"])
     assert store.audit_verify(anchor=older) is True
     assert store.audit_verify(anchor=(2, "f" * 64)) is False
+
+
+# ── the property SQLite does not have (PLAN.md §4.1) ─────────────────────────────────────────
+def test_two_connections_cannot_race_past_the_budget():
+    """Postgres only. The SQLite store's budget is serialised by a lock inside ONE process; a
+    second web instance would not see it. Here the two racers hold SEPARATE connections, so the
+    process lock cannot be what saves them — the row lock `SELECT … FROM audit_head … FOR UPDATE`
+    is. This is the whole reason the deployed store is Postgres."""
+    store = STORE_FACTORY()
+    if type(store).__name__ != "PgStore":
+        pytest.skip("this property is about the database's lock, not the process's")
+    import os
+
+    from policy.store_pg import PgStore
+    other = PgStore(os.environ["ATEZAIN_TEST_DSN"], schema=store.schema)
+    cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml").replace(daily_writes=2)
+    a = PolicyService(cfg, store, Clock())
+    b = PolicyService(cfg, other, Clock())
+    results, barrier = [], threading.Barrier(6)
+
+    def go(i):
+        svc = a if i % 2 == 0 else b
+        barrier.wait()
+        results.append(svc.propose(AGENT_P, "add_note", inv(i), {"note": "x"}).status)
+
+    threads = [threading.Thread(target=go, args=(i,)) for i in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    other.close()
+    assert results.count(APPROVED) == 2 and results.count(DENIED) == 4
+    assert store.audit_verify() and not store.audit_anomalies()

@@ -38,6 +38,12 @@ means and for what step 4 deliberately skipped.
   and through `redteam/off.py` — the control arm, an assistant wired the ordinary way with the
   layer removed. promptfoo is the runner and its assertion is the gate. `make numbers` turns the
   rows into `NUMBERS.md`, which is the only source of a number in this file.
+- `policy/store_pg.py` — the same store over Postgres, as a subclass: the audit logic and every
+  marked check exist once, and what differs is the six places SQLite and Postgres genuinely differ.
+  Its lock is a row lock on the audit head rather than a lock inside one process, so a second web
+  instance cannot race past the budget — there is a test that proves it with two connections, and
+  it is the one property the SQLite store structurally cannot have. The whole policy suite runs on
+  both when `ATEZAIN_TEST_DSN` names a database, and skips the Postgres arm loudly when it does not.
 - `api/` — the same layer behind HTTP: a session is a namespace (its own records, its own audit
   chain, its own fuse) opened by a bearer token; you upload a CSV of your own invoices, ask for an
   assist, see what it drafts and what it holds, decide, and read the chain. `api/auth.py` is the
@@ -111,8 +117,8 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 137 passed (79 after the second repair; 29 came with step 3, 18 with step 7, 11 with step 4) |
-| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 27 crashing test(s) alongside assertion kills |
+| `make test` | 137 passed, 70 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **206 passed** (the policy suite twice, SQLite and PostgreSQL 18.6, 3 min 34 s) |
+| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 24 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 18/18 sabotages caught by at least one gauge |
 

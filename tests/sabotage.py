@@ -7,6 +7,7 @@ at least one of `make test` / `make hostile` red, or this script exits 1.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -73,8 +74,9 @@ SABOTAGES = [
 
 
 def run(tree: Path, target: str) -> int:
-    r = subprocess.run([sys.executable, target], cwd=tree, capture_output=True, text=True) if target.endswith(".py") else \
-        subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=tree, capture_output=True, text=True)
+    env = {k: v for k, v in os.environ.items() if k != "ATEZAIN_TEST_DSN"}   # see tests/mutate.py
+    r = subprocess.run([sys.executable, target], cwd=tree, env=env, capture_output=True, text=True) if target.endswith(".py") else \
+        subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=tree, env=env, capture_output=True, text=True)
     return r.returncode
 
 

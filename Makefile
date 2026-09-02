@@ -6,6 +6,11 @@ REDTEAM_MODEL_ID ?= openai/gpt-oss-120b
 
 .PHONY: test mutate hostile sabotage all redteam numbers serve
 
+# With ATEZAIN_TEST_DSN set, the policy suite runs TWICE — once on SQLite, once on that Postgres
+# (PLAN.md §4.1). That is ~3.5 minutes of network round-trips, so for the fast loop:
+#   ATEZAIN_TEST_DSN= make test        the SQLite arm only; the Postgres arm SKIPS, loudly
+# `make mutate` and `make sabotage` always drop the variable in the child they run: what they
+# measure is whether a check can fail, not which database it fails on.
 test:
 	$(PY) -m pytest -q -p no:cacheprovider tests/
 
