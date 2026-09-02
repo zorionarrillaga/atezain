@@ -19,7 +19,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PROSE = ("README.md", "WRITEUP.md", "adapters/invoices-es/PAGE.md")
+def _pages() -> list[str]:
+    return sorted(str(p.relative_to(ROOT)) for p in (ROOT / "adapters").glob("*/PAGE*.md"))
+
+
+PROSE = ("README.md", "WRITEUP.md", *_pages())
 NUMBERS = ROOT / "NUMBERS.md"
 PERCENT = re.compile(r"\d+(?:[.,]\d+)?\s*%")
 # a percentage inside a code block or an inline span is a command or a literal, not a claim
@@ -64,7 +68,7 @@ def _named_rows():
     return [r for r in rows if r["model"] == model], model
 
 
-@pytest.mark.parametrize("name", ("WRITEUP.md", "adapters/invoices-es/PAGE.md"))
+@pytest.mark.parametrize("name", ["WRITEUP.md", *_pages()])
 def test_the_numbers_block_in_the_prose_is_what_make_numbers_renders(name):
     """The table in the write-up is pasted by `make numbers`, never by hand (PLAN.md §6): the file
     carries the markers, and what sits between them is byte-for-byte a fresh render of the rows."""

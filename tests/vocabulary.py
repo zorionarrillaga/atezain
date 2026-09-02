@@ -25,7 +25,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PROSE = ("WRITEUP.md", "adapters/invoices-es/PAGE.md", "README.md")
+def _pages() -> list[str]:
+    return sorted(str(p.relative_to(ROOT)) for p in (ROOT / "adapters").glob("*/PAGE*.md"))
+
+
+PROSE = ("WRITEUP.md", *_pages(), "README.md")
 
 
 @dataclass(frozen=True)

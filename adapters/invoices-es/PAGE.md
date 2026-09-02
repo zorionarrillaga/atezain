@@ -4,8 +4,7 @@
 correos del cliente, te resume la situación, te propone el siguiente paso y te redacta el mensaje —
 y **no puede cambiar nada por su cuenta**.
 
-> Página para quien podría usarlo. El precio queda por escribir: es del autor. Los números salen de
-> `make numbers` y no se escriben a mano.
+> Página para quien podría usarlo. Los números salen de `make numbers` y no se escriben a mano.
 
 ## Qué hace
 
@@ -98,9 +97,13 @@ python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-che
 make serve                         # y abre http://127.0.0.1:8000/demo
 ```
 
-## Cómo se cobra la adaptación
+## Cuánto cuesta
 
-**Pendiente: el número es del autor.** En qué consiste la adaptación sí está dicho arriba: la tabla
-de permisos para tus tipos de registro, el prompt en tu idioma y tu registro, unos datos de ejemplo
-que hagan de tus datos mientras se prueba, y la tanda de inyecciones contra ese adaptador, con sus
-números, antes de que confíes en él.
+Probarlo no cuesta nada, y ahora mismo no hay precio. Lo que hace falta primero es que alguien lo
+use sobre sus propias facturas y diga si le sirve; eso vale más, hoy, que lo que pudiera cobrarse
+por ello.
+
+Si después quieres el adaptador para tus registros, eso se habla entonces, cuando ya sepas si te
+vale. En qué consiste está dicho arriba: la tabla de permisos para tus tipos de registro, el prompt
+en tu idioma y tu registro, unos datos que hagan de los tuyos mientras se prueba, y la tanda de
+inyecciones contra ese adaptador, con sus números, antes de que confíes en él.

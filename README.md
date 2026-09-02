@@ -128,7 +128,7 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 164 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **245 passed, 1 skipped, 4 min 10 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 168 passed, 82 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **249 passed, 1 skipped, 4 min 10 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 23/23 sabotages caught by at least one gauge |

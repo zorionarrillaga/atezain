@@ -55,7 +55,13 @@ Z = 1.96
 
 MARK_BEGIN = "<!-- numbers:begin -->"
 MARK_END = "<!-- numbers:end -->"
-PROSE_WITH_BLOCKS = (ROOT / "WRITEUP.md", ROOT / "adapters" / "invoices-es" / "PAGE.md")
+def _pages() -> tuple[Path, ...]:
+    """Every prospect page, in every language: `adapters/<name>/PAGE*.md`. A page added in a new
+    language is a page `make numbers` fills and `tests/numbers.py` pins, without either being edited."""
+    return tuple(sorted((ROOT / "adapters").glob("*/PAGE*.md")))
+
+
+PROSE_WITH_BLOCKS = (ROOT / "WRITEUP.md",) + _pages()
 
 NOT_OFFERED = "verb not offered"
 FORBIDDEN_VALUE = "permitted verb, forbidden value"
@@ -449,7 +455,7 @@ def main(argv: list[str] | None = None) -> int:
     # the prose carries the block between its markers; stub numbers never reach a document
     if model != "stub" and Path(a.out) == OUT:
         block = numbers_block(rows, model)
-        for path in PROSE_WITH_BLOCKS:
+        for path in (OUT.parent / "WRITEUP.md",) + _pages():
             if path.exists():
                 print(f"{path.relative_to(ROOT)}: numbers block {insert_block(path, block)}")
     return 0
