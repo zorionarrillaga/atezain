@@ -22,8 +22,7 @@ def setup(deny_all=False):
     records.load_seed(SEED)
     cfg = PolicyConfig.load(CFG)
     if deny_all:
-        for name, spec in list(cfg.actions.items()):
-            cfg.actions[name] = spec.__class__(**{**spec.__dict__, "deny": True})
+        cfg = cfg.deny_all()          # the config is frozen; the only way to change it is a new one
     policy = PolicyService(cfg, Store(":memory:"))
     graph = build_graph(records, policy, StubLLM(), AGENT_P)
     return records, policy, graph

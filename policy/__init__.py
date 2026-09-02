@@ -1,11 +1,11 @@
 from .model import (AGENT, HUMAN, SYSTEM, DENIED, HELD, APPROVED, REJECTED, EXECUTED, EXECUTED_MISMATCH,
-                    Principal, ActionSpec, PolicyConfig, Proposal)
+                    EXECUTED_UNKNOWN, Principal, ActionSpec, PolicyConfig, Proposal, canonical)
 from .store import Store, StoreUnreachable
 from .fuse import Fuse
-from .service import PolicyService, Denied
+from .service import PolicyService, Denied, LIVE
 
 __all__ = [
     "AGENT", "HUMAN", "SYSTEM", "DENIED", "HELD", "APPROVED", "REJECTED", "EXECUTED", "EXECUTED_MISMATCH",
-    "Principal", "ActionSpec", "PolicyConfig", "Proposal", "Store", "StoreUnreachable", "Fuse",
-    "PolicyService", "Denied",
+    "EXECUTED_UNKNOWN", "Principal", "ActionSpec", "PolicyConfig", "Proposal", "canonical", "Store",
+    "StoreUnreachable", "Fuse", "PolicyService", "Denied", "LIVE",
 ]

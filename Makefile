@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: test mutate hostile all
+.PHONY: test mutate hostile sabotage all
 
 test:
 	$(PY) -m pytest -q -p no:cacheprovider tests/
@@ -11,4 +11,7 @@ mutate:
 hostile:
 	$(PY) tests/hostile_selftest.py
 
-all: test mutate hostile
+sabotage:
+	$(PY) tests/sabotage.py
+
+all: test mutate hostile sabotage

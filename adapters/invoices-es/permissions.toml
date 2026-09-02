@@ -9,7 +9,12 @@ lang = "es"
 version = 1
 
 [budget]
-daily_writes = 20            # proposals that are not denied, per day; reaching it trips the fuse
+daily_writes = 20            # proposals that are not denied, per day; reaching it trips the fuse.
+                             # A human's REJECTED counts: a budget the agent refills by getting
+                             # rejected is not a limit. Only a policy denial is free.
+
+[records]                    # every action names a record type; a record_id must fullmatch its pattern
+invoice = '^F-\d{4}-\d{3}$'
 
 [actions.send_reminder]      # draft a reminder and, if a human approves, send it
 record = "invoice"

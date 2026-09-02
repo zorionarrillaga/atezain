@@ -4,15 +4,22 @@ Everything the model (an LLM agent) may do to records is described HERE, as data
 prompt. The agent proposes; this layer decides what a proposal is allowed to be; a human decides
 whether a held proposal happens; the layer executes and re-validates. See PROVENANCE.md for the
 incident behind each rule.
+
+The configuration is immutable once loaded (frozen dataclass, read-only mappings) and carries a
+fingerprint that every PROPOSAL audit row records: a policy re-specced at runtime by whoever holds
+the process is a different policy, and the audit log says which one decided each proposal.
 """
 from __future__ import annotations
 
+import dataclasses
+import hashlib
 import json
 import tomllib
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
 AGENT = "agent"
 HUMAN = "human"
@@ -23,9 +30,10 @@ SYSTEM = "system"
 DENIED = "denied"
 HELD = "held"
 APPROVED = "approved"
-REJECTED = "rejected"            # a human said no
+REJECTED = "rejected"                     # a human said no
 EXECUTED = "executed"
 EXECUTED_MISMATCH = "executed_mismatch"   # it ran, and what ran differs from what was approved
+EXECUTED_UNKNOWN = "executed_unknown"     # the executor raised: the write may or may not have happened
 
 
 @dataclass(frozen=True)
@@ -36,6 +44,12 @@ class Principal:
     def is_human(self) -> bool:
         return self.kind == HUMAN
 
+    @property
+    def tag(self) -> str:
+        """How a principal is written into the audit log: kind and id, so a reader can tell a
+        human's decision from an agent's without trusting the id alone."""
+        return f"{self.kind}:{self.id}"
+
 
 @dataclass(frozen=True)
 class ActionSpec:
@@ -45,16 +59,17 @@ class ActionSpec:
     approval: str                       # "required" | "none"
     deny: bool
     daily_max: int | None
-    constraints: dict[str, tuple[Any, ...]]
+    constraints: Mapping[str, tuple[Any, ...]]
 
 
-@dataclass
+@dataclass(frozen=True)
 class PolicyConfig:
     adapter: str
     lang: str
     version: int
     daily_writes: int
-    actions: dict[str, ActionSpec]
+    records: Mapping[str, str]          # record type -> regex the record_id must fullmatch
+    actions: Mapping[str, ActionSpec]
 
     @classmethod
     def load(cls, path: str | Path) -> "PolicyConfig":
@@ -67,7 +82,7 @@ class PolicyConfig:
         budget = raw.get("budget", {})
         actions: dict[str, ActionSpec] = {}
         for name, spec in raw.get("actions", {}).items():
-            constraints = {k: tuple(v) for k, v in spec.get("constraints", {}).items()}
+            constraints = MappingProxyType({k: tuple(v) for k, v in spec.get("constraints", {}).items()})
             actions[name] = ActionSpec(
                 name=name,
                 record=spec.get("record", ""),
@@ -82,8 +97,31 @@ class PolicyConfig:
             lang=meta.get("lang", "es"),
             version=int(meta.get("version", 1)),
             daily_writes=int(budget.get("daily_writes", 0)),
-            actions=actions,
+            records=MappingProxyType(dict(raw.get("records", {}))),
+            actions=MappingProxyType(actions),
         )
+
+    def replace(self, **changes: Any) -> "PolicyConfig":
+        """A new config with some fields changed. The only way to change one; the original is frozen."""
+        if "actions" in changes:
+            changes["actions"] = MappingProxyType(dict(changes["actions"]))
+        if "records" in changes:
+            changes["records"] = MappingProxyType(dict(changes["records"]))
+        return dataclasses.replace(self, **changes)
+
+    def deny_all(self) -> "PolicyConfig":
+        return self.replace(actions={n: dataclasses.replace(s, deny=True) for n, s in self.actions.items()})
+
+    def fingerprint(self) -> str:
+        """sha256 of the canonical configuration; recorded in every PROPOSAL audit row."""
+        canon = {
+            "adapter": self.adapter, "lang": self.lang, "version": self.version, "daily_writes": self.daily_writes,
+            "records": dict(self.records),
+            "actions": {n: {"record": s.record, "writes": list(s.writes), "approval": s.approval, "deny": s.deny,
+                            "daily_max": s.daily_max, "constraints": {k: list(v) for k, v in s.constraints.items()}}
+                        for n, s in sorted(self.actions.items())},
+        }
+        return hashlib.sha256(json.dumps(canon, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
 @dataclass
@@ -111,3 +149,9 @@ class Proposal:
     @classmethod
     def from_json(cls, s: str) -> "Proposal":
         return cls(**json.loads(s))
+
+
+def canonical(value: Any) -> str:
+    """One string per value: sorted keys, no NaN, unknown objects rendered by repr so that an
+    object with a lying `__eq__` cannot pass for the dict it claims to equal."""
+    return json.dumps(value, sort_keys=True, allow_nan=False, ensure_ascii=False, default=repr)
