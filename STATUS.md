@@ -13,6 +13,24 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
 | 5b | text-only "try it" offers, measured | not started — `PLAN.md` §7. ✋ his voice |
 | 6 | one external refutation of the built thing | not started — `PLAN.md` §8. Two seats have run on step 1 (09-01 and 09-02); the step-6 seat is on the DEPLOYED thing |
 
+## Where the next session starts (written 2026-09-02, end of session)
+
+Run `make all` first and fix nothing else until it is green (`PLAN.md` §10). Then, in the order the
+plan puts them:
+
+| next | who | blocked on |
+|---|---|---|
+| Connect Render to the private repo and deploy | ✋ then BUILDER | the owner's word, that day. Everything technical is ready: the account exists, the repo is there, and a session's records, queue, chain and held graph now survive a restart on Neon. `autoDeploy` stays `false`, so the push and the deploy remain two acts |
+| §4.4 retrieval (pgvector or Postgres FTS) with its recall measurement | ⚖ then BUILDER | ⚖ writes the ten Spanish queries and their expected ids; the 512 MB fit test needs the deploy. Until then the local keyword retriever runs and no document says otherwise |
+| §4.5 tracing into Langfuse | BUILDER | nothing — the keys are in the owner's shell and the project is empty |
+| Step 7 §5.2, the wiring under `bin/venture` | ⚖ | it touches the owner's live pipeline. The repo half is done; the artifact formats differ and the difference is written down above |
+| Step 5, the write-up | ⚖ | `NUMBERS.md` being reviewed by someone other than the model that wrote the cases |
+| Step 6, a refutation seat | ⚖ | the deployed thing existing |
+
+The judgment-dense (⚖) seat has no model since Fable left the subscription on 2026-07-07. Every ⚖
+item above is therefore waiting on a decision about who plays that part — that is the single
+biggest thing standing between this repo and steps 5 and 6.
+
 ## What the seat found at step 1, and what changed (2026-09-02)
 
 | # | the seat's finding | the fix | now exercised by |
