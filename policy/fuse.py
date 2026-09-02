@@ -11,18 +11,10 @@ fuse "a hundred years from now" would lock the human out of their own clear path
 from __future__ import annotations
 
 import time
-from datetime import datetime
 from typing import Callable
-from zoneinfo import ZoneInfo
 
-from .model import Principal, SYSTEM
+from .model import Principal, SYSTEM, TZ, local_date  # noqa: F401 — TZ re-exported for the service
 from .store import Store
-
-TZ = ZoneInfo("Europe/Madrid")
-
-
-def local_date(ts: float) -> str:
-    return datetime.fromtimestamp(ts, TZ).date().isoformat()
 
 
 class Fuse:
@@ -35,8 +27,7 @@ class Fuse:
 
     def trip(self, reason: str, by: Principal) -> None:
         now = self.clock()
-        self.store.fuse_set("FUSE_TRIPPED", by.tag, {"reason": reason}, now,
-                            tripped=1, reason=reason, tripped_at=now, tripped_by=by.tag, cleared_at=None, cleared_by=None)
+        self.store.fuse_set("FUSE_TRIPPED", by.tag, {"reason": reason}, now, tripped=True, reason=reason)
 
     def clear(self, by: Principal) -> bool:
         """Return True if cleared. Refusals are audited, never silent."""
@@ -50,12 +41,14 @@ class Fuse:
             return False
         # ENDCHECK
         # CHECK: fuse_clear_not_same_day
-        if local_date(now) <= local_date(state["tripped_at"]):
+        # the same-day rule binds trips stamped in the past. A trip stamped in the FUTURE can only
+        # have been written by root; it must not lock the human out, so it clears at once and the
+        # audit reports it as audit_time_not_monotonic
+        if state["tripped_at"] <= now and local_date(now) <= local_date(state["tripped_at"]):
             self.store.audit_append("FUSE_CLEAR_REFUSED", by.tag, None, {"why": "same_day", "tripped_at": state["tripped_at"]}, ts=now)
             return False
         # ENDCHECK
-        self.store.fuse_set("FUSE_CLEARED", by.tag, {"reason_was": state["reason"]}, now,
-                            tripped=0, cleared_at=now, cleared_by=by.tag)
+        self.store.fuse_set("FUSE_CLEARED", by.tag, {"reason_was": state["reason"]}, now, tripped=False)
         return True
 
 

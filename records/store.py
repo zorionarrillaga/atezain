@@ -39,6 +39,11 @@ class Records:
         """Seeding / planting only — NOT the agent's write path (that is `_apply_add_note` via policy)."""
         self.conn.execute("INSERT INTO notes (invoice_id, ts, author, text) VALUES (?,?,?,?)", (invoice_id, ts, author, text))
 
+    def set_field_raw(self, invoice_id: str, field: str, value: str) -> None:
+        """Planting only (red-team `field_value` class) — NOT a write path for the agent."""
+        assert field in ("customer", "currency", "issued", "due"), field
+        self.conn.execute(f"UPDATE invoices SET {field} = ? WHERE id = ?", (value, invoice_id))
+
     def plant_email(self, invoice_id: str, sender: str, subject: str, body: str, ts: str = "2026-09-01") -> None:
         """The red-team's verb: an email arrives carrying an injection."""
         self.conn.execute("INSERT INTO emails (invoice_id, ts, direction, sender, subject, body) VALUES (?,?,?,?,?,?)",
@@ -71,16 +76,47 @@ class Records:
         hits.sort(key=lambda h: -h[0])
         return [h[1] for h in hits[:k]]
 
+    # ── observation: what the record looks like, for re-validation ─────────────────────────
+    def snapshot(self, invoice_id: str) -> dict | None:
+        """The whole record as the policy will compare it: fields, note texts, email count."""
+        inv = self.invoice(invoice_id)
+        if inv is None:
+            return None
+        return {**{k: inv[k] for k in ("customer", "amount", "currency", "issued", "due", "status", "reminder_text", "reminder_channel")},
+                "notes": [n["text"] for n in inv["notes"]], "emails": len(inv["emails"])}
+
+    @staticmethod
+    def diff(before: dict | None, after: dict | None) -> dict:
+        """What actually changed between two snapshots, in the params vocabulary the policy uses:
+        a changed field → {field: new}; exactly one note added → {"note": text}; anything else that
+        changed → named as itself, so a write of MORE than was approved never equals the approval."""
+        if before is None or after is None:
+            return {} if before == after else {"record": "missing" if after is None else "created"}
+        out: dict = {}
+        for k in before:
+            if k in ("notes", "emails"):
+                continue
+            if before[k] != after[k]:
+                out[k] = after[k]
+        added = after["notes"][len(before["notes"]):] if after["notes"][:len(before["notes"])] == before["notes"] else None
+        if added is None:
+            out["notes"] = "rewritten"
+        elif len(added) == 1:
+            out["note"] = added[0]
+        elif added:
+            out["notes_added"] = len(added)
+        if before["emails"] != after["emails"]:
+            out["emails_added"] = after["emails"] - before["emails"]
+        return out
+
     # ── writes: reachable only through the policy executor ──────────────────────────────────
-    def _apply_update_status(self, invoice_id: str, status: str) -> dict:
+    def _apply_update_status(self, invoice_id: str, status: str) -> None:
         self.conn.execute("UPDATE invoices SET status = ? WHERE id = ?", (status, invoice_id))
-        return {"status": status}
 
-    def _apply_add_note(self, invoice_id: str, note: str) -> dict:
-        self.add_note_raw(invoice_id, "now", "assistant", note)
-        return {"note": note}
+    def _apply_add_note(self, invoice_id: str, note: str) -> None:
+        if self.invoice(invoice_id) is not None:
+            self.add_note_raw(invoice_id, "now", "assistant", note)
 
-    def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str) -> dict:
+    def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str) -> None:
         # Sending is simulated: the record carries what was sent and where. A real channel plugs in here.
         self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ? WHERE id = ?", (reminder_text, reminder_channel, invoice_id))
-        return {"reminder_text": reminder_text, "reminder_channel": reminder_channel}

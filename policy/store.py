@@ -5,11 +5,16 @@ There is no method on this class that updates or deletes an audit row, on purpos
 `audit_head` row, written in the same transaction as every append, records the last seq and hash;
 `audit_verify()` recomputes the chain and checks it ends at the head. `audit_head()` is meant to
 be published out-of-band (a log line, a mail, a file the agent cannot write): pass it back as
-`anchor=` and a chain that was truncated and re-headed after that point fails too.
+`anchor=` and a chain truncated at or below that seq fails, whatever the head now says.
 
 What the chain proves, and what it does not (README §Trust boundary): anything holding this
-object can write proposals, fuse state and audit rows directly. The chain cannot stop that. It
-can only make the write show — `audit_anomalies()` lists every shape of it this layer knows.
+object can write proposals, fuse state and audit rows directly, and can re-hash the chain end to
+end. The chain cannot stop that and does not detect a root that re-links everything it touched; an
+anchor covers the rows up to its own seq and nothing after it, so the head must be published after
+every append or the gap between publications is unprotected. `audit_anomalies()` lists the shapes
+of illegitimate history this layer knows how to see; the `principal` string on a row is what the
+writer wrote — at the store it is unauthenticated, so the anomalies reason about the ORDER and
+COUNT of rows per proposal, which an appended row cannot repair, rather than about who signed one.
 
 Every count-then-write the policy service does runs inside `transaction()` (a process lock plus
 `BEGIN IMMEDIATE`), so a budget cannot be raced past by concurrent proposals.
@@ -27,7 +32,7 @@ import threading
 import time
 from typing import Any, Iterator
 
-from .model import HUMAN, Proposal
+from .model import HUMAN, Proposal, local_date
 
 GENESIS = "0" * 64
 OUTCOMES = ("EXECUTED", "EXECUTION_MISMATCH", "EXECUTION_UNKNOWN")
@@ -133,13 +138,17 @@ class Store:
         keys = ("tripped", "reason", "tripped_at", "tripped_by", "cleared_at", "cleared_by")
         return dict(zip(keys, row))
 
-    def fuse_set(self, kind: str, principal: str, detail: dict, ts: float, **fields: Any) -> None:
+    def fuse_set(self, kind: str, principal: str, detail: dict, ts: float, tripped: bool, reason: str | None = None) -> None:
         """The one way to change fuse state: the new state and its audit row land in one
-        transaction, so there is no fuse change without a row that says who and why."""
+        transaction, so there is no fuse change without a row that says who and why. No caller
+        chooses `tripped_at`: it is `ts`, the same instant the row carries."""
         with self.transaction():
-            cols = ", ".join(f"{k} = ?" for k in fields)
-            self._c().execute(f"UPDATE fuse SET {cols} WHERE id = 1", tuple(fields.values()))
-            self.audit_append(kind, principal, None, {**detail, "tripped": int(bool(fields.get("tripped", 0)))}, ts=ts)
+            if tripped:
+                self._c().execute("UPDATE fuse SET tripped = 1, reason = ?, tripped_at = ?, tripped_by = ?, cleared_at = NULL, cleared_by = NULL WHERE id = 1",
+                                  (reason, ts, principal))
+            else:
+                self._c().execute("UPDATE fuse SET tripped = 0, cleared_at = ?, cleared_by = ? WHERE id = 1", (ts, principal))
+            self.audit_append(kind, principal, None, {**detail, "tripped": int(bool(tripped))}, ts=ts)
 
     # ── audit: append-only hash chain with a head ────────────────────────────────────────────
     def audit_append(self, kind: str, principal: str, proposal_id: str | None, detail: dict, ts: float | None = None) -> str:
@@ -170,8 +179,10 @@ class Store:
     def audit_verify(self, anchor: tuple[int, str] | None = None) -> bool:
         """True iff every row hashes to the next, seqs are 1..n with no gap, the chain ends at the
         recorded head, and — if an out-of-band `anchor` (seq, hash) is given — that row is present
-        with that hash. Without an anchor, a root that truncates the tail AND rewrites the head is
-        not detected; that is why `audit_head()` exists."""
+        with that hash. An anchor covers rows up to its own seq: a root that truncates the tail
+        and rewrites the head is detected only if the truncation reaches at or below an anchor that
+        was published. Publish the head after every append, or the rows since the last published
+        head are unprotected."""
         prev, expected_seq, last = GENESIS, 1, (0, GENESIS)
         anchored = anchor is None
         for r in self.audit_rows():
@@ -201,42 +212,87 @@ class Store:
         return True
 
     def audit_anomalies(self) -> list[tuple[str, str]]:
-        """Every shape of 'a write happened that the rules did not allow' this layer knows how to
-        see after the fact, as (code, id). Empty means none seen — not none possible."""
+        """Every shape of illegitimate history this layer knows how to see after the fact, as
+        (code, id). Empty means none seen — not none possible. The checks are on the order and
+        count of rows per proposal, so that an attacker who can append rows (appends are legal)
+        cannot repair an earlier forgery by adding an agreeing row later."""
         rows = self.audit_rows()
         out: list[tuple[str, str]] = []
-        proposal_of = {r["proposal_id"]: json.loads(r["detail"]) for r in rows if r["kind"] == "PROPOSAL"}
-        auto = {pid for pid, d in proposal_of.items() if d.get("status") == "approved"}
-        approved_by_human = {r["proposal_id"] for r in rows if r["kind"] == "DECISION"
-                             and json.loads(r["detail"]).get("approve") is True and r["principal"].startswith(HUMAN + ":")}
+        by_pid: dict[str, list[dict]] = {}
         for r in rows:
-            d = json.loads(r["detail"])
-            if r["kind"] in OUTCOMES:
+            if r["proposal_id"] is not None:
+                by_pid.setdefault(r["proposal_id"], []).append(r)
+        for pid, rs in by_pid.items():
+            proposals = [r for r in rs if r["kind"] == "PROPOSAL"]
+            decisions = [r for r in rs if r["kind"] == "DECISION"]
+            attempts = [r for r in rs if r["kind"] == "EXECUTION_ATTEMPTED"]
+            outcomes = [r for r in rs if r["kind"] in OUTCOMES]
+            # CHECK: anomaly_proposal_row_count
+            if len(proposals) != 1:
+                out.append(("proposal_row_count", pid))
+                continue                      # nothing below is well-defined for this id
+            # ENDCHECK
+            src = json.loads(proposals[0]["detail"])
+            # CHECK: anomaly_decision_row_count
+            if len(decisions) > 1:
+                out.append(("decision_row_count", pid))
+            # ENDCHECK
+            first_attempt = attempts[0]["seq"] if attempts else None
+            valid_approval = False
+            for d in decisions:
+                dd = json.loads(d["detail"])
+                # CHECK: anomaly_decision_out_of_order
+                if src.get("status") != "held" or d["seq"] < proposals[0]["seq"] or (first_attempt is not None and d["seq"] > first_attempt):
+                    out.append(("decision_out_of_order", pid))
+                    continue
+                # ENDCHECK
+                # CHECK: anomaly_decision_not_by_human
+                if not d["principal"].startswith(HUMAN + ":"):
+                    out.append(("decision_not_by_human", pid))
+                    continue
+                # ENDCHECK
+                valid_approval = valid_approval or dd.get("approve") is True
+            auto = src.get("status") == "approved"
+            for o in outcomes:
+                d = json.loads(o["detail"])
                 # CHECK: anomaly_executed_without_approval
-                if r["proposal_id"] not in approved_by_human and r["proposal_id"] not in auto:
-                    out.append(("executed_without_approval", r["proposal_id"]))
+                if not (auto or valid_approval):
+                    out.append(("executed_without_approval", pid))
                 # ENDCHECK
                 # CHECK: anomaly_executed_action_mismatch
-                src = proposal_of.get(r["proposal_id"], {})
                 if (d.get("action"), d.get("record_id")) != (src.get("action"), src.get("record_id")):
-                    out.append(("executed_action_mismatch", r["proposal_id"]))
+                    out.append(("executed_action_mismatch", pid))
                 # ENDCHECK
-            # CHECK: anomaly_decision_not_by_human
-            if r["kind"] == "DECISION" and not r["principal"].startswith(HUMAN + ":"):
-                out.append(("decision_not_by_human", r["proposal_id"]))
+            # CHECK: anomaly_execution_without_outcome
+            if attempts and not outcomes:
+                out.append(("execution_without_outcome", pid))
             # ENDCHECK
-            # CHECK: anomaly_fuse_cleared_not_by_human
-            if r["kind"] == "FUSE_CLEARED" and not r["principal"].startswith(HUMAN + ":"):
-                out.append(("fuse_cleared_not_by_human", r["principal"]))
+            # CHECK: anomaly_execution_row_count
+            if len(attempts) > 1 or len(outcomes) > 1:
+                out.append(("execution_row_count", pid))
             # ENDCHECK
-        attempted = [r["proposal_id"] for r in rows if r["kind"] == "EXECUTION_ATTEMPTED"]
-        concluded = {r["proposal_id"] for r in rows if r["kind"] in OUTCOMES}
-        # CHECK: anomaly_execution_without_outcome
-        out += [("execution_without_outcome", pid) for pid in attempted if pid not in concluded]
-        # ENDCHECK
+        attempted = {pid for pid, rs in by_pid.items() if any(r["kind"] == "EXECUTION_ATTEMPTED" for r in rs)}
         # CHECK: anomaly_execution_claim_unaudited
-        out += [("execution_claim_unaudited", pid) for pid in self.execution_claims() if pid not in set(attempted)]
+        out += [("execution_claim_unaudited", pid) for pid in self.execution_claims() if pid not in attempted]
         # ENDCHECK
+        prev_ts, last_trip_date = None, None
+        for r in rows:
+            # CHECK: anomaly_time_not_monotonic
+            if prev_ts is not None and r["ts"] < prev_ts:
+                out.append(("audit_time_not_monotonic", str(r["seq"])))
+            # ENDCHECK
+            prev_ts = r["ts"]
+            if r["kind"] == "FUSE_TRIPPED":
+                last_trip_date = local_date(r["ts"])
+            if r["kind"] == "FUSE_CLEARED":
+                # CHECK: anomaly_fuse_cleared_not_by_human
+                if not r["principal"].startswith(HUMAN + ":"):
+                    out.append(("fuse_cleared_not_by_human", r["principal"]))
+                # ENDCHECK
+                # CHECK: anomaly_fuse_cleared_same_day
+                if last_trip_date is not None and local_date(r["ts"]) <= last_trip_date:
+                    out.append(("fuse_cleared_same_day", str(r["seq"])))
+                # ENDCHECK
         # CHECK: anomaly_fuse_state_mismatch
         fuse_rows = [r for r in rows if r["kind"].startswith("FUSE_") and "tripped" in json.loads(r["detail"])]
         audited = int(json.loads(fuse_rows[-1]["detail"])["tripped"]) if fuse_rows else 0

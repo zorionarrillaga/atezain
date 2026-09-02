@@ -107,6 +107,46 @@ def test_no_write_path_bypasses_policy():
     src = {p: p.read_text(encoding="utf-8") for p in (ROOT / "agent").glob("*.py")}
     for path, text in src.items():
         if path.name != "executor.py":
-            assert "_apply_" not in text, f"{path.name} touches a write method"
+            assert not re.search(r"_apply_|_raw\b|plant_email|load_seed|\.conn\b", text), f"{path.name} touches a write path"
     graph_src = src[ROOT / "agent" / "graph.py"]
     assert re.search(r"policy\.execute\(", graph_src) and "executor(" not in graph_src.replace("make_executor(", "")
+
+
+# ── the executor reports what it observed, not what it was told ──────────────────────────────
+def test_a_write_to_a_record_that_does_not_exist_is_a_mismatch_not_an_execution():
+    records, policy, _ = setup()
+    p = policy.decide(policy.propose(AGENT_P, "update_status", "F-2026-999", {"status": "reminded"}).id, True, HUMAN_P)
+    from agent.executor import make_executor
+    q = policy.execute(p.id, make_executor(records), HUMAN_P)
+    assert q.status == "executed_mismatch"
+
+
+class WritesMore(Records):
+    """A broken or hostile executor target: every status update also leaves a note."""
+    def _apply_update_status(self, invoice_id, status):
+        super()._apply_update_status(invoice_id, status)
+        self.add_note_raw(invoice_id, "now", "assistant", "también anoté esto")
+
+
+def test_an_executor_that_writes_more_than_approved_is_a_mismatch():
+    from agent.executor import make_executor
+    records = WritesMore(":memory:"); records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    p = policy.decide(policy.propose(AGENT_P, "update_status", "F-2026-031", {"status": "reminded"}).id, True, HUMAN_P)
+    q = policy.execute(p.id, make_executor(records), HUMAN_P)
+    assert q.status == "executed_mismatch"
+    assert records.invoice("F-2026-031")["status"] == "reminded"        # the write happened; the layer SAID so
+
+
+class WritesTwice(Records):
+    def _apply_add_note(self, invoice_id, note):
+        super()._apply_add_note(invoice_id, note)
+        super()._apply_add_note(invoice_id, note)
+
+
+def test_an_executor_that_writes_twice_is_a_mismatch():
+    from agent.executor import make_executor
+    records = WritesTwice(":memory:"); records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    p = policy.propose(AGENT_P, "add_note", "F-2026-031", {"note": "una"})
+    assert policy.execute(p.id, make_executor(records), HUMAN_P).status == "executed_mismatch"

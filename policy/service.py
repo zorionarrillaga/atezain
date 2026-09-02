@@ -48,12 +48,30 @@ def _render(value: Any) -> Any:
         return repr(value)
 
 
+MAX_PARAMS_BYTES = 64 * 1024      # canonical JSON of the params; a note is not a novel
+MAX_EVIDENCE_CHARS = 2000
+
+
 class PolicyService:
+    """Its bindings are fixed at construction: `config`, `store`, `clock` and `fuse` are read-only
+    properties over slots, so whoever holds the service cannot swap the policy, the clock or the
+    fuse under it (an outside seat did all three in one line each on 2026-09-02). Whoever holds
+    the STORE is root — README §Trust boundary."""
+    __slots__ = ("_config", "_store", "_clock", "_fuse")
+
     def __init__(self, config: PolicyConfig, store: Store, clock: Callable[[], float] = time.time):
-        self.config = config
-        self.store = store
-        self.clock = clock
-        self.fuse = Fuse(store, clock)
+        object.__setattr__(self, "_config", config)
+        object.__setattr__(self, "_store", store)
+        object.__setattr__(self, "_clock", clock)
+        object.__setattr__(self, "_fuse", Fuse(store, clock))
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError(f"PolicyService.{name} is fixed at construction")
+
+    config = property(lambda self: self._config)
+    store = property(lambda self: self._store)
+    clock = property(lambda self: self._clock)
+    fuse = property(lambda self: self._fuse)
 
     # ── helpers ──────────────────────────────────────────────────────────────────────────────
     def _day_start(self, now: float) -> float:
@@ -67,7 +85,7 @@ class PolicyService:
     def propose(self, by: Principal, action: str, record_id: str, params: Any, evidence: str = "") -> Proposal:
         now = self.clock()
         p = Proposal(id=Proposal.new_id(), principal_id=by.tag, action=action, record_id=record_id,
-                     params={}, evidence=evidence, status=APPROVED, reason="", created_at=now)
+                     params={}, evidence=str(evidence), status=APPROVED, reason="", created_at=now)
         try:
             self.store.ping()
             # the checks, the budget count and the insert are ONE transaction: N concurrent
@@ -105,7 +123,19 @@ class PolicyService:
             raise Denied("params_not_a_mapping")
         # ENDCHECK
         # one plain copy, made through canonical JSON; everything below reads p.params
-        p.params = json.loads(canonical({str(k): v for k, v in params.items()}))
+        canon = canonical({str(k): v for k, v in params.items()})
+        # CHECK: params_bounded
+        if len(canon.encode("utf-8")) > MAX_PARAMS_BYTES or len(p.evidence) > MAX_EVIDENCE_CHARS:
+            raise Denied("params_too_large")
+        # ENDCHECK
+        p.params = json.loads(canon)
+        # CHECK: params_scalar
+        # a field is written with ONE value: a string, a number, a boolean or null. A nested
+        # object in a field is not a value the adapter declared and is not compared as one
+        nested = sorted(k for k, v in p.params.items() if isinstance(v, (dict, list)))
+        if nested:
+            raise Denied(f"param_not_scalar:{','.join(nested)}")
+        # ENDCHECK
         # CHECK: field_smuggling
         extra = sorted(set(p.params) - set(spec.writes))
         if extra:
@@ -116,10 +146,13 @@ class PolicyService:
             if f in p.params and p.params[f] not in allowed:
                 raise Denied(f"value_not_permitted:{f}")
         # ENDCHECK
-        # CHECK: record_scope
+        # CHECK: record_shape
+        # the SHAPE of an id for the record type the action declares — ASCII digits only. This is
+        # not ownership: any well-formed id of the type passes; which ids a principal may touch is
+        # the authenticated host's to decide (README §Trust boundary, step 4)
         pattern = self.config.records.get(spec.record)
-        if pattern is None or not isinstance(record_id, str) or re.fullmatch(pattern, record_id) is None:
-            raise Denied(f"record_out_of_scope:{spec.record}")
+        if pattern is None or not isinstance(record_id, str) or re.fullmatch(pattern, record_id, re.ASCII) is None:
+            raise Denied(f"record_shape:{spec.record}")
         # ENDCHECK
         day = self._day_start(now)
         # CHECK: daily_budget_trips_fuse
@@ -142,6 +175,7 @@ class PolicyService:
                 self.store.put_proposal(p)
                 self._audit("PROPOSAL", by, p, {"status": p.status, "reason": p.reason, "action": p.action,
                                                 "record_id": p.record_id, "params": p.params,
+                                                "evidence": p.evidence[:MAX_EVIDENCE_CHARS],
                                                 "policy": self.config.fingerprint()}, now)
         except Exception as e:  # noqa: BLE001
             # CHECK: persist_fail_closed
@@ -220,11 +254,13 @@ class PolicyService:
                 self._audit("EXECUTION_UNKNOWN", by, p, {**ident, "error": type(err).__name__, "message": str(err)[:500]}, now)
                 return p
             # ENDCHECK
-            self.store.record_effect(p.id, effect)
-            applied = effect.get("applied") if isinstance(effect, Mapping) else None
             try:
+                self.store.record_effect(p.id, effect)
+                applied = effect.get("applied") if isinstance(effect, Mapping) else None
                 same = canonical(applied) == canonical(p.params)
-            except (TypeError, ValueError):
+            except Exception as e:  # noqa: BLE001 — an effect that cannot be written down is not a match
+                applied = f"unrenderable:{type(e).__name__}"
+                self.store.record_effect(p.id, {"unrenderable": type(e).__name__})
                 same = False
             # CHECK: revalidate_after_execution
             if not same:

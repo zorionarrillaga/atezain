@@ -4,14 +4,14 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
 
 | step | what | state |
 |---|---|---|
-| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts got through); REPAIRED 2026-09-02** — see the table below. Gauges now: 61 tests · 34 checks killed by assertion (0 crashed, 0 survived) · 26/26 scored hostile attempts blocked + 1 out of scope shown · 6/6 sabotages caught. Trust boundary declared in `README.md`. |
+| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now: 76 tests · 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 22 crashing test(s) alongside assertion kills · 36/36 scored hostile attempts blocked + 1 out of scope shown · 14/14 sabotages caught. Trust boundary declared in `README.md`, restated to what the code supports. |
 | 2 | the assistant graph + ONE adapter (`invoices-es`) | **built 2026-09-01 with a stub model**: LangGraph retrieve→think→propose→hold(interrupt)→execute; the resume value is untrusted (the store decides); deny-all policy ⇒ zero writes across all 12 invoices; a manipulated model's `update_amount` and an exfiltration via a forbidden channel are denied at propose; approve→resume executes exactly once under node re-execution; the only write path is `agent/executor.py` (grep-tested). NOT yet exercised: a real model (Groq class present, no key), pgvector (local keyword retriever behind the same interface) |
 | 3 | red-team with promptfoo, boundary ON/OFF, numbers with intervals | not started — `PLAN.md` §3. BUILDER can build all of it against the stub now; the real run needs ✋ `GROQ_API_KEY`; ⚖ the case texts |
 | 7 | the same policy layer under the author's own outbound pipeline | not started — `PLAN.md` §5. BUILDER: the `outreach` adapter + CLI; ⚖ the wiring under `bin/venture` |
 | 4 | deploy ($0: Render + Neon + Groq + Langfuse Hobby), self-serve upload | not started — `PLAN.md` §4. BUILDER: `store_pg.py`, the API routes, ops, retrieval with its measurement; ⚖ `api/auth.py` (identity closure); ✋ four free accounts |
 | 5 | write-up; every number from `make numbers` | not started — `PLAN.md` §6. ⚖ prose; BUILDER tooling. Blocked until `NUMBERS.md` exists from a named model |
 | 5b | text-only "try it" offers, measured | not started — `PLAN.md` §7. ✋ his voice |
-| 6 | one external refutation of the built thing | not started — `PLAN.md` §8. A second seat on the REPAIRED step 1 was launched 2026-09-02 02:50 ET; verdict pending |
+| 6 | one external refutation of the built thing | not started — `PLAN.md` §8. Two seats have run on step 1 (09-01 and 09-02); the step-6 seat is on the DEPLOYED thing |
 
 ## What the seat found at step 1, and what changed (2026-09-02)
 
@@ -31,7 +31,28 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
 | C1 | one of 19 "checks" was a bare assignment; its kill was a NameError | marker removed; `mutate.py` now classifies CRASH separately and fails on it | `make mutate` |
 | S11 | the agent chose the trip time and locked the human out for a hundred years | the fuse owns its clock; no caller passes a time | `test_the_fuse_keeps_its_own_clock`, hostile b10 |
 
+## What the second seat found on the repair, and what changed (2026-09-02)
+
+| # | the seat's finding | the fix | now exercised by |
+|---|---|---|---|
+| D1 | the shipped executor returned its own input, so `applied == approved` was a tautology; a write to a non-existent record read EXECUTED; an executor writing twice or writing an extra note passed every gauge | `agent/executor.py` reports a before/after diff of the record (`Records.snapshot`/`diff`); nothing touched ⇒ `{}` ⇒ mismatch; more touched ⇒ the extra is in the diff ⇒ mismatch | `test_agent.py` executor tests; sabotage rows "reports its input", "writes twice", "extra note"; hostile b23 |
+| D2 | four anomaly shapes fell to one legally appended row or one label: a `human:` DECISION appended after a forged execution; a second PROPOSAL row agreeing with a swapped action; a fuse clear labelled `human:owner` | `audit_anomalies()` reasons about ORDER and COUNT per proposal: exactly one PROPOSAL row, at most one DECISION, a DECISION only after a `held` PROPOSAL and before the attempt, one attempt and one outcome; a FUSE_CLEARED on the day of its trip is an anomaly whatever it is labelled; the store says plainly the principal string is unauthenticated | the "appended … cannot launder" tests; hostile b19 b20 b21 b26 |
+| D3 | the anchor sentences pointed the wrong way: an anchor covers rows up to its own seq, not after | both sentences rewritten (README §Trust boundary 3, `store.py` docstring); the test anchors on an OLDER head | `test_a_truncated_and_reheaded_chain…`, `test_a_clean_run…` |
+| D4 | `PolicyConfig` was frozen but `svc.config`/`clock`/`fuse`/`store` were rebindable in one line; the suite itself did it | `__slots__` + read-only properties + a `__setattr__` that refuses; the suite builds a new service instead | `test_the_services_bindings_cannot_be_swapped`; hostile b13 b17 b18; sabotage "bindings can be swapped" |
+| D5 | `Store.fuse_set` took a caller's `tripped_at` and arbitrary columns — round-1's S11 reproduced at the store face | `fuse_set(kind, principal, detail, ts, tripped, reason)`: `tripped_at` IS `ts`; a trip stamped in the future binds nobody (clears at once) and shows as `audit_time_not_monotonic` | `test_a_trip_stamped_in_the_future…`; hostile b22 |
+| D6 | `record_scope` was a shape, and `\d` matched non-ASCII digits | renamed `record_shape` with `re.ASCII`; the README says shape, not ownership; ownership arrives with the authenticated host (step 4) | `test_record_shape_means_ascii_digits`; hostile b12; sabotage "any digit" |
+| D7 | four hostile attempts passed for the wrong reason: b7 scored an exception after a real write as a block; a3 was refused by `field_smuggling`, not `deny`; a6 by the status transition, not the claim; b13 by a TypeError while its property was false | the wrapper scores an exception after a write as BREACH; a3 uses a denied action that declares a field; a6 resets the status through the store and counts four claim refusals; b13 also tries rebinding | `make hostile` |
+| D8 | six one-line sabotages uncaught | seven added (re-authored), two of them the executor writing more than approved; `sabotage.py` runs the whole suite | `make sabotage` 14/14 |
+| M1/M2 | "0 crashed" hid tests that crashed alongside assertion kills; `model.py` never mutated; both passes ran a subset of the suite | crash counts printed per row and in the total; `model.py` in the pass (`Principal.is_human` is a check); both passes run `tests/` | `make mutate` |
+| M3/T25 | a 20 000-deep param left ZERO audit rows (`asdict` recursed after the checks) | `Proposal.to_json` is shallow; params values must be scalars (`params_scalar`); params ≤ 64 KiB and evidence ≤ 2000 chars (`params_bounded`) | `test_a_nested_param_value…`, `test_params_and_evidence_are_bounded`; hostile b24 |
+| M6 | the model's justification was in no audit row | `evidence` in the PROPOSAL row | `test_the_models_justification_is_in_the_audit_row` |
+| M7 | the write-path grep caught `_apply_` only | it also catches `_raw`, `plant_email`, `load_seed`, `.conn` | `test_no_write_path_bypasses_policy` |
+| M8/M9 | the anchor assertion could not fail; an unrenderable effect raised out of `execute` leaving `approved` | older anchor + wrong anchor asserted; `record_effect` inside the try ⇒ mismatch | `test_an_effect_that_cannot_be_written_down…`; hostile b25 |
+| T4, T19–T22, M4 | ownership of records; root re-hashing, inserting, replaying; nested transactions are not savepoints | **not fixed, restated**: ownership is the host's (step 4); a root that re-links the chain is out of scope by design and the README now says so; the replay shows as `execution_row_count`; the savepoint gap is recorded here as open | README §Trust boundary 3 |
+
 ## Open questions (a builder writes here instead of deciding; ⚖ or ✋ answers)
+
+- `Store.transaction()` nesting is not a savepoint: an inner failure that is caught leaves the inner writes in the outer transaction (seat 2, T24). No route from the agent's surface was found. Postgres store (step 4.1) should use real savepoints; decide then whether SQLite gets them too.
 
 _(none yet)_
 

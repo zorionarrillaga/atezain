@@ -29,7 +29,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = [ROOT / "policy" / "service.py", ROOT / "policy" / "fuse.py", ROOT / "policy" / "store.py"]
+FILES = [ROOT / "policy" / "service.py", ROOT / "policy" / "fuse.py", ROOT / "policy" / "store.py", ROOT / "policy" / "model.py"]
 BLOCK = re.compile(r"^(?P<indent>[ \t]*)# CHECK: (?P<name>[\w-]+)\n(?P<body>.*?)^(?P=indent)# ENDCHECK\n", re.S | re.M)
 ASSERTION = re.compile(r"^E\s+(assert\b|AssertionError\b)", re.M)
 
@@ -47,7 +47,7 @@ def mutate(path: Path, block_src: str) -> str:
 
 
 def run_suite(tree: Path) -> tuple[int, str]:
-    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", "tests/test_policy.py"],
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", "tests/"],
                        cwd=tree, capture_output=True, text=True)
     return r.returncode, r.stdout + r.stderr
 
@@ -74,14 +74,18 @@ def main() -> int:
                 rc, out = run_suite(tree)
             v = verdict(rc, out)
             first_error = next((ln.strip() for ln in out.splitlines() if ln.startswith("E ")), "")
-            rows.append((f.name, name, v, first_error))
-    width = max(len(n) for _, n, _, _ in rows)
-    for fn, name, v, err in rows:
-        print(f"{fn:12} {name:{width}}  {v:8}  {err[:70] if v != 'KILLED' else ''}")
+            crashes = sum(1 for ln in out.splitlines() if ln.startswith("FAILED") and " - " in ln and "AssertionError" not in ln and "assert " not in ln)
+            rows.append((f.name, name, v, first_error, crashes))
+    width = max(len(n) for _, n, _, _, _ in rows)
+    for fn, name, v, err, crashes in rows:
+        extra = f"(+{crashes} test(s) also crashed)" if v == "KILLED" and crashes else (err[:70] if v != "KILLED" else "")
+        print(f"{fn:12} {name:{width}}  {v:8}  {extra}")
     killed = sum(1 for r in rows if r[2] == "KILLED")
     crashed = sum(1 for r in rows if r[2] == "CRASH")
     survived = sum(1 for r in rows if r[2] == "SURVIVED")
-    print(f"\n{len(rows)} checks · {killed} killed by assertion · {crashed} crashed · {survived} survived")
+    also = sum(r[4] for r in rows if r[2] == "KILLED")
+    print(f"\n{len(rows)} checks · {killed} killed by assertion · {crashed} killed only by a crash · {survived} survived"
+          + (f" · {also} crashing test(s) alongside assertion kills" if also else ""))
     return 0 if killed == len(rows) else 1
 
 

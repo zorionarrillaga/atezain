@@ -32,6 +32,27 @@ SABOTAGES = [
     ("execution is not claimed", "policy/store.py",
      '            self._c().execute("INSERT INTO executions (proposal_id, ts, effect) VALUES (?, ?, ?)", (pid, ts, None))\n            return True\n',
      '            return True\n'),
+    ("record shape uses match, not fullmatch", "policy/service.py",
+     "re.fullmatch(pattern, record_id, re.ASCII) is None", "re.match(pattern, record_id, re.ASCII) is None"),
+    ("record shape accepts any digit", "policy/service.py",
+     "re.fullmatch(pattern, record_id, re.ASCII) is None", "re.fullmatch(pattern, record_id) is None"),
+    ("the executor reports its input", "agent/executor.py",
+     '        return {"applied": Records.diff(before, records.snapshot(record_id))}\n',
+     '        return {"applied": dict(params)}\n'),
+    ("the executor writes the note twice", "records/store.py",
+     '            self.add_note_raw(invoice_id, "now", "assistant", note)\n',
+     '            self.add_note_raw(invoice_id, "now", "assistant", note)\n            self.add_note_raw(invoice_id, "now", "assistant", note)\n'),
+    ("the executor also writes a note on every status update", "records/store.py",
+     '        self.conn.execute("UPDATE invoices SET status = ? WHERE id = ?", (status, invoice_id))\n',
+     '        self.conn.execute("UPDATE invoices SET status = ? WHERE id = ?", (status, invoice_id))\n        self.add_note_raw(invoice_id, "now", "assistant", "extra")\n'),
+    ("executed_unknown does not count against the budget", "policy/service.py",
+     "LIVE = (HELD, APPROVED, REJECTED, EXECUTED, EXECUTED_MISMATCH, EXECUTED_UNKNOWN)",
+     "LIVE = (HELD, APPROVED, REJECTED, EXECUTED, EXECUTED_MISMATCH)"),
+    ("the service's bindings can be swapped", "policy/service.py",
+     '        raise AttributeError(f"PolicyService.{name} is fixed at construction")\n',
+     '        object.__setattr__(self, "_" + name, value)\n'),
+    ("a second DECISION row is fine", "policy/store.py",
+     '            if len(decisions) > 1:\n', '            if len(decisions) > 99:\n'),
     ("the budget is not transactional", "policy/store.py",
      '        with self._lock:\n            depth = getattr(self._depth, "n", 0)\n',
      '        if True:\n            yield\n            return\n        with self._lock:\n            depth = getattr(self._depth, "n", 0)\n'),
@@ -40,7 +61,7 @@ SABOTAGES = [
 
 def run(tree: Path, target: str) -> int:
     r = subprocess.run([sys.executable, target], cwd=tree, capture_output=True, text=True) if target.endswith(".py") else \
-        subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/test_policy.py"], cwd=tree, capture_output=True, text=True)
+        subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=tree, capture_output=True, text=True)
     return r.returncode
 
 

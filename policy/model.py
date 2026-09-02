@@ -18,8 +18,16 @@ import tomllib
 import uuid
 from dataclasses import dataclass, asdict
 from pathlib import Path
+from datetime import datetime
 from types import MappingProxyType
 from typing import Any, Mapping
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("Europe/Madrid")
+
+
+def local_date(ts: float) -> str:
+    return datetime.fromtimestamp(ts, TZ).date().isoformat()
 
 AGENT = "agent"
 HUMAN = "human"
@@ -42,7 +50,9 @@ class Principal:
     kind: str  # AGENT | HUMAN | SYSTEM
 
     def is_human(self) -> bool:
+        # CHECK: principal_kind_is_the_only_identity
         return self.kind == HUMAN
+        # ENDCHECK
 
     @property
     def tag(self) -> str:
@@ -144,7 +154,9 @@ class Proposal:
         return uuid.uuid4().hex
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self), sort_keys=True)
+        # a shallow dict on purpose: `asdict` recurses into params and a deeply nested value
+        # would raise here, AFTER the checks, leaving no audit row (an outside seat's T25)
+        return json.dumps({f.name: getattr(self, f.name) for f in dataclasses.fields(self)}, sort_keys=True)
 
     @classmethod
     def from_json(cls, s: str) -> "Proposal":

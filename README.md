@@ -6,8 +6,8 @@ An assistant over your records (invoices, orders, customers) that summarises, re
 action and drafts the message — and **cannot change anything on its own**. Every write it wants
 to make is a proposal; a policy layer outside the model decides whether the proposal is even
 allowed to exist; a human approves the ones that matter; the layer executes exactly once and
-checks that what happened is what was approved. Then it is attacked, in public, with injections
-planted in the very records it reads, and the result is a number.
+compares what the executor observed in the record afterwards with what was approved. Then it is
+attacked, in public, with injections planted in the very records it reads, and the result is a number.
 
 **Status: steps 1 and 2 of 6 — the policy layer, and the assistant graph over it with a stub
 model.** Nothing here is deployed yet. See `STATUS.md`.
@@ -15,15 +15,18 @@ model.** Nothing here is deployed yet. See `STATUS.md`.
 ## What is built
 
 - `policy/` — the boundary. Permissions as data (`adapters/*/permissions.toml`: actions, the fields
-  each may write, allowed values, the record type and id shape each may touch), an approval queue,
-  an append-only audit log (a hash chain with a published head), a fuse the agent can trip and
-  cannot clear, a daily budget that trips it. Pure Python, no dependencies.
+  each may write, allowed values, the record type and id shape each may touch — shape, not
+  ownership), an approval queue, an append-only audit log (a hash chain with a published head), a
+  fuse the agent can trip and cannot clear through the service, a daily budget that trips it. Pure
+  Python, no dependencies.
 - `agent/` — the assistant as a LangGraph graph: retrieve → think → propose → hold → execute. The
   model talks only to `think`; the only write path is `agent/executor.py`, called only from inside
-  the policy's `execute`; the value a client passes on resume is untrusted.
+  the policy's `execute`, and it reports a before/after diff of the record, never its input; the
+  value a client passes on resume is untrusted.
 - `tests/test_policy.py` — one test per rule, and one per shape of root write the audit can see.
-- `tests/mutate.py` — deletes each rule in turn and demands that the suite goes red **by
-  assertion**. A rule whose deletion changes nothing, or only crashes the suite, fails the build.
+- `tests/mutate.py` — deletes each marked check in `policy/` in turn and demands that the suite
+  goes red **by assertion**. A check whose deletion changes nothing, or only crashes the suite,
+  fails the build; tests that crash alongside an assertion kill are counted and printed.
 - `tests/hostile_selftest.py` — an attacker holding the application's own objects tries to get a
   write through without a human, or to hide one that happened. Scored attempts only.
 - `tests/sabotage.py` — breaks a property on purpose and demands that the numbers above fall.
@@ -50,20 +53,29 @@ one hostile attempt returned "blocked" unconditionally — sabotaging the detect
 The seat's report is in the author's private repo; the defects and their fixes are listed in
 `STATUS.md`. Every attempt class it used is re-authored here as `b1`–`b16` in the hostile self-test.
 
-After the fix (2026-09-02, `make all`):
+After that repair the numbers were 61 · 34/34 · 26/26 · 6/6. A **second** seat, on the repair,
+reproduced all four and refuted it again the same day, more narrowly: the executor the repo shipped
+reported its own input, so the headline re-validation could not fire; four of the audit anomaly
+shapes were laundered by one legally appended row; the service's bindings could be swapped; the
+store's fuse primitive still took a caller's time; the id check was a shape, not ownership, and
+matched non-ASCII digits; four hostile attempts passed for a reason other than their name; and six
+one-line sabotages of claimed properties went uncaught by every gauge. All of it is folded
+(`STATUS.md`, second table). After that (2026-09-02, `make all`):
 
 | gauge | result |
 |---|---|
-| `make test` | 61 passed |
-| `make mutate` | 34 checks · 34 killed by assertion · 0 crashed · 0 survived |
-| `make hostile` | 26/26 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 6/6 sabotages caught by at least one gauge |
+| `make test` | 76 passed |
+| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 22 crashing test(s) alongside assertion kills |
+| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
+| `make sabotage` | 14/14 sabotages caught by at least one gauge |
 
-What these prove and do not: the mutation pass proves every check **present** can fail; it says
-nothing about a check that is absent (the seat found one — a `record` key the policy declared and
-never read — precisely because there was no block to delete). The hostile test's concurrency
-attempt is timing-dependent and did not catch a removed lock on its own; the deterministic
-interleaving test in the suite did. The sabotage pass covers six properties, not all of them.
+What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
+about a check that is absent (the first seat found one — a `record` key the policy declared and
+never read — precisely because there was no block to delete), and it mutates `policy/` only. The
+hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
+suite is what sees a removed lock. The sabotage pass covers fourteen properties, not all of them.
+Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
+left after both, not what was true before either.
 
 ## Trust boundary
 
@@ -74,21 +86,32 @@ do not cover them.
    construct `Principal("owner", HUMAN)` can approve their own proposal, and the chain will show a
    clean human decision. In the deployed shape (step 4) principals are minted by the authenticated
    API surface only, and the agent process never holds a `HUMAN` principal; until then, the last
-   line of `make hostile` shows exactly this write going through, unscored.
-2. **The executor.** The layer knows what the executor *reports* it applied, compared as canonical
-   JSON so an object with a lying `__eq__` does not pass. The write itself is unobserved. An
-   executor that lies consistently is not caught; one that raises after committing is recorded as
-   `executed_unknown` with the attempt row committed before it ran.
+   line of `make hostile` shows exactly this write going through, unscored. The service's own
+   bindings (`config`, `store`, `clock`, `fuse`) cannot be swapped by whoever holds it; whoever
+   holds the **store** is root (item 3).
+2. **The executor.** The layer compares what the executor *reports* with what was approved, as
+   canonical JSON. The executor this repo ships reports a before/after diff of the record it was
+   asked to change, so a write that touched nothing, or touched more than was approved, is a
+   mismatch — but a write outside that record, or an executor that lies consistently about the
+   diff, is not seen. An executor that raises after committing is recorded as `executed_unknown`,
+   with the attempt row committed before it ran; an effect the layer cannot write down is a mismatch.
 3. **The store.** Anything holding the `Store` can write proposals, fuse state and audit rows
-   directly. The chain does not prevent this; it makes it show: `audit_verify()` fails on an edited,
-   relinked, or truncated chain, and `audit_anomalies()` lists an execution without a human's
-   approval, an action swapped under an approved id, a rejection forged into an approval, an
-   attempt with no outcome, a fuse cleared by a non-human, and fuse state that disagrees with the
-   chain. One case is caught only with help: a root that truncates the tail **and** rewrites the
-   head passes a bare `audit_verify()`; it fails against a head published earlier out-of-band
-   (`audit_head()`), which is why that method exists. In this repo the graph holds the
-   `PolicyService` — and so its store — which is the shape the hostile self-test attacks. Step 4
-   puts the service behind an API so the agent process holds `propose` and nothing else.
+   directly, and can re-hash the chain end to end. The chain does not prevent this and does not
+   detect a root that re-links everything it touched: `audit_verify()` fails on tampering that
+   breaks a link, a hash, the numbering or the head, and a re-hashed, re-numbered, re-headed chain
+   passes. **An anchor covers rows up to its own seq and nothing after it**: a head published
+   out-of-band catches a truncation at or below it, and every row appended since the last published
+   head is unprotected — publish the head after every append or accept that gap.
+   `audit_anomalies()` reasons about the order and count of rows per proposal, which an appended
+   row cannot repair: an execution without a valid prior approval, a decision after the attempt
+   or on a proposal that was never held, a second proposal or decision row for one id, an action
+   swapped under an approved id, an attempt without an outcome, a claim without an attempt, a
+   replayed execution, a fuse cleared the same day it tripped or by a non-human label, a row stamped
+   earlier than the one before it, and fuse state that disagrees with the chain. The `principal`
+   string on a row is whatever the writer wrote — at the store it is unauthenticated, which is why
+   none of those checks rest on it alone. In this repo the graph holds the `PolicyService` — and so
+   its store — which is the shape the hostile self-test attacks. Step 4 puts the service behind an
+   API so the agent process holds `propose` and nothing else.
 
 ## What it does not claim
 

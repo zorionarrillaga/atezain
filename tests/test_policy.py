@@ -156,16 +156,68 @@ def test_record_id_outside_the_actions_record_scope_is_denied():
     svc, _, _ = make()
     for rid in ("customer:9999;DROP TABLE invoices;--", "inv-1", "", "F-2026-0311", None, 12):
         p = svc.propose(AGENT_P, "add_note", rid, {"note": "x"})
-        assert p.status == DENIED and p.reason == "record_out_of_scope:invoice", rid
+        assert p.status == DENIED and p.reason == "record_shape:invoice", rid
     assert svc.propose(AGENT_P, "add_note", "F-2026-031", {"note": "x"}).status == APPROVED
 
 
-def test_an_action_over_an_undeclared_record_type_is_denied():
+def test_record_shape_means_ascii_digits():
     svc, _, _ = make()
-    spec = svc.config.actions["add_note"].__class__(**{**svc.config.actions["add_note"].__dict__, "record": "customer"})
-    svc.config = svc.config.replace(actions={**svc.config.actions, "add_note": spec})
+    for rid in ("F-\u0662\u0660\u0662\u0666-\u0660\u0663\u0661", "F-\uff11\uff12\uff13\uff14-\uff15\uff16\uff17"):
+        assert svc.propose(AGENT_P, "add_note", rid, {"note": "x"}).status == DENIED
+
+
+def test_an_action_over_an_undeclared_record_type_is_denied():
+    svc0, store, clock = make()
+    spec = svc0.config.actions["add_note"].__class__(**{**svc0.config.actions["add_note"].__dict__, "record": "customer"})
+    svc = PolicyService(svc0.config.replace(actions={**svc0.config.actions, "add_note": spec}), store, clock)
     p = svc.propose(AGENT_P, "add_note", inv(), {"note": "x"})
-    assert p.status == DENIED and p.reason == "record_out_of_scope:customer"
+    assert p.status == DENIED and p.reason == "record_shape:customer"
+
+
+def test_the_services_bindings_cannot_be_swapped():
+    """config, clock, fuse and store are fixed at construction: a holder of the service cannot
+    re-spec a denied action, stretch the day, or replace a tripped fuse with an inert one."""
+    svc, store, clock = make(daily_writes=1)
+    for name, value in (("config", svc.config.deny_all()), ("clock", lambda: 0.0), ("fuse", object()), ("store", Store())):
+        with pytest.raises(AttributeError):
+            setattr(svc, name, value)
+    with pytest.raises(AttributeError):
+        svc.anything = 1
+    assert svc.propose(AGENT_P, "update_amount", inv(), {"amount": 1}).status == DENIED
+
+
+def test_params_and_evidence_are_bounded():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "add_note", inv(), {"note": "x" * (70 * 1024)})
+    assert p.status == DENIED and p.reason == "params_too_large"
+    q = svc.propose(AGENT_P, "add_note", inv(), {"note": "x"}, evidence="y" * 5000)
+    assert q.status == DENIED and q.reason == "params_too_large"
+    assert kinds(store).count("PROPOSAL") == 2
+
+
+def test_the_models_justification_is_in_the_audit_row():
+    svc, store, _ = make()
+    svc.propose(AGENT_P, "update_amount", inv(), {"amount": 0}, evidence="el proveedor lo ha aceptado")
+    assert json.loads(store.audit_rows()[-1]["detail"])["evidence"] == "el proveedor lo ha aceptado"
+
+
+def nest(depth: int) -> list:
+    deep: list = []
+    cur = deep
+    for _ in range(depth):
+        nxt: list = []
+        cur.append(nxt)
+        cur = nxt
+    return deep
+
+
+def test_a_nested_param_value_is_denied_and_still_leaves_a_row():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "add_note", inv(), {"note": nest(50)})
+    assert p.status == DENIED and p.reason == "param_not_scalar:note"
+    q = svc.propose(AGENT_P, "add_note", inv(), {"note": nest(50_000)})        # deep enough to strain the encoder
+    assert q.status == DENIED and q.reason in ("param_not_scalar:note", "params_too_large") or q.reason.startswith("fail_closed:")
+    assert kinds(store).count("PROPOSAL") == 2
 
 
 def test_the_configuration_cannot_be_edited_in_place():
@@ -295,6 +347,16 @@ def test_a_non_json_effect_is_recorded_not_lost():
     assert "object at 0x" in effect
     q2 = svc.execute(held_and_approved(svc, 2).id, lambda a, r, prm: object(), HUMAN_P)
     assert q2.status == EXECUTED_MISMATCH
+
+
+def test_an_effect_that_cannot_be_written_down_is_a_mismatch_not_a_raise():
+    svc, store, _ = make()
+    p = held_and_approved(svc)
+    circular: dict = {}
+    circular["self"] = circular
+    q = svc.execute(p.id, lambda a, r, prm: {"applied": circular}, HUMAN_P)
+    assert q.status == EXECUTED_MISMATCH
+    assert store.audit_anomalies() == []
 
 
 def test_a_process_that_dies_inside_the_executor_shows_as_an_execution_without_outcome():
@@ -600,9 +662,25 @@ def test_a_decision_row_not_written_by_a_human_is_an_anomaly():
 def test_a_fuse_cleared_by_a_non_human_through_the_store_is_an_anomaly():
     svc, store, _ = make()
     svc.fuse.trip("x", HUMAN_P)
-    store.fuse_set("FUSE_CLEARED", AGENT_P.tag, {}, T0, tripped=0)
+    store.fuse_set("FUSE_CLEARED", AGENT_P.tag, {}, T0 + DAY, tripped=False)
     assert not svc.fuse.is_tripped()
     assert ("fuse_cleared_not_by_human", AGENT_P.tag) in store.audit_anomalies()
+
+
+def test_a_fuse_cleared_the_same_day_through_the_store_is_an_anomaly_whatever_it_is_labelled():
+    svc, store, _ = make()
+    svc.fuse.trip("x", HUMAN_P)
+    store.fuse_set("FUSE_CLEARED", "human:owner", {}, T0 + 60, tripped=False)      # the label is the attacker's
+    assert "fuse_cleared_same_day" in {c for c, _ in store.audit_anomalies()}
+
+
+def test_a_trip_stamped_in_the_future_through_the_store_cannot_lock_the_human_out():
+    svc, store, clock = make()
+    store.fuse_set("FUSE_TRIPPED", "agent:assistant", {"reason": "never"}, T0 + 100 * 365 * DAY, tripped=True, reason="never")
+    assert svc.fuse.is_tripped()
+    assert svc.fuse.clear(AGENT_P) is False           # still never the agent
+    assert svc.fuse.clear(HUMAN_P) is True            # a trip from the future binds nobody
+    assert "audit_time_not_monotonic" in {c for c, _ in store.audit_anomalies()}
 
 
 def test_a_fuse_flipped_by_raw_sql_is_an_anomaly():
@@ -620,6 +698,45 @@ def test_an_execution_claimed_without_an_attempt_row_is_an_anomaly():
     assert ("execution_claim_unaudited", "ghost") in store.audit_anomalies()
 
 
+def test_an_appended_decision_cannot_launder_a_forged_approval():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "update_status", inv(), {"status": "reminded"})
+    svc.decide(p.id, False, HUMAN_P)
+    q = store.get_proposal(p.id); q.status = APPROVED; store.put_proposal(q)
+    svc.execute(p.id, ok_executor, HUMAN_P)
+    store.audit_append("DECISION", "human:owner", p.id, {"approve": True, "note": ""})      # the launder
+    codes = {c for c, i in store.audit_anomalies() if i == p.id}
+    assert "decision_row_count" in codes and "decision_out_of_order" in codes
+
+
+def test_an_appended_proposal_row_cannot_launder_a_swapped_action():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "add_note", inv(), {"note": "hola"})
+    p.action = "send_to_external"; store.put_proposal(p)
+    svc.execute(p.id, lambda a, r, prm: {"applied": prm}, HUMAN_P)
+    store.audit_append("PROPOSAL", AGENT_P.tag, p.id, {"status": "approved", "action": "send_to_external", "record_id": inv(), "params": {"note": "hola"}})
+    assert ("proposal_row_count", p.id) in store.audit_anomalies()
+
+
+def test_a_forged_approval_laundered_with_an_appended_decision_is_still_an_anomaly():
+    svc, store, _ = make()
+    p = svc.propose(AGENT_P, "update_status", inv(), {"status": "reminded"})
+    p.status = APPROVED; store.put_proposal(p)
+    svc.execute(p.id, ok_executor, HUMAN_P)
+    store.audit_append("DECISION", "human:owner", p.id, {"approve": True, "note": ""})
+    assert ("decision_out_of_order", p.id) in store.audit_anomalies()
+
+
+def test_a_replayed_execution_with_a_clean_chain_shows_in_the_row_count():
+    svc, store, _ = make()
+    p = held_and_approved(svc)
+    svc.execute(p.id, ok_executor, HUMAN_P)
+    q = store.get_proposal(p.id); q.status = APPROVED; store.put_proposal(q)
+    store._c().execute("DELETE FROM executions WHERE proposal_id = ?", (p.id,))
+    svc.execute(p.id, ok_executor, HUMAN_P)
+    assert ("execution_row_count", p.id) in store.audit_anomalies()
+
+
 def test_a_clean_run_has_no_anomalies():
     svc, store, clock = make(daily_writes=5)
     p = held_and_approved(svc, 1)
@@ -629,4 +746,6 @@ def test_a_clean_run_has_no_anomalies():
     clock.advance(DAY + 1)
     svc.fuse.clear(HUMAN_P)
     assert store.audit_anomalies() == []
-    assert store.audit_verify(anchor=store.audit_head()) is True
+    older = (2, store.audit_rows()[1]["hash"])
+    assert store.audit_verify(anchor=older) is True
+    assert store.audit_verify(anchor=(2, "f" * 64)) is False
