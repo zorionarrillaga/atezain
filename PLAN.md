@@ -285,8 +285,11 @@ writes the sent artifact and the pipeline row.
 
 ### 5.1 The adapter — `adapters/outreach/`
 `permissions.toml`: record type `draft` with id pattern `^[a-z0-9_./-]+\.md$` (the draft's path
-relative to `venture/outreach/`); actions: `send` (writes `to`, `subject`; `approval = "required"`;
-`daily_max = 5`; constraint: none on `to` — the gates already check it), `mark_replied`
+relative to `venture/outreach/`); actions: `send` (writes `to`, `subject`, **`target`** —
+reopened by one word on the ⚖ ruling of 2026-09-03, `STATUS.md` › Open questions: the target is his
+`--target`, it names the ledger row and the artifact, and this layer may not guess it from a
+filename; `approval = "required"`; `daily_max = 5`; constraint: none on `to` — the gates already
+check it), `mark_replied`
 (`approval = "required"`), `add_note` (`approval = "none"`); `deny = true`: `send_bulk`,
 `send_from_other_address`. `budget.daily_writes = 8`. `prompt.md` is not used (the assistant is the
 Claude session itself; there is no model call in this adapter — say so in the file).

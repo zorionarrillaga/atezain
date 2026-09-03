@@ -14,15 +14,9 @@ attacked, in public, with injections planted in the very records it reads, and t
 measures it against a named model, the deploy, and the write-up; step 7's adapter and CLI are
 built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
 below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothing forbidden through
-it, one defect in the served execute path, folded the same day in this repository.**
-
-⚠ **What is at that URL is behind this tree, and the difference is that defect.** The service runs
-commit `4b7bd10`, and `autoDeploy` is off by design, so a push is not a deploy: until it is
-deployed by hand, a note the policy approves with no human — beside a proposal that is held — stays
-`approved` and is never written there, while the audit chain verifies and reports no anomaly. The
-round-2 seat measured the repaired path at zero such notes across the hundred cached outputs, was
-told nothing about the deployment, and found it still behaving the old way. Read `STATUS.md` before
-you read anything into what the URL does.
+it, one defect in the served execute path, folded the same day and deployed by hand on
+2026-09-03, so the URL and this tree now run the same execute path (commit `9bf2a07`;
+`autoDeploy` stays off, so a push is still not a deploy).**
 
 See `STATUS.md` for
 what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
@@ -154,10 +148,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 204 passed, 88 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **291 passed, 1 skipped, 4 min 32 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 209 passed, 88 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **296 passed, 1 skipped, 4 min 31 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 38/38 sabotages caught by at least one gauge |
+| `make sabotage` | 41/41 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and

@@ -39,15 +39,18 @@ def make_outreach_executor(drafts: Drafts, proposal_id: str = ""):
     call it belongs to.
 
     A draft id that resolves outside the root is not a record of this store: `snapshot` says None,
-    nothing is applied, and the diff is empty — which the policy reports as a mismatch. A store with
-    the owner's `PIPELINE.md` configured RAISES when no row names the draft, or when the row cannot
-    be marked: the proposal ends `executed_unknown` with the reason in the chain, and his rule holds
-    — a send that is not a row did not happen."""
+    nothing is applied, and the diff is empty — which the policy reports as a mismatch. A send carries the
+    target a human approved (⚖ 2026-09-03): it names his ledger row and it names the artifact, and
+    a send approved without one RAISES having written nothing. A store with the owner's
+    `PIPELINE.md` configured raises the same way when no row of his names that target, or when the
+    row cannot be marked: the proposal ends `executed_unknown` with the reason in the chain, and his
+    rule holds — a send that is not a row did not happen."""
     def execute(action: str, record_id: str, params: dict[str, Any]) -> dict[str, Any]:
         before = drafts.snapshot(record_id)
         if before is not None:
             if action == "send":
-                drafts._apply_send(record_id, params["to"], params["subject"], proposal=proposal_id)
+                drafts._apply_send(record_id, params["to"], params["subject"],
+                                   params.get("target", ""), proposal=proposal_id)
             elif action == "mark_replied":
                 drafts._apply_mark_replied(record_id, params["replied"], proposal=proposal_id)
             elif action == "add_note":

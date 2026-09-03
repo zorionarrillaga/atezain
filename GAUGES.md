@@ -9,8 +9,8 @@ own, so that a clone with no database can still reach a green `make all`.
 
 | gauge | result |
 |---|---|
-| `make test` | 204 passed, 88 skipped |
-| `make test` with `ATEZAIN_TEST_DSN` | 291 passed, 1 skipped (2026-09-03) |
+| `make test` | 209 passed, 88 skipped |
+| `make test` with `ATEZAIN_TEST_DSN` | 296 passed, 1 skipped (2026-09-03) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 38/38 sabotages caught by at least one gauge |
+| `make sabotage` | 41/41 sabotages caught by at least one gauge |

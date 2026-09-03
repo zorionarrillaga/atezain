@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,7 @@ import pytest
 from agent.executor import make_outreach_executor
 from policy import (AGENT, APPROVED, DENIED, EXECUTED, EXECUTED_MISMATCH, EXECUTED_UNKNOWN, HELD,
                     HUMAN, REJECTED, SYSTEM, PolicyConfig, PolicyService, Principal, Store)
-from records.drafts import Drafts, LedgerRefused, OutsideRoot
+from records.drafts import Drafts, LedgerRefused, OutsideRoot, SendRefused, slug
 
 ROOT = Path(__file__).resolve().parents[1]
 CFG = ROOT / "adapters" / "outreach" / "permissions.toml"
@@ -34,6 +35,23 @@ LEDGER = """# PIPELINE — every target, one row, current state
 | **Prueba** | `hola@empresa.example` | email | **TODO — top of queue** | — | esperando |
 | **Otra Cosa** | `x@y.example` | email | **TODO** | — | — |
 """
+# His own shape, read from `venture/PIPELINE.md` on 2026-09-03: the one table of his that has a
+# Date column, and a target no filename of his would round-trip to.
+HIS_LEDGER = """# PIPELINE
+
+| Target | Contact / route | Channel | State | Date | Next action |
+|---|---|---|---|---|---|
+| ★★ **Babou — Agent-Native Software Engineer** | `careers@babou.ai` | email | **TODO** | — | CV + letter |
+"""
+
+
+def today() -> str:
+    return time.strftime("%Y-%m-%d", time.localtime())
+
+
+def art_path(drafts: Drafts, target: str = "Prueba") -> Path:
+    """Where HIS `record` would put the letter: `sent/<today>_<slug(target)>.md`."""
+    return drafts.root / "sent" / f"{today()}_{slug(target)}.md"
 
 
 def draft(root: Path, name: str = "queued/2026-09-02_prueba.md") -> str:
@@ -49,8 +67,9 @@ def setup(tmp_path, clock=None):
     return drafts, policy
 
 
-def send(policy, drafts, name, to="hola@empresa.example", subject="Una pregunta"):
-    return policy.propose(AGENT_P, "send", name, {"to": to, "subject": subject}, evidence="check pasó")
+def send(policy, drafts, name, to="hola@empresa.example", subject="Una pregunta", target="Prueba"):
+    params = {"to": to, "subject": subject} | ({"target": target} if target is not None else {})
+    return policy.propose(AGENT_P, "send", name, params, evidence="check pasó")
 
 
 # ── the adapter is what PLAN.md §5.1 says it is ──────────────────────────────────────────────
@@ -60,7 +79,7 @@ def test_the_toml_loads_and_says_exactly_what_the_plan_specified():
     assert c.records["draft"] == r"^[a-z0-9_./-]+\.md$"
     assert set(c.actions) == {"send", "mark_replied", "add_note", "send_bulk", "send_from_other_address"}
     assert c.actions["send"].approval == "required" and c.actions["send"].daily_max == 5
-    assert set(c.actions["send"].writes) == {"to", "subject"} and not c.actions["send"].constraints
+    assert set(c.actions["send"].writes) == {"to", "subject", "target"} and not c.actions["send"].constraints
     assert c.actions["mark_replied"].approval == "required"
     assert c.actions["add_note"].approval == "none"
     assert c.actions["send_bulk"].deny and c.actions["send_from_other_address"].deny
@@ -77,7 +96,8 @@ def test_a_send_is_held_for_a_human_and_writes_nothing_until_one_decides(tmp_pat
     name = draft(drafts.root)
     p = send(policy, drafts, name)
     assert p.status == HELD
-    assert drafts.snapshot(name) == {"to": None, "subject": None, "replied": False, "notes": []}
+    assert drafts.snapshot(name) == {"to": None, "subject": None, "target": None,
+                                     "replied": False, "notes": []}
     assert not (drafts.root / "sent").exists()
     # the agent cannot decide its own proposal, and the refusal is in the chain
     assert policy.decide(p.id, True, AGENT_P).status == HELD
@@ -93,14 +113,39 @@ def test_the_owner_approves_and_the_executor_writes_the_artifact_and_the_pipelin
     assert q.status == EXECUTED
     art = drafts.artifact(name)
     assert art["to"] == "hola@empresa.example" and art["subject"] == "Una pregunta"
-    assert art["proposal"] == p.id and art["draft"] == name
-    assert BODY in (drafts.root / "sent" / "2026-09-02_prueba.md").read_text(encoding="utf-8")
+    assert art["proposal"] == p.id and art["draft"] == name and art["target"] == "Prueba"
+    assert BODY in art_path(drafts).read_text(encoding="utf-8")
     rows = drafts.rows(name)
     assert [r["event"] for r in rows] == ["sent"] and rows[0]["proposal"] == p.id
     assert policy.store.audit_verify() and not policy.store.audit_anomalies()
 
 
 # ── the format is his, not this layer's (⚖ 2026-09-02, STATUS.md › Open questions) ───────────
+def test_the_artifact_is_named_the_way_his_record_names_it_and_not_after_the_draft(tmp_path):
+    """`sent/<day>_<slug(target)>.md`, which is what `bin/venture_send.py::record` builds from the
+    `--target` it is handed — not the draft's own basename, which is what this store wrote until
+    the ⚖ ruling of 2026-09-03 caught it. The draft here is named nothing like its target, the way
+    his really are (`babou_agent_native_engineer.md` against `**Babou — …**`), because a fixture
+    that names them alike is what hid the divergence for a day.
+
+    It matters downstream: his `venture_channels.classify` splits an artifact's stem at its leftmost
+    `_`, so a letter filed under the draft's name leaves the lane its target put it in."""
+    drafts, policy = setup(tmp_path)
+    name = draft(drafts.root, "queued/babou_agent_native_engineer.md")
+    target = "Babou — Agent-Native Software Engineer"
+    p = policy.decide(send(policy, drafts, name, target=target).id, True, OWNER)
+    assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED
+
+    art = drafts.root / "sent" / f"{today()}_babou-agent-native-software-engineer.md"
+    assert art.is_file(), "his name: sent/<day>_<slug(target)>.md"
+    assert not (drafts.root / "sent" / "babou_agent_native_engineer.md").exists(), \
+        "the draft's own basename never names the letter"
+    assert not (drafts.root / "sent" / "queued").exists(), "the mirrored path is gone"
+    assert drafts.artifact(name)["target"] == target
+    assert re.fullmatch(rf"# SENT {today()} · {re.escape(target)} · hola@empresa\.example",
+                        art.read_text(encoding="utf-8").splitlines()[0])
+
+
 def test_the_artifact_is_flat_and_carries_his_own_SENT_header(tmp_path):
     """The executor writes the artifact his pipeline already writes: flat under `sent/`, headed
     `# SENT <date> · <target> · <route>`, then the draft's body — so nothing downstream of him (his
@@ -110,12 +155,12 @@ def test_the_artifact_is_flat_and_carries_his_own_SENT_header(tmp_path):
     p = policy.decide(send(policy, drafts, name).id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED
 
-    art = drafts.root / "sent" / "2026-09-02_prueba.md"
-    assert art.is_file(), "flat: sent/<basename>.md"
+    art = art_path(drafts)
+    assert art.is_file(), "flat: sent/<day>_<slug(target)>.md"
     assert not (drafts.root / "sent" / "queued").exists(), "the mirrored path is gone"
     text = art.read_text(encoding="utf-8")
     lines = text.splitlines()
-    assert re.fullmatch(r"# SENT \d{4}-\d{2}-\d{2} · prueba · hola@empresa\.example", lines[0])
+    assert re.fullmatch(r"# SENT \d{4}-\d{2}-\d{2} · Prueba · hola@empresa\.example", lines[0])
     assert lines[1] == f"**Held, decided by a human and executed** through atezain — proposal `{p.id}`."
     assert lines[2] == "**Subject:** Una pregunta"
     assert lines[3].startswith("**Draft:** `queued/2026-09-02_prueba.md` · **Sent at:** ")
@@ -124,7 +169,7 @@ def test_the_artifact_is_flat_and_carries_his_own_SENT_header(tmp_path):
     assert "venture_send.py check" not in text
 
 
-def test_the_executor_flips_the_row_in_his_pipeline_md_and_takes_his_wording_for_the_target(tmp_path):
+def test_the_executor_flips_the_row_his_approved_target_names(tmp_path):
     ledger = tmp_path / "PIPELINE.md"
     ledger.write_text(LEDGER, encoding="utf-8")
     drafts = Drafts(tmp_path / "outreach", ledger=ledger)
@@ -138,18 +183,29 @@ def test_the_executor_flips_the_row_in_his_pipeline_md_and_takes_his_wording_for
     assert re.search(r"\| \d{4}-\d{2}-\d{2} \|", row), "the empty date cell is filled, not a new column"
     assert row.count("|") == LEDGER.splitlines()[4].count("|"), "same cell count as the header"
     assert "| **Otra Cosa** | `x@y.example` | email | **TODO** | — | — |" in ledger.read_text(encoding="utf-8")
-    # the header names the target HE wrote in the row, not the slug the filename kept
-    first = (drafts.root / "sent" / "2026-09-02_prueba.md").read_text(encoding="utf-8").splitlines()[0]
+    # the header carries the approved target verbatim, and so does this layer's own row
+    first = art_path(drafts).read_text(encoding="utf-8").splitlines()[0]
     assert re.fullmatch(r"# SENT \d{4}-\d{2}-\d{2} · Prueba · hola@empresa\.example", first)
     assert drafts.rows(name)[0]["target"] == "Prueba"
+    assert drafts.rows(name)[0]["artifact"] == art_path(drafts).name
 
 
 def test_the_date_goes_after_the_state_cell_or_into_it_never_into_the_column_before():
-    """`Drafts.ledger_sent`, on his own two table shapes. Not every table of his has a Date column
-    — `| Target | Route | State | Barrier | Money | Notes |` has none — so a `| — |` sitting BEFORE
-    the state cell is a Barrier, and writing the date there would put it in the wrong column. When
-    nothing empty follows, the state cell is dated instead: his own fallback, and his own words for
-    it, *rather than inventing a column*."""
+    """`Drafts.ledger_sent`, on his own table shapes, and the ⚖ ruling of 2026-09-03 behind it.
+
+    His own `record` fills the leftmost `| — |` ANYWHERE in the row, and his re-read afterwards
+    checks only that the row carries `**SENT**` — it never looks at where the date went, so a
+    wrong-column date is not caught there or later. The column that costs him is one BEFORE the
+    state cell: a Route or a Channel, where a date reads as a claim about how the letter went. The
+    live case is `**BrandMultiplier**` in his `PIPELINE.md` — Channel `—`, Date `—` — where his rule
+    dates the Channel and this one dates the Date; on 2026-09-03 the two rules agreed on the other
+    nine rows of his whose state cell his regex matches. When nothing empty follows the state cell,
+    it is dated instead: his own fallback and his own words for it, *rather than inventing a
+    column*."""
+    # his live row's shape, under `| Target | Contact / route | Channel | State | Date | Next |`
+    brand = "| **BrandMultiplier** | Notion spec (URL truncated) | — | TODO | — | Fractional→FT |"
+    assert Drafts.ledger_sent(brand, "2026-09-03") == \
+        "| **BrandMultiplier** | Notion spec (URL truncated) | — | **SENT** | 2026-09-03 | Fractional→FT |"
     both = "| **Antes** | `a@b.example` | — | TODO | — | dos vacías |"
     assert Drafts.ledger_sent(both, "2026-09-03") == \
         "| **Antes** | `a@b.example` | — | **SENT** | 2026-09-03 | dos vacías |"
@@ -160,7 +216,7 @@ def test_the_date_goes_after_the_state_cell_or_into_it_never_into_the_column_bef
         Drafts.ledger_sent("| **Ya** | `e@f.example` | — | **LOST** | — | sin TODO |", "2026-09-03")
 
 
-def test_a_draft_his_ledger_does_not_name_writes_nothing_at_all(tmp_path):
+def test_a_target_his_ledger_does_not_name_writes_nothing_at_all(tmp_path):
     """His C6: *a send that is not a row did not happen*. The refusal runs before the artifact is
     written — the 2026-08-18 fault in his own `record` was a refused send that still left a file
     headed `# SENT`."""
@@ -169,10 +225,10 @@ def test_a_draft_his_ledger_does_not_name_writes_nothing_at_all(tmp_path):
     drafts = Drafts(tmp_path / "outreach", ledger=ledger)
     policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
     name = draft(drafts.root, "queued/2026-09-02_sin-fila.md")
-    p = policy.decide(send(policy, drafts, name).id, True, OWNER)
+    p = policy.decide(send(policy, drafts, name, target="Sin Fila").id, True, OWNER)
     q = policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P)
     assert q.status == EXECUTED_UNKNOWN
-    assert not (drafts.root / "sent" / "2026-09-02_sin-fila.md").exists()
+    assert not art_path(drafts, "Sin Fila").exists()
     assert drafts.rows(name) == [] and ledger.read_text(encoding="utf-8") == LEDGER
     assert any(r["kind"] == "EXECUTION_UNKNOWN" for r in policy.store.audit_rows())
 
@@ -188,7 +244,7 @@ def test_a_row_that_cannot_be_marked_is_refused_before_the_artifact_is_written(t
     name = draft(drafts.root)
     p = policy.decide(send(policy, drafts, name).id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED_UNKNOWN
-    assert not (drafts.root / "sent" / "2026-09-02_prueba.md").exists()
+    assert not art_path(drafts).exists()
     assert ledger.read_text(encoding="utf-8") == before and drafts.rows(name) == []
 
 
@@ -209,32 +265,115 @@ def test_a_ledger_write_that_fails_takes_the_artifact_back_down_with_it(tmp_path
     name = draft(drafts.root)
     p = policy.decide(send(policy, drafts, name).id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED_UNKNOWN
-    assert not (drafts.root / "sent" / "2026-09-02_prueba.md").exists()
+    assert not art_path(drafts).exists()
     assert drafts.rows(name) == [] and ledger.read_text(encoding="utf-8") == LEDGER
 
 
 def test_no_ledger_configured_means_no_ledger_write_and_no_ledger_refusal(tmp_path):
     """This repo standing alone has no `PIPELINE.md`, and a store without one still records sends."""
     drafts, policy = setup(tmp_path)
-    assert drafts.ledger is None and drafts.ledger_row(draft(drafts.root)) is None
+    assert drafts.ledger is None and drafts.ledger_row("Prueba") is None
     name = draft(drafts.root, "queued/2026-09-02_nadie.md")
     p = policy.decide(send(policy, drafts, name).id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED
 
 
-def test_two_drafts_sharing_one_basename_do_not_share_one_letter(tmp_path):
-    """Flat paths collide where mirrored ones did not. The first letter keeps the file; the second
-    draft reads the `**Draft:**` line, sees a name that is not its own and reports nothing — so the
-    policy calls it a mismatch instead of reading the first letter's `to` as the second's."""
+def test_two_drafts_sharing_one_basename_each_get_their_own_letter(tmp_path):
+    """The letter is named from the target, so two drafts with the same basename no longer want the
+    same file — and neither reads the other's, because `artifact` finds a letter by its
+    `**Draft:**` line and not by a name it guessed."""
     drafts, policy = setup(tmp_path)
     a, b = draft(drafts.root), draft(drafts.root, "archivo/2026-09-02_prueba.md")
     p = policy.decide(send(policy, drafts, a).id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED
     assert drafts.artifact(b) is None
-    assert drafts.snapshot(b) == {"to": None, "subject": None, "replied": False, "notes": []}
+    assert drafts.snapshot(b) == {"to": None, "subject": None, "target": None,
+                                  "replied": False, "notes": []}
+    q = policy.decide(send(policy, drafts, b, to="otro@sitio.example", target="Otra Cosa").id,
+                      True, OWNER)
+    assert policy.execute(q.id, make_outreach_executor(drafts, q.id), CLI_P).status == EXECUTED
+    assert drafts.artifact(a)["to"] == "hola@empresa.example" and drafts.artifact(a)["draft"] == a
+    assert drafts.artifact(b)["to"] == "otro@sitio.example" and drafts.artifact(b)["draft"] == b
+    assert art_path(drafts).is_file() and art_path(drafts, "Otra Cosa").is_file()
+
+
+def test_two_drafts_to_one_target_on_one_day_the_second_is_refused_before_any_write(tmp_path):
+    """His own refusal, in this layer's hands: `record` exits 4 when `sent/<today>_<slug>.md` is
+    already there — *this target was already recorded today*. Here it raises before a byte is
+    written, so the second draft leaves no letter, no row, and nothing changed in the first."""
+    drafts, policy = setup(tmp_path)
+    a, b = draft(drafts.root), draft(drafts.root, "queued/2026-09-02_otro-borrador.md")
+    p = policy.decide(send(policy, drafts, a).id, True, OWNER)
+    assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED
     q = policy.decide(send(policy, drafts, b, to="otro@sitio.example").id, True, OWNER)
-    assert policy.execute(q.id, make_outreach_executor(drafts, q.id), CLI_P).status == EXECUTED_MISMATCH
-    assert drafts.artifact(a)["to"] == "hola@empresa.example"
+    assert policy.execute(q.id, make_outreach_executor(drafts, q.id), CLI_P).status == EXECUTED_UNKNOWN
+    assert sorted(x.name for x in (drafts.root / "sent").glob("*.md")) == [art_path(drafts).name]
+    assert drafts.artifact(a)["to"] == "hola@empresa.example" and drafts.rows(b) == []
+
+
+def test_a_send_approved_without_a_target_writes_nothing(tmp_path):
+    """The target is the row to flip and the name of the letter. Guessing it from the draft's
+    filename is what the ⚖ ruling of 2026-09-03 removed, so a send that carries none is refused
+    before any write — with a ledger configured and without one."""
+    for ledger in (None, "PIPELINE.md"):
+        root = tmp_path / (ledger or "none")
+        path = None
+        if ledger:
+            path = root / ledger
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(LEDGER, encoding="utf-8")
+        drafts = Drafts(root / "outreach", ledger=path)
+        policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+        name = draft(drafts.root)
+        p = policy.decide(send(policy, drafts, name, target=None).id, True, OWNER)
+        assert p.status == APPROVED, "the policy has no opinion: an absent field is not a denial"
+        q = policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P)
+        assert q.status == EXECUTED_UNKNOWN
+        assert not (drafts.root / "sent").exists() and drafts.rows(name) == []
+        if path:
+            assert path.read_text(encoding="utf-8") == LEDGER
+    with pytest.raises(SendRefused):
+        Drafts(tmp_path / "raw")._apply_send("a.md", "a@b.example", "s", "")
+
+
+def test_his_match_is_exact_so_a_partial_target_finds_no_row(tmp_path):
+    """His `record` searches for `**<target>**` with `re.escape`; a target that is only part of the
+    row's wording is not that row. The inverse this replaced would have matched it — a slug
+    collapses case and punctuation and any bold span in the line qualified."""
+    ledger = tmp_path / "PIPELINE.md"
+    ledger.write_text(HIS_LEDGER, encoding="utf-8")
+    drafts = Drafts(tmp_path / "outreach", ledger=ledger)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    name = draft(drafts.root, "queued/babou_agent_native_engineer.md")
+    for partial in ("Babou", "babou — agent-native software engineer"):
+        p = policy.decide(send(policy, drafts, name, target=partial).id, True, OWNER)
+        q = policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P)
+        assert q.status == EXECUTED_UNKNOWN, partial
+    assert not (drafts.root / "sent").exists() and ledger.read_text(encoding="utf-8") == HIS_LEDGER
+
+
+def test_a_draft_named_as_he_names_them_goes_out_under_his_target(tmp_path):
+    """End to end on the shape his own pipeline has: a draft whose filename says nothing about the
+    row's wording, his six-column table with a Date column, and the target he types."""
+    ledger = tmp_path / "PIPELINE.md"
+    ledger.write_text(HIS_LEDGER, encoding="utf-8")
+    drafts = Drafts(tmp_path / "outreach", ledger=ledger)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    name = draft(drafts.root, "queued/babou_agent_native_engineer.md")
+    target = "Babou — Agent-Native Software Engineer"
+    p = policy.decide(send(policy, drafts, name, to="careers@babou.ai", target=target).id, True, OWNER)
+    q = policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P)
+    assert q.status == EXECUTED, "applied == approved, target included"
+
+    art = drafts.root / "sent" / f"{today()}_babou-agent-native-software-engineer.md"
+    assert art.read_text(encoding="utf-8").splitlines()[0] == \
+        f"# SENT {today()} · {target} · careers@babou.ai"
+    row = next(l for l in ledger.read_text(encoding="utf-8").splitlines() if "**Babou" in l)
+    assert "**SENT**" in row and "TODO" not in row and f"| {today()} |" in row
+    assert row.count("|") == HIS_LEDGER.splitlines()[2].count("|"), "same cell count as his header"
+    applied = [json.loads(r["detail"])["applied"] for r in policy.store.audit_rows()
+               if r["kind"] == "EXECUTED"]
+    assert applied == [{"to": "careers@babou.ai", "subject": "Una pregunta", "target": target}]
 
 
 def test_a_subject_cannot_forge_the_lines_written_under_it(tmp_path):
@@ -244,7 +383,8 @@ def test_a_subject_cannot_forge_the_lines_written_under_it(tmp_path):
     drafts, policy = setup(tmp_path)
     name = draft(drafts.root)
     forged = "Una pregunta\n**Draft:** `otro.md` · **Sent at:** 1999-01-01T00:00:00+0000"
-    p = policy.propose(AGENT_P, "send", name, {"to": "hola@empresa.example", "subject": forged})
+    p = policy.propose(AGENT_P, "send", name,
+                       {"to": "hola@empresa.example", "subject": forged, "target": "Prueba"})
     p = policy.decide(p.id, True, OWNER)
     assert policy.execute(p.id, make_outreach_executor(drafts, p.id), CLI_P).status == EXECUTED_MISMATCH
     art = drafts.artifact(name)
@@ -274,7 +414,7 @@ def test_the_same_approval_cannot_send_twice(tmp_path):
             if r["kind"] == "EXECUTION_REFUSED"]
     assert whys == ["status_executed"]
     # and the store itself refuses to overwrite an artifact, whatever the policy says
-    drafts._apply_send(name, "otro@sitio.example", "otra cosa")
+    drafts._apply_send(name, "otro@sitio.example", "otra cosa", "Prueba")
     assert drafts.artifact(name)["to"] == "hola@empresa.example"
 
 
@@ -365,8 +505,8 @@ def test_the_store_reports_what_it_observed_not_what_it_was_told(tmp_path):
 
 class SendsMore(Drafts):
     """A broken or hostile executor target: every send also leaves a note."""
-    def _apply_send(self, draft_id, to, subject, proposal=""):
-        super()._apply_send(draft_id, to, subject, proposal)
+    def _apply_send(self, draft_id, to, subject, target="", proposal=""):
+        super()._apply_send(draft_id, to, subject, target, proposal)
         super()._apply_add_note(draft_id, "y además esto", proposal)
 
 
@@ -392,7 +532,7 @@ def run(tmp_path, *args, expect=0):
 def test_the_cli_walks_the_whole_path_and_refuses_every_shortcut(tmp_path):
     name = draft(Drafts(tmp_path / "outreach").root)
     held = run(tmp_path, "propose", "send", name, "--param", "to=hola@empresa.example",
-               "--param", "subject=Una pregunta", "--why", "check pasó")
+               "--param", "subject=Una pregunta", "--param", "target=Prueba", "--why", "check pasó")
     assert held.startswith("held: ")
     pid = held.split()[1]
 

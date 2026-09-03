@@ -2,8 +2,10 @@
 
 A draft is a markdown file under one root. What happened to it lives in three places:
 
-    <root>/sent/<basename>.md  the sent artifact, in HIS format — the `# SENT <date> · <target> ·
-                               <route>` header his `bin/venture record` writes, then the body
+    <root>/sent/<day>_<slug(target)>.md
+                               the sent artifact, in HIS format and under HIS name — the
+                               `# SENT <date> · <target> · <route>` header his `bin/venture record`
+                               writes, then the body
     <root>/pipeline.jsonl      one row per event: sent · replied · note. This layer's own
                                structured record, BESIDE his artifact, never instead of it
     <ledger>                   his `venture/PIPELINE.md`, when one is configured: this draft's row
@@ -31,15 +33,15 @@ Three things this store insists on, because the policy layer alone cannot:
 1. **Containment.** The adapter's id pattern is a SHAPE: `../../elsewhere.md` matches it. Every path
    is resolved and checked against the root, so a draft id that escapes is not a record of this
    store — `snapshot` returns None, the executor observes nothing, and the proposal ends
-   `executed_mismatch` having written nowhere. The artifact path is flat, but the FULL id is
-   contained first, so an escaping id has no artifact at all rather than a flattened one that
-   collides with a real draft's.
+   `executed_mismatch` having written nowhere. The artifact is named from the approved target, not
+   from the id, but the FULL id is contained first, so an escaping id has no artifact at all.
 2. **The store keeps its own clock.** No caller passes `sent_at`; an agent that could choose the
    time of a send could date it into the past or the future (the fuse's lesson, PROVENANCE F1–F2).
-3. **An artifact belongs to one draft.** Flattening means `queued/a.md` and `archive/a.md` want the
-   same file. The first one there keeps it; for the other, `artifact` reads the `**Draft:**` line,
-   sees another draft's id and reports nothing — so the second send observes no change and the
-   policy calls it a mismatch instead of reading the first letter's `to` as its own.
+3. **An artifact belongs to one draft.** The file is named from the target and the day of the
+   send, which the draft alone does not know, so `artifact` finds it by reading the `**Draft:**`
+   line of each letter under `sent/` — never by guessing a name. A letter another draft wrote is
+   not this draft's: the second send observes no change and the policy calls it a mismatch instead
+   of reading the first letter's `to` as its own.
 
 What `snapshot` reports is read back off the DISK — `to` and `subject` come out of the sent
 artifact, not out of the pipeline row that claims them. A row written without an artifact changes
@@ -64,7 +66,6 @@ DRAFT_OF = re.compile(r"^\*\*Draft:\*\* `(?P<draft>[^`]*)`")
 PROPOSAL_OF = re.compile(r"proposal `(?P<proposal>[^`]*)`")
 
 # His ledger row, flipped exactly as `bin/venture_send.py::record` flips it.
-BOLD = re.compile(r"\*\*(.+?)\*\*")
 TODO_CELL = re.compile(r"\|\s*\**\s*TODO\b[^|]*\|")
 SENT_CELL = "| **SENT** |"
 EMPTY_DATE = re.compile(r"\|\s*—\s*\|")
@@ -74,7 +75,14 @@ class OutsideRoot(ValueError):
     """A draft id that resolves outside the root. Never a record of this store."""
 
 
-class LedgerRefused(RuntimeError):
+class SendRefused(RuntimeError):
+    """This send is refused, and the refusal ran BEFORE anything was written. His own ordering:
+    every refusal that can happen before a byte lands does (`bin/venture_send.py`, 2026-08-18).
+    The policy sees the raise as `executed_unknown` with the reason in the chain — pessimistic
+    about a write that did not happen, which is the safe direction."""
+
+
+class LedgerRefused(SendRefused):
     """His C6, in this layer's hands: *a send that is not a row did not happen*. Raised before the
     artifact exists when no row names this draft, and after unlinking it when the row could not be
     marked — his ordering and his rollback (`bin/venture_send.py`, the 2026-08-24 fault)."""
@@ -115,12 +123,14 @@ class Drafts:
     def path_of(self, draft_id: str) -> Path:
         return self._inside(draft_id)
 
-    def artifact_of(self, draft_id: str) -> Path:
-        """Flat, as his pipeline writes it: `sent/<basename>.md`, never a mirror of the draft's
-        subdirectory. The full id is contained first — an id that escapes the root has no artifact
-        rather than a flattened one landing beside the real ones."""
-        self._inside(draft_id)
-        return self._inside(Path(draft_id).name, self.root / SENT)
+    def artifact_path(self, target: str, day: str) -> Path:
+        """His basename: `sent/<day>_<slug(target)>.md`, which is what `bin/venture_send.py::record`
+        builds from the `--target` it is handed (line 2347). The name comes from the APPROVED
+        target and never from the draft's filename — the ⚖ ruling of 2026-09-03, which found that
+        this store had been naming the file after the draft. It matters downstream: his
+        `venture_channels.classify` splits an artifact's stem at its leftmost `_`, so a draft named
+        `mindrift_ai_eval_engineer.md` filed under its own name loses the vendor lane."""
+        return self._inside(f"{day}_{slug(target)}.md", self.root / SENT)
 
     @property
     def pipeline(self) -> Path:
@@ -161,22 +171,27 @@ class Drafts:
                 out.append(r)
         return out
 
-    def target_of(self, draft_id: str) -> str:
-        """The target his header names, as far as the draft alone can say it: the basename with the
-        date prefix his own filenames carry taken off. When a ledger is configured the row's own
-        wording wins over this — see `ledger_row`."""
-        stem = Path(draft_id).stem
-        return re.sub(r"^\d{4}-\d{2}-\d{2}_", "", stem) or stem
-
     def artifact(self, draft_id: str) -> dict | None:
-        """His sent artifact, read back into this layer's words, or None if the letter has not gone
-        out — or if the flat name is held by a DIFFERENT draft's letter."""
+        """His sent artifact for this draft, read back into this layer's words, or None if the
+        letter has not gone out.
+
+        Found by its `**Draft:**` line and not by its name: the name his `record` gives a letter is
+        built from the target and the day of the send, and a draft on its own knows neither. A
+        letter that names another draft is not this one's — the store's third insistence, above."""
         try:
-            path = self.artifact_of(draft_id)
+            self._inside(draft_id)
         except OutsideRoot:
             return None
-        if not path.is_file():
-            return None
+        sent = self.root / SENT
+        for path in sorted(sent.glob("*.md")) if sent.is_dir() else []:
+            out = self._read_artifact(path)
+            if out.get("draft") == draft_id:
+                return out
+        return None
+
+    @staticmethod
+    def _read_artifact(path: Path) -> dict:
+        """One sent letter's header block, in this layer's words. The body below it is his."""
         out: dict[str, Any] = {}
         for line in path.read_text(encoding="utf-8").splitlines():
             head = HEADER.match(line)
@@ -192,27 +207,23 @@ class Drafts:
                 out["proposal"] = pr["proposal"]
             elif not line.strip() and out:
                 break                      # the header block ends; the rest is his body
-        if not out or out.get("draft") != draft_id:
-            return None
         return out
 
-    def ledger_row(self, draft_id: str) -> tuple[str, str] | None:
-        """His `PIPELINE.md` row for this draft, as `(the line, the target it names)`.
+    def ledger_row(self, target: str) -> str | None:
+        """His `PIPELINE.md` row for this target: the earliest `|` line carrying `**<target>**`,
+        which is his own match (`bin/venture_send.py` 2294–2302, `re.escape`d exactly as his is).
 
-        His `record` is handed the target and searches for `**<target>**`; here the target is not
-        given, so the search runs the other way — a row is this draft's when one of its bold spans
-        slugs to the draft's own slug, which is the exact inverse of how he built the filename. A
-        row he wrote by hand under a different wording will not be found, and then nothing is
-        written at all: refusing is the safe half of that failure."""
+        The target is given, the way his `record` is given `--target`. It used to be guessed — a row
+        was this draft's when one of its bold spans slugged to the draft's own slug — and the ⚖
+        ruling of 2026-09-03 removed the guess: measured over his own `outreach/queued/`, that
+        inverse found a row for 41 of 90 drafts, and it matched any bold span in the line, a state
+        cell or a note included, so its failure had an unsafe half as well as a safe one."""
         if self.ledger is None or not self.ledger.is_file():
             return None
-        want = slug(self.target_of(draft_id))
+        want = re.compile(rf"\*\*{re.escape(target)}\*\*")
         for line in self.ledger.read_text(encoding="utf-8").splitlines():
-            if not line.startswith("|"):
-                continue
-            for name in BOLD.findall(line):
-                if slug(name) == want:
-                    return line, name
+            if line.startswith("|") and want.search(line):
+                return line
         return None
 
     @staticmethod
@@ -223,16 +234,20 @@ class Drafts:
         artifact is written, which is his own 2026-08-18 lesson."""
         # The state flip is what makes the row a send; the date is decoration on top of it. His own
         # version tests `new == hit` only AFTER filling the date, so a row that is already LOST but
-        # still carries an empty cell changes and passes that test — caught by his re-read, one
-        # write later. Tested here before anything is written, which is the same lesson earlier.
+        # still carries an empty cell changes and passes that test — and his re-read afterwards asks
+        # only whether the row carries `**SENT**` (2393–2396), so it does not catch that either.
+        # Tested here before anything is written, which is his own 2026-08-18 lesson, earlier.
         cell = TODO_CELL.search(row)
         if cell is None:
             raise LedgerRefused(f"the row's state cell holds no matchable TODO: {row[:160]}")
         marked = row[:cell.start()] + SENT_CELL + row[cell.end():]
-        # And the empty cell is looked for AFTER the state cell, never before it. His tables do not
-        # all carry a Date column (`| Target | Route | State | Barrier | Money | Notes |` has none),
-        # and the first `| — |` in such a row is a Barrier, not a date. Dating the state cell — his
-        # own fallback, "rather than inventing a column" — is the right answer there.
+        # And the empty cell is looked for AFTER the state cell, never before it — the deviation
+        # from his rule that the ⚖ ruling of 2026-09-03 upheld. His own `record` fills the leftmost
+        # `| — |` anywhere in the row, so an empty column BEFORE the state cell takes the date: the
+        # live case is `**BrandMultiplier**` in his `PIPELINE.md`, Channel `—` and Date `—`, where
+        # his rule dates the Channel — a claim about how the letter went that nobody made. Not every
+        # table of his has a Date column at all, and there the state cell is dated: his own
+        # fallback, and his own words for it, "rather than inventing a column".
         empty = EMPTY_DATE.search(marked, cell.start() + len(SENT_CELL) - 1)
         if empty:
             return marked[:empty.start()] + f"| {day} |" + marked[empty.end():]
@@ -245,7 +260,7 @@ class Drafts:
             return None
         art = self.artifact(draft_id) or {}
         rows = self.rows(draft_id)
-        return {"to": art.get("to"), "subject": art.get("subject"),
+        return {"to": art.get("to"), "subject": art.get("subject"), "target": art.get("target"),
                 "replied": any(r.get("event") == "replied" for r in rows),
                 "notes": [r.get("note", "") for r in rows if r.get("event") == "note"]}
 
@@ -256,7 +271,7 @@ class Drafts:
         if before is None or after is None:
             return {} if before == after else {"record": "missing" if after is None else "created"}
         out: dict = {}
-        for k in ("to", "subject"):
+        for k in ("to", "subject", "target"):
             if before[k] != after[k]:
                 out[k] = after[k]
         if before["replied"] != after["replied"]:
@@ -275,27 +290,40 @@ class Drafts:
         with self.pipeline.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
-    def _apply_send(self, draft_id: str, to: str, subject: str, proposal: str = "") -> None:
+    def _apply_send(self, draft_id: str, to: str, subject: str, target: str = "",
+                    proposal: str = "") -> None:
         """Write his sent artifact, flip his ledger row, and append this layer's own pipeline row.
-        Refuses to overwrite an artifact: a draft goes out once, and the policy's exactly-once is
-        not the only thing saying so.
+        A draft goes out once, and the policy's exactly-once is not the only thing saying so.
+
+        The `target` is the third approved parameter (⚖ 2026-09-03): his `--target`, the flag he
+        already types, frozen in the proposal a human approved. It names the ledger row, it names
+        the artifact, and it is written into the header verbatim. Nothing here derives it from a
+        filename — a send approved without one is refused, having written nothing, because the
+        alternative is this layer choosing which of his rows to flip.
 
         The order is his, and so is the reason: every refusal that CAN run before anything is
         written does (2026-08-18 — a refused record used to leave a file headed `# SENT`), and the
         ledger flip is proved by re-reading the file, not by the write returning."""
-        path, artifact = self.path_of(draft_id), self.artifact_of(draft_id)
-        if artifact.exists():
-            return
-        to, subject = _oneline(to), _oneline(subject)
-        row = self.ledger_row(draft_id)
+        path = self.path_of(draft_id)
+        if self.artifact(draft_id) is not None:
+            return                                              # a draft goes out once
+        to, subject, target = _oneline(to), _oneline(subject), _oneline(target).strip()
+        if not target:
+            raise SendRefused(f"no target was approved for {draft_id} — the row to flip and the "
+                              f"name of the letter both come from it, and neither is this layer's "
+                              f"to guess")
+        row = self.ledger_row(target)
         if self.ledger is not None and row is None:
-            raise LedgerRefused(f"no row in {self.ledger.name} names {self.target_of(draft_id)!r} "
+            raise LedgerRefused(f"no row in {self.ledger.name} names {target!r} "
                                 f"— a send that is not a row did not happen (his C6)")
         ts = self.clock()
         stamp = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(ts))
         day = stamp[:10]
-        marked = self.ledger_sent(row[0], day) if row else ""   # can it be flipped? before writing
-        target = row[1] if row else self.target_of(draft_id)
+        marked = self.ledger_sent(row, day) if row else ""      # can it be flipped? before writing
+        artifact = self.artifact_path(target, day)
+        if artifact.exists():
+            raise SendRefused(f"{artifact.name} already exists — this target was already recorded "
+                              f"today (his own refusal, `venture_send.py` exit 4)")
         artifact.parent.mkdir(parents=True, exist_ok=True)
         artifact.write_text(
             f"# SENT {day} · {target} · {to}\n"
@@ -306,12 +334,13 @@ class Drafts:
             encoding="utf-8")
         if row:
             try:
-                self._ledger_write(row[0], marked)
+                self._ledger_write(row, marked)
             except Exception:
                 artifact.unlink()          # his rollback: no artifact claims a send the row lacks
                 raise
         self._append({"ts": ts, "at": stamp, "draft": draft_id, "event": "sent", "to": to,
-                      "subject": subject, "target": target, "proposal": proposal})
+                      "subject": subject, "target": target, "artifact": artifact.name,
+                      "proposal": proposal})
 
     def _ledger_write(self, row: str, marked: str) -> None:
         text = self.ledger.read_text(encoding="utf-8")

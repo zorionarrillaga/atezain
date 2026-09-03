@@ -23,11 +23,15 @@ draft = '^[a-z0-9_./-]+\.md$'
 
 [actions.send]               # record that this draft went out, after the owner sent it by hand
 record = "draft"
-writes = ["to", "subject"]
+writes = ["to", "subject", "target"]
 approval = "required"
 daily_max = 5
 # no constraint on `to`: `bash bin/venture check <draft>` already gates the address, and a second
 # list here would be a second source of truth that drifts.
+# `target` is his `--target`, the flag his own `record` already takes (⚖ 2026-09-03). It names the
+# row in his PIPELINE.md that gets flipped and the artifact that gets written, so it is a value a
+# human approves, frozen in the proposal — not something the executor reads off a filename at write
+# time. A send approved without one writes nothing.
 
 [actions.mark_replied]       # the recipient answered
 record = "draft"

@@ -16,6 +16,10 @@ Identity is the shell's (README §Trust boundary 1): whoever can run this can pa
 Meant to be called from the owner's `bin/venture` by path:
     python3 <atezain>/bin/atezain_cli.py --root <outreach dir> --db <state db> propose send <draft>
 
+A `send` carries three approved values: `to`, `subject`, and `target` — his `--target`, which names
+the row in his `PIPELINE.md` and the artifact `sent/<day>_<slug(target)>.md`. A send approved
+without a target writes nothing.
+
 `--ledger <PIPELINE.md>` adds his ledger row to what `record` writes; without it the artifact and
 this layer's own `pipeline.jsonl` are all that is touched.
 """
@@ -189,7 +193,8 @@ def main(argv: list[str] | None = None) -> int:
                 held = c.for_draft(a.draft, "send", HELD)
                 print(f"refused: no approved send for {a.draft}"
                       + (f" — it is held as {held[-1].id[:12]}, waiting for a human" if held else
-                         " — propose it first (`atezain propose send <draft> --param to=… --param subject=…`)"),
+                         " — propose it first (`atezain propose send <draft> --param to=… "
+                         "--param subject=… --param target=…`)"),
                       file=sys.stderr)
                 return REFUSED
             pid = ready[-1].id
