@@ -144,16 +144,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 189 passed, 83 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **271 passed, 1 skipped, 4 min 14 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 192 passed, 86 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **277 passed, 1 skipped, 4 min 22 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 29/29 sabotages caught by at least one gauge |
+| `make sabotage` | 31/31 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers twenty-nine properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers thirty-one properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either. A third seat, on the deployed thing (2026-09-03),
 got nothing forbidden through it and found that the served application left an auto-approved note

@@ -77,22 +77,30 @@ class Store:
 
     @contextlib.contextmanager
     def transaction(self) -> Iterator[None]:
-        """Serialise a read-then-write: one process lock, one `BEGIN IMMEDIATE`. Re-entrant — an
-        inner call joins the outer transaction."""
+        """Serialise a read-then-write: one process lock, one `BEGIN IMMEDIATE`. Re-entrant, and
+        the inner level is a real SAVEPOINT: an inner failure the caller CATCHES rolls back the
+        inner writes and leaves the outer transaction going. Until 2026-09-03 the inner call simply
+        joined the outer one, so caught inner writes survived — seat 2's T24, found with no route
+        to it from the agent's surface, closed by ⚖ because step 7's outbound CLI runs on SQLite by
+        design and this store is therefore not a local-only store. `PgStore.transaction` has always
+        done this (psycopg's own nested `transaction()`)."""
         with self._lock:
             depth = getattr(self._depth, "n", 0)
             self._depth.n = depth + 1
-            if depth == 0:
-                self._c().execute("BEGIN IMMEDIATE")
+            name = f"atezain_{depth}"
+            self._c().execute("BEGIN IMMEDIATE" if depth == 0 else f"SAVEPOINT {name}")
             try:
                 yield
             except BaseException:
                 if depth == 0:
                     self._c().execute("ROLLBACK")
+                else:
+                    # ROLLBACK TO leaves the savepoint on the stack; RELEASE pops it
+                    self._c().execute(f"ROLLBACK TO {name}")
+                    self._c().execute(f"RELEASE {name}")
                 raise
             else:
-                if depth == 0:
-                    self._c().execute("COMMIT")
+                self._c().execute("COMMIT" if depth == 0 else f"RELEASE {name}")
             finally:
                 self._depth.n = depth
 

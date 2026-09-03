@@ -819,3 +819,41 @@ def test_two_connections_cannot_race_past_the_budget():
     other.close()
     assert results.count(APPROVED) == 2 and results.count(DENIED) == 4
     assert store.audit_verify() and not store.audit_anomalies()
+
+
+def test_an_inner_transaction_that_fails_and_is_caught_leaves_nothing_behind():
+    """Seat 2's T24, closed by ⚖ on 2026-09-02 and built on 2026-09-03: `transaction()` nests as a
+    real savepoint on BOTH stores. An inner block that raises and whose exception the caller catches
+    must leave none of its writes in the outer transaction, and the outer transaction must still
+    commit what it did itself. `PgStore` has always had this; the SQLite store joined the outer
+    transaction instead, so a caught inner write survived."""
+    svc, store, _ = make()
+    outer = svc.propose(AGENT_P, "add_note", inv(1), {"note": "outer"})
+    inner = svc.propose(AGENT_P, "add_note", inv(2), {"note": "inner"})
+    with store.transaction():
+        outer.note = "in the outer transaction"
+        store.put_proposal(outer)
+        try:
+            with store.transaction():
+                inner.note = "in the inner transaction"
+                store.put_proposal(inner)
+                raise RuntimeError("the inner block fails and the caller catches it")
+        except RuntimeError:
+            pass
+        assert store.get_proposal(inner.id).note != "in the inner transaction", "the inner write survived its own rollback"
+    assert store.get_proposal(outer.id).note == "in the outer transaction", "the outer transaction lost its own write"
+    assert store.get_proposal(inner.id).note != "in the inner transaction", "the inner write survived the commit"
+
+
+def test_a_savepoint_that_does_not_fail_keeps_its_writes():
+    """The other half: the rollback path must not be the only path that works."""
+    svc, store, _ = make()
+    outer = svc.propose(AGENT_P, "add_note", inv(3), {"note": "outer"})
+    inner = svc.propose(AGENT_P, "add_note", inv(4), {"note": "inner"})
+    with store.transaction():
+        outer.note = "kept"
+        store.put_proposal(outer)
+        with store.transaction():
+            inner.note = "kept"
+            store.put_proposal(inner)
+    assert store.get_proposal(outer.id).note == "kept" and store.get_proposal(inner.id).note == "kept"

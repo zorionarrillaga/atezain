@@ -8,20 +8,23 @@ assistant reads.
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
 import sqlite3
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 class Records:
-    def __init__(self, path: str = ":memory:"):
+    def __init__(self, path: str = ":memory:", clock: Callable[[], float] = time.time):
         # check_same_thread=False for the same reason `policy/store.py` does it: a served
         # request runs in whatever worker thread the server hands it, and the connection
         # outlives the thread that opened it. SQLite serialises writers itself; two
         # concurrent writes to one session raise "database is locked" rather than corrupt,
         # and a session is one visitor (api/app.py).
+        self.clock = clock
         self.conn = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount REAL, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
@@ -123,9 +126,16 @@ class Records:
     def _apply_update_status(self, invoice_id: str, status: str) -> None:
         self.conn.execute("UPDATE invoices SET status = ? WHERE id = ?", (status, invoice_id))
 
+    def today(self) -> str:
+        """The date this store stamps a write with, from its OWN clock — the same rule as
+        `records/drafts.py`: no caller passes a timestamp, so nothing the model says can choose when
+        its note was written. ISO, like the seed's own notes; until 2026-09-03 the stamp was the
+        literal word `now` and a reader of the record got a note with no date."""
+        return dt.datetime.fromtimestamp(self.clock(), tz=dt.timezone.utc).date().isoformat()
+
     def _apply_add_note(self, invoice_id: str, note: str) -> None:
         if self.invoice(invoice_id) is not None:
-            self.add_note_raw(invoice_id, "now", "assistant", note)
+            self.add_note_raw(invoice_id, self.today(), "assistant", note)
 
     def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str) -> None:
         # Sending is simulated: the record carries what was sent and where. A real channel plugs in here.

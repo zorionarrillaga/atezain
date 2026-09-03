@@ -35,9 +35,11 @@ class _Placeholders:
 
 
 class PgRecords(Records):
-    def __init__(self, dsn: str, schema: str | None = None):
+    def __init__(self, dsn: str, schema: str | None = None, clock=None):
         import psycopg
+        import time
 
+        self.clock = clock or time.time      # `Records.today()` reads it; the store owns the clock
         self.schema = schema
         self._raw = psycopg.connect(dsn, autocommit=True, connect_timeout=20)
         self.conn = _Placeholders(self._raw)

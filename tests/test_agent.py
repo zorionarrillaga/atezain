@@ -245,3 +245,21 @@ def test_a_write_that_needs_no_human_does_not_wait_for_one():
     assert records.invoice("F-2026-042")["status"] == "reminded"
     assert len(records.invoice("F-2026-042")["notes"]) == 1
     assert set(out2["executed"]) == set(by_action.values())
+
+
+def test_a_note_the_executor_writes_carries_a_date_from_the_stores_own_clock():
+    """⚖ ruled 2026-09-03 that the records store owns a clock, the way `records/drafts.py` does.
+    The stamp used to be the literal word `now`, so a reader of the record got a note with no date.
+    No caller passes the timestamp — the store reads its own clock — so nothing the model returns
+    can choose when its note was written."""
+    records = RECORDS_FACTORY()
+    records.load_seed(SEED)
+    records.clock = lambda: 1768435200.0                  # 2026-01-15T00:00:00Z: a date that is not today,
+                                                          # so a stamp read from the real clock fails here
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    graph = build_graph(records, policy, _NoteAndHold(), AGENT_P)
+    run(graph, "F-2026-042")                              # the note needs no human and is written at once
+    note = records.invoice("F-2026-042")["notes"][-1]
+    assert note["author"] == "assistant"
+    assert note["ts"] == "2026-01-15", note["ts"]
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", note["ts"])   # the shape the seed's own notes carry
