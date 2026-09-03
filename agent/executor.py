@@ -24,7 +24,8 @@ def make_executor(records: Records):
             elif action == "add_note":
                 records._apply_add_note(record_id, params["note"])
             elif action == "send_reminder":
-                records._apply_send_reminder(record_id, params["reminder_text"], params["reminder_channel"])
+                records._apply_send_reminder(record_id, params["reminder_text"], params["reminder_channel"],
+                                             params.get("reminder_to"))
             # an approved action this executor does not implement applies nothing; the diff says so
         return {"applied": Records.diff(before, records.snapshot(record_id))}
     return execute

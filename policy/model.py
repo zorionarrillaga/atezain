@@ -70,6 +70,8 @@ class ActionSpec:
     deny: bool
     daily_max: int | None
     constraints: Mapping[str, tuple[Any, ...]]
+    # field -> the record's own field it must equal. A value the model may name but not choose.
+    record_constraints: Mapping[str, str] = MappingProxyType({})
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,7 @@ class PolicyConfig:
         actions: dict[str, ActionSpec] = {}
         for name, spec in raw.get("actions", {}).items():
             constraints = MappingProxyType({k: tuple(v) for k, v in spec.get("constraints", {}).items()})
+            bound = MappingProxyType({str(k): str(v) for k, v in spec.get("record_constraints", {}).items()})
             actions[name] = ActionSpec(
                 name=name,
                 record=spec.get("record", ""),
@@ -101,6 +104,7 @@ class PolicyConfig:
                 deny=bool(spec.get("deny", False)),
                 daily_max=spec.get("daily_max"),
                 constraints=constraints,
+                record_constraints=bound,
             )
         return cls(
             adapter=meta.get("adapter", "unnamed"),
@@ -128,7 +132,8 @@ class PolicyConfig:
             "adapter": self.adapter, "lang": self.lang, "version": self.version, "daily_writes": self.daily_writes,
             "records": dict(self.records),
             "actions": {n: {"record": s.record, "writes": list(s.writes), "approval": s.approval, "deny": s.deny,
-                            "daily_max": s.daily_max, "constraints": {k: list(v) for k, v in s.constraints.items()}}
+                            "daily_max": s.daily_max, "constraints": {k: list(v) for k, v in s.constraints.items()},
+                            "record_constraints": dict(s.record_constraints)}
                         for n, s in sorted(self.actions.items())},
         }
         return hashlib.sha256(json.dumps(canon, sort_keys=True).encode("utf-8")).hexdigest()[:16]

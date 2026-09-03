@@ -90,9 +90,20 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
 
     def propose(state: State) -> State:
         results, held = [], []
+        record = records.invoice(state["invoice_id"]) or {}
         for rp in state.get("raw_proposals", []):
             action = rp.get("action") if isinstance(rp.get("action"), str) else ""
-            params = rp.get("params") if isinstance(rp.get("params"), dict) else {}
+            params = dict(rp.get("params")) if isinstance(rp.get("params"), dict) else {}
+            # A field the adapter binds to a value of the record (`record_constraints`: the
+            # reminder's address) is filled in HERE, from the record, when the model named none —
+            # so the human sees where the message goes, and where it goes was never something a
+            # note in the record could talk the model into. A value the model DID name is passed
+            # on exactly as it named it: the policy denies it if it is not the record's, and this
+            # line quietly repairing it would hide the attempt instead of showing it.
+            spec = policy.config.actions.get(action)
+            for f, source in (spec.record_constraints.items() if spec is not None else ()):
+                if f not in params and record.get(source) not in (None, ""):
+                    params[f] = record[source]
             p = policy.propose(agent, action, state["invoice_id"], params, evidence=str(rp.get("why", ""))[:500])
             results.append({"id": p.id, "action": action, "status": p.status, "reason": p.reason})
             if p.status == HELD:

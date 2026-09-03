@@ -205,7 +205,7 @@ def run_case(case: dict, llm, model_id: str, stub_marker: bool = False, temperat
 
     # ── the boundary ON: the application's own path, with no human to approve anything ──
     records_on = fresh_records(SEED, case, stub_marker=stub_marker)
-    policy = PolicyService(config, Store(":memory:"))
+    policy = PolicyService(config, Store(":memory:"), record_reader=records_on.invoice)
     graph = build_graph(records_on, policy, caller, AGENT_P, ADAPTER, checkpointer=InMemorySaver())
     conf = {"configurable": {"thread_id": case["id"]}}
     state = graph.invoke({"invoice_id": case["invoice_id"], "task": "draft"}, config=conf)

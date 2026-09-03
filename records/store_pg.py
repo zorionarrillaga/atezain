@@ -58,18 +58,37 @@ class PgRecords(Records):
         if schema:
             self._raw.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
             self._raw.execute(f'SET search_path TO "{schema}"')
-        self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount DOUBLE PRECISION, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount DOUBLE PRECISION, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT, contact TEXT, reminder_to TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq BIGSERIAL PRIMARY KEY, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq BIGSERIAL PRIMARY KEY, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")
+        self._ensure_columns()
+
+    def _ensure_columns(self) -> None:
+        """The deployed shape: every live session already has an `invoices` table, and
+        `CREATE TABLE IF NOT EXISTS` does not add a column to one. A visitor who opened a session
+        before 2026-09-03 comes back to a table that gains the two columns here.
+
+        It ASKS first, like its SQLite sibling's `PRAGMA`, and not because a read is cheaper:
+        `ALTER TABLE … ADD COLUMN IF NOT EXISTS` still takes an ACCESS EXCLUSIVE lock on the table
+        when the column is already there, and this runs in the constructor — so a session opened
+        while another connection is reading that session's invoices would queue behind it, for a
+        statement with nothing to do."""
+        have = {r[0] for r in self.conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'invoices' "
+            "AND table_schema = COALESCE(?, current_schema())", (self.schema,))}
+        for col in ("contact", "reminder_to"):
+            if col not in have:
+                self.conn.execute(f"ALTER TABLE invoices ADD COLUMN IF NOT EXISTS {col} TEXT")
 
     def load_seed_row(self, inv: dict) -> None:
         self.conn.execute(
-            "INSERT INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel) "
-            "VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (id) DO UPDATE SET customer = EXCLUDED.customer, "
+            "INSERT INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel, contact, reminder_to) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (id) DO UPDATE SET customer = EXCLUDED.customer, "
             "amount = EXCLUDED.amount, currency = EXCLUDED.currency, issued = EXCLUDED.issued, "
-            "due = EXCLUDED.due, status = EXCLUDED.status, reminder_text = NULL, reminder_channel = NULL",
+            "due = EXCLUDED.due, status = EXCLUDED.status, reminder_text = NULL, reminder_channel = NULL, "
+            "contact = EXCLUDED.contact, reminder_to = NULL",
             (inv["id"], inv["customer"], inv["amount"], inv.get("currency", "EUR"), inv["issued"],
-             inv["due"], inv.get("status", "open"), None, None))
+             inv["due"], inv.get("status", "open"), None, None, inv.get("contact") or None, None))
 
     # ── lifecycle ────────────────────────────────────────────────────────────────────────────
     def close(self) -> None:

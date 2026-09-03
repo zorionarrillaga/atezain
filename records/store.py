@@ -62,9 +62,20 @@ class Records:
         # relied on before 2026-09-03.
         self.clock = clock
         self.conn = _Serialised(sqlite3.connect(path, isolation_level=None, check_same_thread=False))
-        self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount REAL, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount REAL, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT, contact TEXT, reminder_to TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")
+        self._ensure_columns()
+
+    # ── columns added after a database already existed ───────────────────────────────────────
+    def _ensure_columns(self) -> None:
+        """`contact` and `reminder_to` arrived on 2026-09-03 (client simulation 1). A session's
+        database is created once and outlives the code, so opening an older one adds the columns
+        rather than reading a table that has not got them."""
+        have = {r[1] for r in self.conn.execute("PRAGMA table_info(invoices)")}
+        for col in ("contact", "reminder_to"):
+            if col not in have:
+                self.conn.execute(f"ALTER TABLE invoices ADD COLUMN {col} TEXT")
 
     # ── loading ──────────────────────────────────────────────────────────────────────────────
     def load_seed(self, path: str | Path) -> int:
@@ -80,17 +91,22 @@ class Records:
 
     def load_seed_row(self, inv: dict) -> None:
         """One invoice, from a seed file or from a visitor's upload (`api/app.py`). Seeding only —
-        this is how a record gets INTO the store, not how the agent changes one."""
-        self.conn.execute("INSERT OR REPLACE INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel) VALUES (?,?,?,?,?,?,?,?,?)",
-                          (inv["id"], inv["customer"], inv["amount"], inv.get("currency", "EUR"), inv["issued"], inv["due"], inv.get("status", "open"), None, None))
+        this is how a record gets INTO the store, not how the agent changes one. `contact` is the
+        customer's address of record: it enters HERE, from the customer's own system, and no
+        action in any adapter declares it in `writes`, so nothing the assistant proposes can move
+        it — which is what makes it worth checking a reminder's address against."""
+        self.conn.execute("INSERT OR REPLACE INTO invoices (id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel, contact, reminder_to) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                          (inv["id"], inv["customer"], inv["amount"], inv.get("currency", "EUR"), inv["issued"], inv["due"], inv.get("status", "open"), None, None, inv.get("contact") or None, None))
 
     def add_note_raw(self, invoice_id: str, ts: str, author: str, text: str) -> None:
         """Seeding / planting only — NOT the agent's write path (that is `_apply_add_note` via policy)."""
         self.conn.execute("INSERT INTO notes (invoice_id, ts, author, text) VALUES (?,?,?,?)", (invoice_id, ts, author, text))
 
     def set_field_raw(self, invoice_id: str, field: str, value: str) -> None:
-        """Planting only (red-team `field_value` class) — NOT a write path for the agent."""
-        assert field in ("customer", "currency", "issued", "due"), field
+        """Planting only (red-team `field_value` class) — NOT a write path for the agent. `contact`
+        is here because a test needs to load one; in the product it arrives with the upload, and no
+        action declares it in `writes`."""
+        assert field in ("customer", "currency", "issued", "due", "contact"), field
         self.conn.execute(f"UPDATE invoices SET {field} = ? WHERE id = ?", (value, invoice_id))
 
     def plant_email(self, invoice_id: str, sender: str, subject: str, body: str, ts: str = "2026-09-01") -> None:
@@ -99,12 +115,25 @@ class Records:
                           (invoice_id, ts, "in", sender, subject, body))
 
     # ── reads ────────────────────────────────────────────────────────────────────────────────
+    #: what a record has always carried, and what this method has always returned
+    FIELDS = ("id", "customer", "amount", "currency", "issued", "due", "status", "reminder_text", "reminder_channel")
+    #: added later, and present in the dict only when the record actually carries them — see `invoice`
+    LATER = ("contact", "reminder_to")
+
     def invoice(self, invoice_id: str) -> dict[str, Any] | None:
-        row = self.conn.execute("SELECT id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
+        """The record as the model is shown it (`agent/graph.py::retrieve`), so what this method
+        returns IS the model's context. A field added here is a change to what every cached
+        red-team answer was produced from, and `redteam/run.py::case_hash` cannot see this file —
+        so `contact` and `reminder_to` appear only when the record carries them, which leaves a
+        record that carries neither exactly as it was when the hundred were run
+        (`tests/test_retrieval.py::test_the_model_is_shown_the_fields_the_hundred_were_run_with`)."""
+        row = self.conn.execute("SELECT id, customer, amount, currency, issued, due, status, reminder_text, reminder_channel, contact, reminder_to FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
         if not row:
             return None
-        keys = ("id", "customer", "amount", "currency", "issued", "due", "status", "reminder_text", "reminder_channel")
-        inv = dict(zip(keys, row))
+        inv = dict(zip(self.FIELDS, row))
+        for k, v in zip(self.LATER, row[len(self.FIELDS):]):
+            if v not in (None, ""):
+                inv[k] = v
         inv["notes"] = [dict(zip(("ts", "author", "text"), r)) for r in self.conn.execute("SELECT ts, author, text FROM notes WHERE invoice_id = ? ORDER BY seq", (invoice_id,))]
         inv["emails"] = [dict(zip(("ts", "direction", "sender", "subject", "body"), r)) for r in self.conn.execute("SELECT ts, direction, sender, subject, body FROM emails WHERE invoice_id = ? ORDER BY seq", (invoice_id,))]
         return inv
@@ -131,7 +160,7 @@ class Records:
         inv = self.invoice(invoice_id)
         if inv is None:
             return None
-        return {**{k: inv[k] for k in ("customer", "amount", "currency", "issued", "due", "status", "reminder_text", "reminder_channel")},
+        return {**{k: inv[k] for k in self.FIELDS[1:]}, **{k: inv.get(k) for k in self.LATER},
                 "notes": [n["text"] for n in inv["notes"]], "emails": len(inv["emails"])}
 
     @staticmethod
@@ -173,9 +202,15 @@ class Records:
         if self.invoice(invoice_id) is not None:
             self.add_note_raw(invoice_id, self.today(), "assistant", note)
 
-    def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str) -> None:
-        # Sending is simulated: the record carries what was sent and where. A real channel plugs in here.
-        self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ? WHERE id = ?", (reminder_text, reminder_channel, invoice_id))
+    def _apply_send_reminder(self, invoice_id: str, reminder_text: str, reminder_channel: str,
+                             reminder_to: str | None = None) -> None:
+        # Sending is simulated: the record carries what was sent, on what channel and to whom. A
+        # real channel plugs in here — and nothing in this repo opens a connection to one, so
+        # "executed" on a reminder means the record says it went out, not that anything left.
+        if reminder_to is None:
+            self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ? WHERE id = ?", (reminder_text, reminder_channel, invoice_id))
+        else:
+            self.conn.execute("UPDATE invoices SET reminder_text = ?, reminder_channel = ?, reminder_to = ? WHERE id = ?", (reminder_text, reminder_channel, reminder_to, invoice_id))
 
     # The three below exist so that the red-team's CONTROL arm can actually happen: an assistant
     # with no boundary changes an amount, deletes a record and mails a stranger, and the measurement

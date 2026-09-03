@@ -54,6 +54,19 @@ SABOTAGES = [
      '        object.__setattr__(self, "_" + name, value)\n'),
     ("a second DECISION row is fine", "policy/store.py",
      '            if len(decisions) > 1:\n', '            if len(decisions) > 99:\n'),
+    # client simulation 1: where a reminder goes, and whose words a note is
+    ("a reminder may go to an address the record does not carry", "policy/service.py",
+     "            if str(p.params[f]) != str(truth):\n", "            if False:\n"),
+    ("the record's own value is read from the proposal instead of the record", "policy/service.py",
+     "            record = self.record_reader(record_id)\n", "            record = dict(p.params)\n"),
+    ("the graph lets the model choose where a reminder goes", "agent/graph.py",
+     "                if f not in params and record.get(source) not in (None, \"\"):\n",
+     "                if False:\n"),
+    ("the record the visitor reads back does not say which notes are the assistant's", "api/app.py",
+     '                     assistant_notes=sum(1 for n in inv["notes"] if n["author"] == "assistant"))\n',
+     "                     assistant_notes=0)\n"),
+    ("a database made before the address columns is opened as if it had them", "records/store.py",
+     "        self._ensure_columns()\n", "        pass\n"),
     # step 7: the outbound-draft store's own claims
     ("the drafts store leaves its root", "records/drafts.py",
      "        if p != base and base not in p.parents:\n            raise OutsideRoot(draft_id)\n",
@@ -147,8 +160,8 @@ SABOTAGES = [
      '    g.add_node("execute", lambda state: {})\n'),
     # the documents' own numbers and prose (tests/gauges.py, 2026-09-02)
     ("a gauge count in the README edited by hand", "README.md",
-     "| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |",
-     "| `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |"),
+     "| `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |",
+     "| `make hostile` | 99/99 scored attempts blocked · 1 out of scope, shown |"),
     ("a paragraph of the write-up pasted into the README", "README.md",
      "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.\n",
      "- `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.\n\n`hold` contains nothing but the "

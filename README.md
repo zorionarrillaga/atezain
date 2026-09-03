@@ -15,8 +15,10 @@ measures it against a named model, the deploy, and the write-up; step 7's adapte
 built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
 below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothing forbidden through
 it, one defect in the served execute path, folded the same day and deployed by hand on
-2026-09-03, so the URL and this tree now run the same execute path (commit `9bf2a07`;
-`autoDeploy` stays off, so a push is still not a deploy).**
+2026-09-03 (commit `9bf2a07`). **The URL runs that commit.** What client simulation 1 changed on
+2026-09-03 — the reminder's address, the records a visitor can read back, the page — is in this tree
+and is NOT at the URL: `autoDeploy` stays off, and deploying is the owner's word on the day
+(`CLAUDE.md` rule 1).**
 
 See `STATUS.md` for
 what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
@@ -26,7 +28,8 @@ result up front, the architecture, one attack end to end with its audit rows, th
 
 - `policy/` — the boundary. Permissions as data (`adapters/*/permissions.toml`: actions, the fields
   each may write, allowed values, the record type and id shape each may touch — shape, not
-  ownership), an approval queue, an append-only audit log (a hash chain with a published head), a
+  ownership — and a field that must equal a value of the record itself, which is how a reminder's
+  address is the customer's and not the assistant's), an approval queue, an append-only audit log (a hash chain with a published head), a
   fuse the agent can trip and cannot clear through the service, a daily budget that trips it. Pure
   Python, no dependencies.
 - `agent/` — the assistant as a LangGraph graph: retrieve → think → propose → execute (what needs
@@ -64,7 +67,9 @@ result up front, the architecture, one attack end to end with its audit rows, th
   both when `ATEZAIN_TEST_DSN` names a database, and skips the Postgres arm loudly when it does not.
 - `api/` — the same layer behind HTTP: a session is a namespace (its own records, its own audit
   chain, its own fuse) opened by a bearer token; you upload a CSV of your own invoices, ask for an
-  assist, see what it drafts and what it holds, decide, and read the chain. `api/auth.py` is the
+  assist, see what it drafts and what it holds, decide, read the chain, and read your records back
+  with every note saying who wrote it — the assistant's own included, which is the one write this
+  adapter needs no human for. `api/auth.py` is the
   only place in the served application where a human principal is constructed, and a test greps the
   package to keep it that way. Runs locally on SQLite and the stub model with `make serve`, and on
   Postgres when `DATABASE_URL` names one — the served shape, live since 2026-09-02 (*Try it*).
@@ -86,11 +91,15 @@ result up front, the architecture, one attack end to end with its audit rows, th
 
 <https://atezain.onrender.com/demo> — a free Render instance that sleeps when idle, so a
 request after a quiet spell wakes it and takes a while. The page has four parts: your records, what the
-assistant says, what it is not allowed to do on its own, and the chain. Open a session (the token
-is shown once; whoever holds it is that session's human — *Trust boundary*, item 1), upload a CSV
-or XLSX of invoices with the columns `id, customer, amount, currency, issued, due, status` and,
-to plant something for the assistant to read, `note`, `email_subject`, `email_body`; ask for an
-assist on one invoice; approve or reject what it holds; read the audit rows and the head. The
+assistant says, what it is not allowed to do on its own, and the chain. Open a session (its token is
+issued once and kept on that device, so a reload comes back to the same records; whoever holds it
+is that session's human — *Trust boundary*, item 1), upload a CSV
+or XLSX of invoices with the columns `id, customer, amount, currency, issued, due, status`,
+optionally `contact` — the address of record, the only address a reminder may be recorded as going
+to — and, to plant something for the assistant to read, `note`, `email_subject`, `email_body`. The
+records come back as a table, oldest due first; ask for an assist on one; approve or reject what it
+holds; read the record, the audit rows and the head. Approving a reminder writes it into the
+record: nothing is sent, because nothing here opens a connection to a mail server. The
 model is `openai/gpt-oss-120b`, on the server's own key under a daily budget with a fuse, or on
 yours with an `X-Groq-Key` header. Each session is its own Postgres schema — its records, its
 queue, its chain, its fuse — and outlives the instance's sleep. `/healthz` says what is behind it.
@@ -155,16 +164,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 215 passed, 92 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **306 passed, 1 skipped, 4 min 48 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
-| `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
-| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 43/43 sabotages caught by at least one gauge |
+| `make test` | 225 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **323 passed, 1 skipped, 4 min 59 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
+| `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
+| `make sabotage` | 48/48 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers thirty-one properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers thirty-six properties, not all of them.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either. A third seat, on the deployed thing (2026-09-03),
 got nothing forbidden through it and found that the served application left an auto-approved note

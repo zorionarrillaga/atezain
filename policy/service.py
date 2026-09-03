@@ -57,13 +57,18 @@ class PolicyService:
     properties over slots, so whoever holds the service cannot swap the policy, the clock or the
     fuse under it (an outside seat did all three in one line each on 2026-09-02). Whoever holds
     the STORE is root — README §Trust boundary."""
-    __slots__ = ("_config", "_store", "_clock", "_fuse")
+    __slots__ = ("_config", "_store", "_clock", "_fuse", "_record_reader")
 
-    def __init__(self, config: PolicyConfig, store: Store, clock: Callable[[], float] = time.time):
+    def __init__(self, config: PolicyConfig, store: Store, clock: Callable[[], float] = time.time,
+                 record_reader: Callable[[str], Any] | None = None):
         object.__setattr__(self, "_config", config)
         object.__setattr__(self, "_store", store)
         object.__setattr__(self, "_clock", clock)
         object.__setattr__(self, "_fuse", Fuse(store, clock))
+        # Read-only, and the records', not the model's: `record_constraints` asks it what a record
+        # says about itself. Bound at construction like every other binding, so whoever holds the
+        # service cannot point it at a record store of their own.
+        object.__setattr__(self, "_record_reader", record_reader)
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError(f"PolicyService.{name} is fixed at construction")
@@ -72,6 +77,7 @@ class PolicyService:
     store = property(lambda self: self._store)
     clock = property(lambda self: self._clock)
     fuse = property(lambda self: self._fuse)
+    record_reader = property(lambda self: self._record_reader)
 
     # ── helpers ──────────────────────────────────────────────────────────────────────────────
     def _day_start(self, now: float) -> float:
@@ -153,6 +159,26 @@ class PolicyService:
         pattern = self.config.records.get(spec.record)
         if pattern is None or not isinstance(record_id, str) or re.fullmatch(pattern, record_id, re.ASCII) is None:
             raise Denied(f"record_shape:{spec.record}")
+        # ENDCHECK
+        # CHECK: value_of_record
+        # A field the adapter BINDS to the record's own value is not the model's to choose: the
+        # reminder's address must be the address the record already carries. Three ways to say no,
+        # and all three are the same sentence — a value this layer cannot check against the record
+        # is a value it does not accept: no reader to ask, a record that carries no such value, or
+        # a value that differs from it. The bound source field is one no action declares in
+        # `writes` (`test_no_action_writes_a_field_another_action_is_checked_against`), so the
+        # agent cannot move the truth it is measured against.
+        for f, source in spec.record_constraints.items():
+            if f not in p.params:
+                continue
+            if self.record_reader is None:
+                raise Denied(f"no_record_reader:{source}")
+            record = self.record_reader(record_id)
+            truth = record.get(source) if isinstance(record, Mapping) else None
+            if truth is None or truth == "":
+                raise Denied(f"record_has_no:{source}")
+            if str(p.params[f]) != str(truth):
+                raise Denied(f"value_not_of_record:{f}")
         # ENDCHECK
         day = self._day_start(now)
         # CHECK: daily_budget_trips_fuse

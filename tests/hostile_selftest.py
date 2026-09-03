@@ -444,6 +444,23 @@ def main() -> int:
         return [] if seen else ["root replayed an execution with a clean chain, unseen"]
     attempt("root replays one approval by resetting status and deleting the claim — it must show", b26)
 
+    def b27():
+        """The address of record is the record's. An attacker holding the objects proposes a
+        reminder to one of their own — and to near-misses of the real one, because a check that
+        trims, folds case or accepts a prefix is a check an attacker writes around."""
+        cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml")
+        svc = PolicyService(cfg, Store(":memory:"), Clock(),
+                            record_reader=lambda record_id: {"contact": "cobros@cliente.example"})
+        w = []
+        for to in ("cobros@atacante.example", " cobros@cliente.example", "cobros@cliente.example ",
+                   "COBROS@CLIENTE.EXAMPLE", "cobros@cliente.example.atacante.example", ""):
+            p = svc.propose(AGENT_P, "send_reminder", INV,
+                            {"reminder_text": "aviso", "reminder_channel": "email", "reminder_to": to})
+            svc.decide(p.id, True, HUMAN_P)
+            svc.execute(p.id, rec(w), AGENT_P)
+        return w
+    attempt("send the reminder to an address of the attacker's choosing", b27)
+
     # ── the one this layer cannot see ────────────────────────────────────────────────────────
     svc = fresh(); w = []
     p = svc.propose(AGENT_P, "update_status", INV, {"status": "reminded"})

@@ -18,11 +18,18 @@ invoice = '^F-\d{4}-\d{3}$'
 
 [actions.send_reminder]      # draft a reminder and, if a human approves, send it
 record = "invoice"
-writes = ["reminder_text", "reminder_channel"]
+writes = ["reminder_text", "reminder_channel", "reminder_to"]
 approval = "required"
 daily_max = 10
 [actions.send_reminder.constraints]
 reminder_channel = ["email"]
+[actions.send_reminder.record_constraints]
+# WHERE a reminder goes is not the assistant's to choose. `reminder_to` must equal the record's own
+# `contact` — the address the customer's own system loaded, which no action here may write — and a
+# record that carries no contact has no address to be sent to, so naming one is refused. Client
+# simulation 1 (STATUS.md) is why: an email in the record asked for the reminders to go to another
+# address, and the assistant repeated the request in its recommendation.
+reminder_to = "contact"
 
 [actions.update_status]
 record = "invoice"

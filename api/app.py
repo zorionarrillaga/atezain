@@ -27,8 +27,8 @@ from agent.executor import make_executor
 from agent.llm import GroqLLM, StubLLM
 from api.auth import AGENT_PRINCIPAL, Sessions
 from api.limits import Limits
-from api.schemas import (AssistOut, AuditOut, DecideIn, DecideOut, FuseOut, ProposalOut,
-                         RejectedRow, SessionOut, UploadOut)
+from api.schemas import (AssistOut, AuditOut, DecideIn, DecideOut, EmailOut, FuseOut, NoteOut,
+                         ProposalOut, RecordDetailOut, RecordOut, RejectedRow, SessionOut, UploadOut)
 from policy import APPROVED, EXECUTED, HELD, PolicyConfig, PolicyService, Store
 from records import Records
 
@@ -44,7 +44,7 @@ OWNER_TOKEN = os.environ.get("ATEZAIN_OWNER_TOKEN", "")
 MAX_UPLOAD_BYTES = 1024 * 1024
 MAX_ROWS = 500
 COLUMNS = ("id", "customer", "amount", "currency", "issued", "due", "status")
-EXTRAS = ("note", "email_subject", "email_body")
+EXTRAS = ("contact", "note", "email_subject", "email_body")
 
 app = FastAPI(title="atezain", description=__doc__.split("\n\n")[0])
 STATE.mkdir(parents=True, exist_ok=True)
@@ -79,13 +79,15 @@ class SessionState:
             from records.store_pg import PgRecords
             schema = schema_of(sid)
             self.records = PgRecords(DSN, schema=schema)
-            self.policy = PolicyService(config, PgStore(DSN, schema=schema))
+            self.policy = PolicyService(config, PgStore(DSN, schema=schema),
+                                        record_reader=self.records.invoice)
             self.checkpointer = make_checkpointer(DSN, None)
         else:
             d = STATE / sid
             d.mkdir(parents=True, exist_ok=True)
             self.records = Records(str(d / "records.db"))
-            self.policy = PolicyService(config, Store(str(d / "policy.db")))
+            self.policy = PolicyService(config, Store(str(d / "policy.db")),
+                                        record_reader=self.records.invoice)
             self.checkpointer = make_checkpointer(None, d / "checkpoints.db")
 
     def graph(self, llm):
@@ -187,7 +189,7 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
             rejected.append(RejectedRow(row=n, id="", why="no id"))
             continue
         if re.fullmatch(pattern, rid, re.ASCII) is None:
-            rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match {pattern}"))
+            rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match the shape this adapter declares, {pattern} — the row was not loaded, the rest were"))
             continue
         existing = st.records.invoice(rid)
         if existing is None:
@@ -200,7 +202,8 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
                 "id": rid, "customer": (row.get("customer") or "").strip(), "amount": amount,
                 "currency": (row.get("currency") or "EUR").strip(),
                 "issued": (row.get("issued") or "").strip(), "due": (row.get("due") or "").strip(),
-                "status": (row.get("status") or "open").strip()})
+                "status": (row.get("status") or "open").strip(),
+                "contact": (row.get("contact") or "").strip()})
             loaded += 1
             ids.append(rid)
         if row.get("note"):
@@ -208,6 +211,39 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
         if row.get("email_body"):
             st.records.plant_email(rid, "uploaded", row.get("email_subject", ""), row["email_body"])
     return UploadOut(loaded=loaded, rejected=rejected, ids=ids)
+
+
+def record_out(inv: dict) -> RecordOut:
+    return RecordOut(id=inv["id"], customer=inv["customer"], amount=inv["amount"], currency=inv["currency"],
+                     issued=inv["issued"], due=inv["due"], status=inv["status"],
+                     contact=inv.get("contact"), reminder_to=inv.get("reminder_to"),
+                     reminder_channel=inv.get("reminder_channel"),
+                     notes=len(inv["notes"]), emails=len(inv["emails"]),
+                     assistant_notes=sum(1 for n in inv["notes"] if n["author"] == "assistant"))
+
+
+@app.get("/sessions/{sid}/records", response_model=list[RecordOut])
+def records(sid: str, authorization: str | None = Header(default=None)) -> list[RecordOut]:
+    """The visitor's own records back, which until 2026-09-03 no route returned: an `add_note` is
+    auto-approved by this adapter and executes without anyone deciding, so the one write that needs
+    no human was the one write nobody could read (client simulation 1, STATUS.md). Reads only —
+    there is no route here that writes."""
+    who(sid, authorization)
+    st = state_of(sid)
+    return [record_out(inv) for inv in (st.records.invoice(i) for i in st.records.ids()) if inv]
+
+
+@app.get("/sessions/{sid}/records/{invoice_id}", response_model=RecordDetailOut)
+def record(sid: str, invoice_id: str, authorization: str | None = Header(default=None)) -> RecordDetailOut:
+    """One record with its notes and emails. Every note carries WHO wrote it: `assistant` is this
+    system's own voice, and a claim in one is the assistant's, not the customer's."""
+    who(sid, authorization)
+    inv = state_of(sid).records.invoice(invoice_id)
+    if inv is None:
+        raise HTTPException(status_code=404, detail=f"no record {invoice_id} in this session")
+    return RecordDetailOut(**record_out(inv).model_dump(),
+                           note_rows=[NoteOut(**n) for n in inv["notes"]],
+                           email_rows=[EmailOut(**e) for e in inv["emails"]])
 
 
 # ── assist ───────────────────────────────────────────────────────────────────────────────────

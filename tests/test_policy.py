@@ -53,13 +53,17 @@ def _bind_store(store_factory):
     STORE_FACTORY = was
 
 
-def make(daily_writes=None):
+def make(daily_writes=None, record=None):
+    """`record` is what the service's record reader answers with — the record's own view of itself,
+    which `record_constraints` checks a proposal against. None means no reader is bound at all,
+    which is what every call here did before 2026-09-03 and still does."""
     cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml")
     if daily_writes is not None:
         cfg = cfg.replace(daily_writes=daily_writes)
     store = STORE_FACTORY()
     clock = Clock()
-    return PolicyService(cfg, store, clock), store, clock
+    reader = (lambda record_id: record) if record is not None else None
+    return PolicyService(cfg, store, clock, record_reader=reader), store, clock
 
 
 def ok_executor(action, record_id, params):
@@ -857,3 +861,51 @@ def test_a_savepoint_that_does_not_fail_keeps_its_writes():
             inner.note = "kept"
             store.put_proposal(inner)
     assert store.get_proposal(outer.id).note == "kept" and store.get_proposal(inner.id).note == "kept"
+
+
+# ── a field bound to the record's own value (CHECK: value_of_record) ─────────────────────────
+# The adapter binds `send_reminder.reminder_to` to the invoice's `contact`. Client simulation 1
+# (STATUS.md, 2026-09-03) is the incident: an email sitting in the record asked for the reminders
+# to go to another address, and the assistant repeated the request in its recommendation. Where a
+# message goes is the record's to say.
+
+def test_a_reminder_must_go_to_the_address_the_record_carries():
+    svc, _, _ = make(record={"contact": "cobros@cliente.example"})
+    good = svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email",
+                                                        "reminder_to": "cobros@cliente.example"})
+    assert good.status == HELD and good.params["reminder_to"] == "cobros@cliente.example"
+    bad = svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email",
+                                                       "reminder_to": "cobros@gestoria-de-otro.example"})
+    assert bad.status == DENIED and bad.reason == "value_not_of_record:reminder_to"
+
+
+def test_an_address_the_record_knows_nothing_about_is_refused():
+    """A record with no address of record has no address a reminder may be sent to — naming one is
+    the model (or an injection) inventing a destination."""
+    svc, _, _ = make(record={"customer": "Talleres Aranburu S.L."})
+    p = svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email",
+                                                     "reminder_to": "cobros@donde-sea.example"})
+    assert p.status == DENIED and p.reason == "record_has_no:contact"
+    # and a reminder that names no address at all is what it always was: held, for a human
+    assert svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email"}).status == HELD
+
+
+def test_a_value_with_no_record_to_check_it_against_is_refused():
+    """Fail closed on the VALUE, not on the action: a service with no record reader bound — the
+    red-team's control shape, and every caller that has no record store — still holds an ordinary
+    reminder, and still refuses one that names an address it cannot check."""
+    svc, _, _ = make()
+    p = svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email",
+                                                     "reminder_to": "cobros@cliente.example"})
+    assert p.status == DENIED and p.reason == "no_record_reader:contact"
+    assert svc.propose(AGENT_P, "send_reminder", inv(), {"reminder_text": "x", "reminder_channel": "email"}).status == HELD
+
+
+def test_no_action_writes_a_field_another_action_is_checked_against():
+    """What makes the check worth having: the agent cannot move the truth it is measured against.
+    A `contact` that some action could write would be a `contact` an injection could rewrite first
+    and then be checked against."""
+    cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml")
+    bound = {src for s in cfg.actions.values() for src in s.record_constraints.values()}
+    written = {f for s in cfg.actions.values() for f in s.writes}
+    assert bound == {"contact"} and not (bound & written)

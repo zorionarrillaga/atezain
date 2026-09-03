@@ -95,3 +95,19 @@ def test_the_prose_quotes_no_recall_number():
         text = (ROOT / rel).read_text(encoding="utf-8")
         m = pat.search(text)
         assert m is None, f"{rel} quotes a retrieval number that nothing measured: {m.group(0)!r}"
+
+
+# What `agent/graph.py::retrieve` puts in front of the model for ONE invoice, on the seed, on
+# 2026-09-02 when the hundred were run. `Records.invoice` IS the model's context, and `case_hash`
+# cannot see that file either — so a field added to a record is a silent change to what every
+# cached answer was an answer to. Fields that only some records carry are omitted when they are
+# empty, which is what keeps this list the same after `contact` and `reminder_to` (2026-09-03).
+SHOWN = ["amount", "currency", "customer", "due", "emails", "id", "issued", "notes",
+         "reminder_channel", "reminder_text", "status"]
+
+
+def test_the_model_is_shown_the_fields_the_hundred_were_run_with():
+    records = Records(":memory:")
+    records.load_seed(SEED)
+    for i in records.ids():
+        assert sorted(records.invoice(i)) == SHOWN, RERUN

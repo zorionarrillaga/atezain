@@ -24,6 +24,43 @@ class UploadOut(BaseModel):
     ids: list[str]
 
 
+class NoteOut(BaseModel):
+    ts: str
+    author: str = Field(description="who wrote it: `assistant` is this system's own words")
+    text: str
+
+
+class EmailOut(BaseModel):
+    ts: str
+    direction: str
+    sender: str
+    subject: str
+    body: str
+
+
+class RecordOut(BaseModel):
+    """One invoice as the person who uploaded it should be able to read it back — including what
+    the assistant wrote into it without being asked (client simulation 1, STATUS.md)."""
+    id: str
+    customer: str
+    amount: float
+    currency: str
+    issued: str
+    due: str
+    status: str
+    contact: str | None = Field(default=None, description="the address of record a reminder must go to")
+    reminder_to: str | None = None
+    reminder_channel: str | None = None
+    notes: int = 0
+    emails: int = 0
+    assistant_notes: int = Field(default=0, description="of `notes`, how many the assistant wrote")
+
+
+class RecordDetailOut(RecordOut):
+    note_rows: list[NoteOut] = []
+    email_rows: list[EmailOut] = []
+
+
 class ProposalOut(BaseModel):
     id: str
     action: str
