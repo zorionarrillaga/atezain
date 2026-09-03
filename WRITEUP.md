@@ -452,9 +452,9 @@ since 2026-09-02: a free Render instance that sleeps when idle and wakes slowly,
 and chain on Postgres, `openai/gpt-oss-120b` behind it. The planted injection reproduces there.
 An outside seat ran it on 2026-09-03 — one model call, a planted injection, nothing forbidden
 through, the chain clean — and refuted it narrowly on the execute path described above; the fold is
-in `STATUS.md`. What runs there is commit `9bf2a07`: the first client simulation, the same day,
-was run against it, and what that simulation changed sits in the repository undeployed until the
-owner says otherwise. Tracing to
+in `STATUS.md`. Two client simulations followed it the same day — the thing used rather than
+attacked, once as a bookkeeper's Monday and once as an evaluator's probe set — and what they changed
+is deployed: `STATUS.md` carries both, with the session ids and what each run did. Tracing to
 an external service, the uptime probe over seven days, and the author's own outbound going through
 the `outreach` adapter — all three are planned, in the order `PLAN.md` §9 gives and with the blocker
 named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.
@@ -505,10 +505,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 225 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 323 passed, 1 skipped, 4 min 59 s |
+| `make test` | 227 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 325 passed, 1 skipped, 5 min 0 s |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 48/48 sabotages caught by at least one gauge |
+| `make sabotage` | 49/49 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

@@ -14,11 +14,11 @@ attacked, in public, with injections planted in the very records it reads, and t
 measures it against a named model, the deploy, and the write-up; step 7's adapter and CLI are
 built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
 below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothing forbidden through
-it, one defect in the served execute path, folded the same day and deployed by hand on
-2026-09-03 (commit `9bf2a07`). **The URL runs that commit.** What client simulation 1 changed on
-2026-09-03 — the reminder's address, the records a visitor can read back, the page — is in this tree
-and is NOT at the URL: `autoDeploy` stays off, and deploying is the owner's word on the day
-(`CLAUDE.md` rule 1).**
+it, one defect in the served execute path, folded the same day. Then the client simulations
+began: two on 2026-09-03, a bookkeeper's workload and an evaluator's probe set, and what they
+changed — where a reminder is allowed to go, the records a visitor can read back, the rules readable
+before you upload — went out the same day on the owner's word (`01ffa38`). `autoDeploy` stays off,
+so a push is still not a deploy.**
 
 See `STATUS.md` for
 what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
@@ -164,10 +164,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 225 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **323 passed, 1 skipped, 4 min 59 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 227 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **325 passed, 1 skipped, 5 min 0 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 48/48 sabotages caught by at least one gauge |
+| `make sabotage` | 49/49 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and

@@ -311,3 +311,29 @@ def test_the_reminder_a_visitor_approves_says_where_it_goes(client):
     d = client.post(f"/sessions/{sid}/proposals/{p['id']}/decide", json={"approve": True}, headers=h).json()
     assert d["executed"] is True
     assert client.get(f"/sessions/{sid}/records/F-2026-031", headers=h).json()["reminder_to"] == "cobros@aranburu.example"
+
+
+def test_the_rules_a_visitor_runs_under_are_readable_before_they_upload_anything(client):
+    """Client simulation 2 (STATUS.md, 2026-09-03): an evaluator watched ten proposals — six held,
+    four executed, none denied, because the model behaved — and had no way to see what WOULD be
+    refused. The permission table answers that, rendered from the running config so it cannot drift
+    from what the service actually checks against, and with no session and no token: someone
+    deciding whether to trust the layer reads the rules before uploading to it."""
+    a = client.get("/adapter").json()
+    by = {x["action"]: x for x in a["actions"]}
+    assert by["update_amount"]["denied"] and by["delete_invoice"]["denied"] and by["send_to_external"]["denied"]
+    assert by["update_amount"]["writes"] == []                       # a denied action writes nothing
+    assert by["add_note"]["approval"] == "none" and by["update_status"]["approval"] == "required"
+    assert by["update_status"]["values"]["status"] == ["reminded", "promised", "disputed"]
+    assert by["send_reminder"]["of_the_record"] == {"reminder_to": "contact"}
+    assert a["fingerprint"] == apimod.config.fingerprint() and a["daily_writes"] == apimod.config.daily_writes
+    # every action the policy knows is listed: a rule that is not shown is a rule nobody can check
+    assert set(by) == set(apimod.config.actions)
+
+
+def test_the_bare_url_goes_to_the_page_and_not_to_a_404(client):
+    """A link shared without the path is the commonest way this URL will be opened (client
+    simulation 2, STATUS.md)."""
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code == 307 and r.headers["location"] == "/demo"
+    assert client.get("/", follow_redirects=True).status_code == 200

@@ -67,6 +67,9 @@ SABOTAGES = [
      "                     assistant_notes=0)\n"),
     ("a database made before the address columns is opened as if it had them", "records/store.py",
      "        self._ensure_columns()\n", "        pass\n"),
+    ("the rules a visitor reads leave out what is denied", "api/app.py",
+     "                 for name, s in sorted(config.actions.items())])\n",
+     "                 for name, s in sorted(config.actions.items()) if not s.deny])\n"),
     # step 7: the outbound-draft store's own claims
     ("the drafts store leaves its root", "records/drafts.py",
      "        if p != base and base not in p.parents:\n            raise OutsideRoot(draft_id)\n",

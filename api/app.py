@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Body, FastAPI, Header, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from agent import build_graph
 from agent.checkpoints import make_checkpointer
@@ -27,8 +27,9 @@ from agent.executor import make_executor
 from agent.llm import GroqLLM, StubLLM
 from api.auth import AGENT_PRINCIPAL, Sessions
 from api.limits import Limits
-from api.schemas import (AssistOut, AuditOut, DecideIn, DecideOut, EmailOut, FuseOut, NoteOut,
-                         ProposalOut, RecordDetailOut, RecordOut, RejectedRow, SessionOut, UploadOut)
+from api.schemas import (ActionOut, AdapterOut, AssistOut, AuditOut, DecideIn, DecideOut, EmailOut,
+                         FuseOut, NoteOut, ProposalOut, RecordDetailOut, RecordOut, RejectedRow,
+                         SessionOut, UploadOut)
 from policy import APPROVED, EXECUTED, HELD, PolicyConfig, PolicyService, Store
 from records import Records
 
@@ -213,6 +214,21 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
     return UploadOut(loaded=loaded, rejected=rejected, ids=ids)
 
 
+@app.get("/adapter", response_model=AdapterOut)
+def adapter() -> AdapterOut:
+    """The permission table, rendered from the loaded config — not from a copy of it in the page.
+    No session and no token: it is the same for everyone, and someone deciding whether to trust the
+    layer should be able to read the rules before uploading anything to it."""
+    return AdapterOut(
+        adapter=config.adapter, version=config.version, fingerprint=config.fingerprint(),
+        daily_writes=config.daily_writes, records=dict(config.records),
+        actions=[ActionOut(action=name, record=s.record, writes=list(s.writes), approval=s.approval,
+                           denied=s.deny, daily_max=s.daily_max,
+                           values={k: list(v) for k, v in s.constraints.items()},
+                           of_the_record=dict(s.record_constraints))
+                 for name, s in sorted(config.actions.items())])
+
+
 def record_out(inv: dict) -> RecordOut:
     return RecordOut(id=inv["id"], customer=inv["customer"], amount=inv["amount"], currency=inv["currency"],
                      issued=inv["issued"], due=inv["due"], status=inv["status"],
@@ -331,6 +347,13 @@ def clear_server_fuse(x_owner_token: str | None = Header(default=None)) -> JSONR
 
 
 # ── the page, and the health check ───────────────────────────────────────────────────────────
+@app.get("/")
+def root() -> RedirectResponse:
+    """A link shared without the path landed on a bare 404 (client simulation 2). What a root page
+    should SAY is the owner's; that it should not be an error is not a question."""
+    return RedirectResponse(url="/demo", status_code=307)
+
+
 @app.get("/demo", response_class=HTMLResponse)
 def demo() -> str:
     return (Path(__file__).resolve().parent / "demo.html").read_text(encoding="utf-8")

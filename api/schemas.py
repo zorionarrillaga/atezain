@@ -24,6 +24,32 @@ class UploadOut(BaseModel):
     ids: list[str]
 
 
+class ActionOut(BaseModel):
+    """One row of the adapter's permission table, as the policy reads it."""
+    action: str
+    record: str
+    writes: list[str] = []
+    approval: str
+    denied: bool = False
+    daily_max: int | None = None
+    values: dict[str, list] = Field(default_factory=dict, description="field -> the only values permitted")
+    of_the_record: dict[str, str] = Field(default_factory=dict,
+                                          description="field -> the record's own field it must equal")
+
+
+class AdapterOut(BaseModel):
+    """What the visitor is running under. Client simulation 2 (STATUS.md): an evaluator watched ten
+    proposals, six held and four executed and NONE denied — because the model behaved — and had no
+    way to see what would have been refused. This is that, read from the same `PolicyConfig` the
+    service checks proposals against, with the fingerprint every PROPOSAL row in the chain carries."""
+    adapter: str
+    version: int
+    fingerprint: str
+    daily_writes: int
+    records: dict[str, str]
+    actions: list[ActionOut]
+
+
 class NoteOut(BaseModel):
     ts: str
     author: str = Field(description="who wrote it: `assistant` is this system's own words")
