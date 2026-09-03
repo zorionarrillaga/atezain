@@ -435,15 +435,17 @@ An outside seat ran it on 2026-09-03 — one model call, a planted injection, no
 through, the chain clean — and refuted it narrowly on the execute path described above; the fold is
 in `STATUS.md`. Tracing to
 an external service, the uptime probe over seven days, and the author's own outbound going through
-the `outreach` adapter — each is planned, in the order `PLAN.md` §9 gives and with its blocker
+the `outreach` adapter — all three are planned, in the order `PLAN.md` §9 gives and with the blocker
 named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.
 
 ## Provenance
 
 Every rule in `policy/` exists because something specific went wrong, on a date, with a price, in
 the author's own autonomous trading system, run against a real proprietary-firm evaluation account
-between May and August 2026. `PROVENANCE.md` has the table: an enforcement surface that strangled the trades it was meant to
-protect and was cut to a closed table of a few rules that may block; a soft loss limit on the day
+between May and August 2026. `PROVENANCE.md` has the table, and every row on it carries the date and the repair, not only the
+failure: sixteen enforcement hooks that accumulated on the trade path and strangled trades that
+should have fired, cut on 2026-05-29 to three, with a closed table of at most eight rules that may
+block — the shape `adapters/*/permissions.toml` has here; a soft loss limit on the day
 an evaluation account was terminated; a fill that slipped past its risk gate with no post-submit
 check — the check that system never built and this layer does; a guard inverted to "cannot see is
 block"; a lockdown that cannot be cleared the same day, by anyone; a daily-kill check that read a
