@@ -75,6 +75,21 @@ def _read(name: str) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
+def _carried(label: str) -> str | None:
+    """A row this working tree has no record of, remembered from `GAUGES.md` itself.
+
+    `var/` is gitignored and the DSN arm needs a database this repo does not ship, so a FRESH CLONE
+    records four gauges and not the fifth. Rendering without the row used to DELETE it from a tracked
+    file and then fail, blaming the three documents that quote it — and `make test` stayed red after
+    that until someone hand-edited the file whose own header forbids it. So `make all` was
+    unreachable for exactly the reader `README.md` invites to reproduce it (round-2 seat, 2026-09-03,
+    D2). The row carries its own date, so it says for itself that it is not from this run."""
+    if not OUT.exists():
+        return None
+    return next((l for l in OUT.read_text(encoding="utf-8").splitlines()
+                 if l.startswith(f"| {label} |")), None)
+
+
 def render() -> str:
     rows = []
     for name in ("test", "test_dsn", "mutate", "hostile", "sabotage"):
@@ -82,6 +97,9 @@ def render() -> str:
         if rec is None:
             if name in REQUIRED:
                 raise SystemExit(f"gauge_record: var/gauges/{name}.json is missing — run `make all`, which records every gauge")
+            carried = _carried(LABEL[name])           # a gauge this tree cannot run keeps its last line
+            if carried:
+                rows.append(carried)
             continue
         if rec.get("exit"):
             raise SystemExit(f"gauge_record: the last `{name}` run exited {rec['exit']}; GAUGES.md is written from green runs only")
@@ -93,7 +111,9 @@ def render() -> str:
         f"Written by `make all` on {today} (`tests/gauge_record.py`) from the last line each gauge printed;\n"
         "the only source of a gauge count in `README.md`, `WRITEUP.md` and `STATUS.md` — `tests/gauges.py`\n"
         "holds them to it, and `make all` ends red if they disagree. Do not edit by hand. The `test` line\n"
-        "is the run without a database; the line with `ATEZAIN_TEST_DSN` is the last run that had one.\n\n"
+        "is the run without a database; the line with `ATEZAIN_TEST_DSN` is the last run that had one —\n"
+        "carried forward from this file, with its own date, when the working tree has no DSN run of its\n"
+        "own, so that a clone with no database can still reach a green `make all`.\n\n"
         "| gauge | result |\n|---|---|\n" + "\n".join(rows) + "\n"
     )
 

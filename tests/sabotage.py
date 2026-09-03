@@ -63,6 +63,13 @@ SABOTAGES = [
     ("the drafts store reports the row, not the artifact", "records/drafts.py",
      "        art = self.artifact(draft_id) or {}\n",
      '        art = next((r for r in reversed(self.rows(draft_id)) if r.get("event") == "sent"), {})\n'),
+    # round-2 seat, 2026-09-03: the two the fold of step 6 left open
+    ('the records store drives one connection from many threads', 'records/store.py',
+     '        self.conn = _Serialised(sqlite3.connect(path, isolation_level=None, check_same_thread=False))\n',
+     '        self.conn = sqlite3.connect(path, isolation_level=None, check_same_thread=False)\n'),
+    ('a gauge line this tree cannot run is dropped from GAUGES.md', 'tests/gauge_record.py',
+     '            carried = _carried(LABEL[name])           # a gauge this tree cannot run keeps its last line\n            if carried:\n',
+     '            carried = _carried(LABEL[name])           # a gauge this tree cannot run keeps its last line\n            if False:\n'),
     # step 7: the owner's own artifact and ledger, in HIS format (⚖ 2026-09-02)
     ('his SENT header is not written', "records/drafts.py",
      '            f"# SENT {day} · {target} · {to}\\n"\n',

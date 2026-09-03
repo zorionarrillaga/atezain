@@ -12,20 +12,56 @@ import datetime as dt
 import json
 import re
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
+
+
+class _Rows(list):
+    """What `execute` hands back: the rows, already read, so nothing is fetched off a shared cursor
+    after the lock is gone. `fetchone` is kept because the callers here read that way."""
+
+    def fetchone(self):
+        return self[0] if self else None
+
+    def fetchall(self):
+        return list(self)
+
+
+class _Serialised:
+    """One connection, one lock, statement and fetch inside it.
+
+    `policy/store.py` has had an `RLock` since the budget race. This file did not, and its comment
+    claimed it did not need one — *"SQLite serialises writers itself … and a session is one
+    visitor"*. The round-2 seat (2026-09-03, D3) showed that claim failing the moment step 6's fold
+    made `assist` a write path: two concurrent assists on one record returned a raw
+    `sqlite3.InterfaceError` off the shared connection and left a note in the record that the queue
+    and the chain did not claim as executed. A visitor double-clicking is enough — `api/demo.html`
+    does not disable its button. Neither "database is locked" nor safe, so: a lock, like its sibling.
+    """
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn, self._lock = conn, threading.RLock()
+
+    def execute(self, sql: str, params=()) -> _Rows:
+        with self._lock:
+            return _Rows(self._conn.execute(sql, params).fetchall())
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
 
 
 class Records:
     def __init__(self, path: str = ":memory:", clock: Callable[[], float] = time.time):
         # check_same_thread=False for the same reason `policy/store.py` does it: a served
         # request runs in whatever worker thread the server hands it, and the connection
-        # outlives the thread that opened it. SQLite serialises writers itself; two
-        # concurrent writes to one session raise "database is locked" rather than corrupt,
-        # and a session is one visitor (api/app.py).
+        # outlives the thread that opened it. What SQLite's own writer serialisation does NOT
+        # give is safety for two threads driving ONE connection — see `_Serialised`, which is
+        # what this attribute is — so a session being one visitor is not the guarantee this
+        # relied on before 2026-09-03.
         self.clock = clock
-        self.conn = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
+        self.conn = _Serialised(sqlite3.connect(path, isolation_level=None, check_same_thread=False))
         self.conn.execute("CREATE TABLE IF NOT EXISTS invoices (id TEXT PRIMARY KEY, customer TEXT, amount REAL, currency TEXT, issued TEXT, due TEXT, status TEXT, reminder_text TEXT, reminder_channel TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")

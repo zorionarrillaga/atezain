@@ -13,6 +13,7 @@ write-up's refutation seat, 2026-09-02, STATUS.md).
 """
 from __future__ import annotations
 
+import json
 import itertools
 import re
 from pathlib import Path
@@ -138,3 +139,41 @@ def test_a_document_that_names_its_own_reading_time_is_not_longer_than_that(rel)
     for m in MINUTES.finditer(text):
         minutes = int(next(g for g in m.groups() if g))
         assert words / 250 <= minutes, f"{rel} says it reads in {minutes} minutes and has {words} words"
+
+
+def test_a_clone_with_no_database_can_still_reach_a_green_make_all(tmp_path, monkeypatch):
+    """Round-2 seat, 2026-09-03 (D2). `var/` is gitignored and the DSN arm needs a database this
+    repo does not ship, so a fresh clone records four gauges and not the fifth. Rendering used to
+    DROP the DSN row from this tracked file and then fail, blaming the three documents that quote
+    it — and `make test` stayed red afterwards until someone hand-edited the file whose header
+    forbids it. `make all` was unreachable for exactly the reader `README.md` invites to reproduce
+    it. The row is now carried forward from `GAUGES.md`, with its own date, when this tree has no
+    DSN run of its own."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gauge_record", ROOT / "tests" / "gauge_record.py")
+    gr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gr)
+
+    # The four records a clone's `make all` would leave, written here rather than copied from this
+    # tree's `var/`: what is under test is the RENDER, and reading whatever the last local run left
+    # behind would make the result depend on whether that run happened to be green.
+    var = tmp_path / "gauges"
+    var.mkdir(parents=True)
+    lines = {"test": "7 passed, 3 skipped", "mutate": "1 checks · 1 killed by assertion",
+             "hostile": "2/2 scored attempts blocked", "sabotage": "5/5 sabotages caught by at least one gauge"}
+    for name, line in lines.items():
+        (var / f"{name}.json").write_text(
+            json.dumps({"line": line, "date": "2026-09-03", "exit": 0}), encoding="utf-8")
+    monkeypatch.setattr(gr, "VAR", var)
+
+    rendered = gr.render()
+    dsn = [l for l in rendered.splitlines() if l.startswith(f"| {gr.LABEL['test_dsn']} |")]
+    assert len(dsn) == 1, "the DSN row must survive a tree that cannot run it"
+    assert dsn[0] == next(l for l in GAUGES.read_text(encoding="utf-8").splitlines()
+                          if l.startswith(f"| {gr.LABEL['test_dsn']} |")), "carried verbatim, date and all"
+    # The four gauges this tree CAN run are still rendered from `var/`, not carried — the carry is
+    # for the one it cannot run, never a way for any line to outlive the run that produced it.
+    # Whether the documents then agree is the other test's job, not this one's: asserting it here
+    # too would just report the same lag twice while the counts are between runs.
+    for name, line in lines.items():
+        assert f"| {gr.LABEL[name]} | {line} |" in rendered

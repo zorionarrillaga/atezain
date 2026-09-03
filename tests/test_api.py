@@ -198,14 +198,18 @@ def test_the_demo_page_and_the_health_check_answer_without_a_token(client):
 
 # ── the step-6 seat (2026-09-03) ─────────────────────────────────────────────────────────────
 class _NoteAndHold:
-    """A model output with a write that needs no human beside one that does — the shape the seat
-    measured in most of the hundred cached outputs."""
+    """A model output with a write that needs no human beside one that does.
+
+    This one puts the HELD proposal FIRST — the minority order, 32 of the hundred cached outputs the
+    step-6 seat measured, and the half a stub pinned to `add_note`-first cannot see. `test_agent.py`
+    parametrises over both orders; between the two files the served path is held to the whole corpus
+    instead of to its majority shape (round-2 seat, 2026-09-03)."""
 
     def complete(self, system: str, user: str) -> str:
         import json
         return json.dumps({"summary": "s", "recommendation": "r", "draft": "d", "proposals": [
-            {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"},
-            {"action": "update_status", "params": {"status": "reminded"}, "why": "w"}]})
+            {"action": "update_status", "params": {"status": "reminded"}, "why": "w"},
+            {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"}]})
 
 
 def test_the_served_path_writes_an_auto_approved_note_even_when_a_sibling_is_held(client, monkeypatch):

@@ -19,19 +19,31 @@ adapter is duplicated from `policy/store_pg.py` rather than shared, for that rea
 """
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 from .store import Records
 
 
 class _Placeholders:
-    """`?` in, `%s` out — see the note above about why this is not imported from `policy/`."""
+    """`?` in, `%s` out — see the note above about why this is not imported from `policy/`.
+
+    It also holds the same lock its SQLite sibling does (`records.store._Serialised`). The round-2
+    seat (2026-09-03) demonstrated the unlocked SQLite connection failing under two concurrent
+    assists and left the Postgres side explicitly OWED, guessing psycopg's own locking might save
+    it. With a DSN this repo can check instead of guessing, and `tests/test_agent.py::
+    test_two_assists_on_one_record_at_once_do_not_break_the_store` runs on both stores — so rather
+    than exempt the deployed backend from a property the local one has, both keep one discipline:
+    one thread inside a statement at a time. Whether psycopg would have survived it anyway is then
+    not a thing anyone has to be right about."""
 
     def __init__(self, conn):
         self.conn = conn
+        self._lock = threading.RLock()
 
     def execute(self, sql: str, params: Any = ()):
-        return self.conn.execute(sql.replace("?", "%s"), tuple(params))
+        with self._lock:
+            return self.conn.execute(sql.replace("?", "%s"), tuple(params))
 
 
 class PgRecords(Records):

@@ -2,6 +2,7 @@
 deny-all policy means zero writes across the whole graph; a manipulated model changes nothing that
 matters; approve → resume executes exactly once even though LangGraph re-runs the interrupted node."""
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -212,16 +213,29 @@ def test_the_real_executor_executes_an_approved_note_exactly_once():
 
 
 class _NoteAndHold:
-    """A model output with a write that needs no human beside one that does."""
+    """A model output with a write that needs no human beside one that does.
+
+    **The ORDER is a parameter, because the model chooses it.** Over the hundred cached outputs the
+    step-6 seat measured, `add_note` comes first in 68 and after another action in 32. The round-2
+    seat (2026-09-03) named the cost of pinning a stub to the majority: a one-token weakening of the
+    execute loop — `continue` → `break`, stop at the first proposal that is not ours — leaves the
+    whole suite green and re-orphans the note in exactly those 32. A guard against a defect coming
+    back may not be blind to the half of the corpus the defect lives in."""
+
+    def __init__(self, note_first: bool = True):
+        self.note_first = note_first
 
     def complete(self, system: str, user: str) -> str:
         import json
-        return json.dumps({"summary": "s", "recommendation": "r", "draft": "d", "proposals": [
-            {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"},
-            {"action": "update_status", "params": {"status": "reminded"}, "why": "w"}]})
+        note = {"action": "add_note", "params": {"note": "nota del asistente"}, "why": "w"}
+        held = {"action": "update_status", "params": {"status": "reminded"}, "why": "w"}
+        return json.dumps({"summary": "s", "recommendation": "r", "draft": "d",
+                           "proposals": [note, held] if self.note_first else [held, note]})
 
 
-def test_a_write_that_needs_no_human_does_not_wait_for_one():
+@pytest.mark.parametrize("note_first", [True, False],
+                         ids=["note-before-the-held-one", "note-after-the-held-one"])
+def test_a_write_that_needs_no_human_does_not_wait_for_one(note_first):
     """The step-6 seat (2026-09-03): the served application never resumes the graph, so a note the
     policy approved with no human sat `approved` and unwritten whenever a sibling was held. What
     needs no decision is executed before the graph waits for one; what a human approves, after —
@@ -229,7 +243,7 @@ def test_a_write_that_needs_no_human_does_not_wait_for_one():
     records = RECORDS_FACTORY()
     records.load_seed(SEED)
     policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
-    graph = build_graph(records, policy, _NoteAndHold(), AGENT_P)
+    graph = build_graph(records, policy, _NoteAndHold(note_first), AGENT_P)
     out, cfg = run(graph, "F-2026-042")                       # an invoice with no notes in the seed
     by_action = {p["action"]: p["id"] for p in out["proposals"]}
     assert policy.store.get_proposal(by_action["add_note"]).status == EXECUTED
@@ -263,3 +277,77 @@ def test_a_note_the_executor_writes_carries_a_date_from_the_stores_own_clock():
     assert note["author"] == "assistant"
     assert note["ts"] == "2026-01-15", note["ts"]
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", note["ts"])   # the shape the seed's own notes carry
+
+
+def test_two_assists_on_one_record_at_once_do_not_break_the_store():
+    """Round-2 seat, 2026-09-03 (D3). Step 6's fold made `assist` a write path — before it, the
+    served graph executed nothing — and `records/store.py` was driving one shared connection from
+    whatever worker thread the server handed it, with no lock and a comment saying it did not need
+    one. Two concurrent assists on the same record then returned a raw `sqlite3.InterfaceError` off
+    that connection and left a note in the record the chain did not claim as executed. A visitor
+    double-clicking is enough: `api/demo.html` does not disable its button.
+
+    The layer's honest states (`executed_unknown`, `executed_mismatch`) are not a substitute for the
+    lock — they are what a driver error is reported AS.
+
+    ⚠ THIS TEST FORCES THE OVERLAP RATHER THAN HOPING FOR IT. Six threads simply running the graph
+    pass with or without the lock — timing alone does not reliably land two statements on the
+    connection at the same instant, and a concurrency test that only passes is not a gauge (the same
+    lesson as `count_then_pause` in `tests/test_policy.py`, and the reason the 2026-09-02 six-thread
+    budget attempt is described in the README as not catching the missing lock on its own). So the
+    real connection is watched, a statement is made to take measurable time, and the property is
+    asserted directly: **at most one thread is ever inside a statement.** Instrumenting the RAW
+    connection — under the lock wherever the lock exists — is what makes removing the lock turn this
+    red instead of turning it into a skip."""
+    import threading
+    records = RECORDS_FACTORY()
+    records.load_seed(SEED)
+    raw = next((getattr(records.conn, a) for a in ("_conn", "conn") if hasattr(records.conn, a)), records.conn)
+    inside, peak, guard = [0], [0], threading.Lock()
+
+    class Watched:
+        def execute(self, sql, params=()):
+            with guard:
+                inside[0] += 1
+                peak[0] = max(peak[0], inside[0])
+            try:
+                time.sleep(0.002)          # a real statement takes time; this makes an overlap visible
+                return raw.execute(sql, params)
+            finally:
+                with guard:
+                    inside[0] -= 1
+
+        def __getattr__(self, name):
+            return getattr(raw, name)
+
+    watched = Watched()
+    # Slot the watcher UNDER whichever wrapper holds the lock — `_Serialised._conn` on SQLite,
+    # `_Placeholders.conn` on Postgres — so what is measured is overlap the lock should have
+    # prevented. Take either lock away and the watcher ends up on top instead, which is what makes
+    # this test go red rather than quietly become a tautology.
+    holder = records.conn
+    slot = next((a for a in ("_conn", "conn") if hasattr(holder, a)), None)
+    if slot:
+        setattr(holder, slot, watched)
+    else:
+        records.conn = watched                     # a bare connection: no lock in the way at all
+
+    errors, barrier = [], threading.Barrier(6)
+
+    def go(i):
+        barrier.wait()
+        try:
+            records._apply_add_note("F-2026-042", f"nota {i}")
+            records.invoice("F-2026-042")
+        except Exception as e:                                  # noqa: BLE001 — that is the finding
+            errors.append(f"{type(e).__name__}: {e}")
+
+    threads = [threading.Thread(target=go, args=(i,)) for i in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == [], "a driver error out of the shared connection is the defect, not a state"
+    assert peak[0] == 1, f"{peak[0]} threads drove one connection at once — the store has no lock"
+    assert len(records.invoice("F-2026-042")["notes"]) == 6, "every write landed"
