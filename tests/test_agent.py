@@ -1,6 +1,7 @@
 """Step 2 (design §5): every write path goes through the policy; the resume value is untrusted; a
 deny-all policy means zero writes across the whole graph; a manipulated model changes nothing that
 matters; approve → resume executes exactly once even though LangGraph re-runs the interrupted node."""
+import json
 import re
 import time
 from pathlib import Path
@@ -351,3 +352,99 @@ def test_two_assists_on_one_record_at_once_do_not_break_the_store():
     assert errors == [], "a driver error out of the shared connection is the defect, not a state"
     assert peak[0] == 1, f"{peak[0]} threads drove one connection at once — the store has no lock"
     assert len(records.invoice("F-2026-042")["notes"]) == 6, "every write landed"
+
+
+# ── tracing: the model call, which the chain does not carry (PLAN.md §4.5) ────────────────────
+def test_tracing_off_is_a_working_state_not_a_degraded_one():
+    """A clone with no keys, no SDK and no sink runs the graph it always ran. `Tracer.from_env` in
+    an environment with neither key is what `build_graph` defaults to, so this is the ordinary path
+    and not a special case: the assertion is that the final state is the untraced one."""
+    from agent.tracing import Tracer
+    records, policy, graph = setup()
+    plain, cfg = run(graph, "F-2026-031")
+
+    records2 = RECORDS_FACTORY(); records2.load_seed(SEED)
+    policy2 = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    traced = build_graph(records2, policy2, StubLLM(), AGENT_P, tracer=Tracer.from_env({}))
+    out, _ = run(traced, "F-2026-031", thread="t-traced")
+    assert [p["action"] for p in out["proposals"]] == [p["action"] for p in plain["proposals"]]
+    assert out["summary"] == plain["summary"] and out["draft"] == plain["draft"]
+    assert Tracer.from_env({}).hosted is False
+    assert Tracer.from_env({"LANGFUSE_PUBLIC_KEY": "pk", "LANGFUSE_SECRET_KEY": "sk"}).hosted is True
+
+
+def test_a_tracer_that_raises_does_not_fail_a_write():
+    """Rule 1 of `agent/tracing.py`: an observability dependency that can fail a send is worse than
+    no observability. The recording throws on every span; the graph must still hold what needs a
+    human, execute what does not, and leave a chain that verifies."""
+    from agent.tracing import Tracer
+
+    class Breaks(Tracer):
+        def _record(self, *a, **k):
+            raise RuntimeError("the sink is on fire")
+
+    records, policy = RECORDS_FACTORY(), None
+    records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    graph = build_graph(records, policy, StubLLM(), AGENT_P, tracer=Breaks())
+    out, cfg = run(graph, "F-2026-031")
+    held = [p for p in out["proposals"] if p["status"] == HELD]
+    assert len(held) == 1 and records.invoice("F-2026-031")["status"] == "open"
+    policy.decide(held[0]["id"], True, HUMAN_P)
+    out2 = graph.invoke(Command(resume="ok"), config=cfg)
+    assert out2["executed"] == [held[0]["id"]]
+    assert records.invoice("F-2026-031")["status"] == "reminded", "the write landed anyway"
+    assert policy.store.audit_verify() and not policy.store.audit_anomalies()
+
+
+def test_a_span_carries_the_model_call_and_not_the_record_it_read():
+    """The keys a span may record are named at the call site in `build_graph`. The model's answer is
+    in the span; the invoice, the customer and the retrieved snippets are not — a trace is an
+    observation of the agent, and the record is the chain's business."""
+    from agent.tracing import Tracer
+    records = RECORDS_FACTORY(); records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    tracer = Tracer()
+    graph = build_graph(records, policy, StubLLM(), AGENT_P, tracer=tracer)
+    out, cfg = run(graph, "F-2026-031")
+    policy.decide([p for p in out["proposals"] if p["status"] == HELD][0]["id"], True, HUMAN_P)
+    graph.invoke(Command(resume="ok"), config=cfg)
+
+    think = [s for s in tracer.spans if s["span"] == "think"]
+    assert len(think) == 1, "one model call, one span"
+    assert set(think[0]["in"]) == {"invoice_id", "task"} and think[0]["in"]["invoice_id"] == "F-2026-031"
+    assert set(think[0]["out"]) == {"summary", "recommendation", "draft", "raw_proposals"}
+    assert think[0]["out"]["draft"].startswith("Buenos días")
+    assert isinstance(think[0]["ms"], int) and think[0]["ms"] >= 0
+    blob = json.dumps(tracer.spans, ensure_ascii=False)
+    assert "context" not in blob and "snippets" not in blob
+    assert records.invoice("F-2026-031")["customer"] not in blob
+    assert [s["span"] for s in tracer.spans if s["span"].startswith("execute")] == ["execute", "execute_decided"]
+
+
+def test_the_sink_and_the_export_replay_a_run_with_no_key(tmp_path):
+    """`traces/export.py`: one JSON per proposal, carrying the call that produced it and every audit
+    row that names it. No key is required to write it and none is required to read it — which is the
+    half of §4.5 that makes the record outlive a hosted account's thirty days."""
+    from agent.tracing import Tracer, load_spans
+    from traces.export import export
+    sink = tmp_path / "traces.jsonl"
+    records = RECORDS_FACTORY(); records.load_seed(SEED)
+    policy = PolicyService(PolicyConfig.load(CFG), Store(":memory:"))
+    graph = build_graph(records, policy, StubLLM(), AGENT_P, tracer=Tracer(sink=sink))
+    out, cfg = run(graph, "F-2026-031")
+    policy.decide([p for p in out["proposals"] if p["status"] == HELD][0]["id"], True, HUMAN_P)
+    graph.invoke(Command(resume="ok"), config=cfg)
+
+    spans = load_spans(sink)
+    assert [s["span"] for s in spans] == ["think", "execute", "execute_decided"]
+    written = export(policy.store, spans, tmp_path / "out")
+    assert len(written) == len(out["proposals"]) >= 1
+    docs = [json.loads(p.read_text(encoding="utf-8")) for p in written]
+    assert {d["proposal"]["id"] for d in docs} == {p["id"] for p in out["proposals"]}
+    for d in docs:
+        assert d["think"]["out"]["draft"].startswith("Buenos días"), "the call that made it"
+        assert d["audit"] and all(r["proposal_id"] == d["proposal"]["id"] for r in d["audit"])
+    # nothing exported is a secret: the tracer records no key, so no file can carry one
+    blob = "\n".join(p.read_text(encoding="utf-8") for p in written)
+    assert "LANGFUSE" not in blob and "secret" not in blob.lower()

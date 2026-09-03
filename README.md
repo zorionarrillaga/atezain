@@ -73,6 +73,13 @@ result up front, the architecture, one attack end to end with its audit rows, th
   no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
   the approval himself; the CLI holds the proposal until he does, records what the store observed
   afterwards, and prints the audit head for the day. The wiring into his own pipeline is not done.
+- `agent/tracing.py` + `traces/export.py` — the model call, which the chain does not carry and is
+  not meant to: what the model was shown, what it answered, how long it took. Spans are collected in
+  the process whatever is configured, and the export writes one JSON per proposal beside that
+  proposal's audit rows, so a run is readable a year later with no key and no account. Langfuse is a
+  view of that record when its keys are in the environment. They are not in the deployed service's,
+  and `ops/render.yaml` asks Render for none: what a stranger uploads to the demo is traced nowhere,
+  and a test keeps the blueprint that way.
 - `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.
 
 ## Try it
@@ -91,7 +98,7 @@ queue, its chain, its fuse — and outlives the instance's sleep. `/healthz` say
 ## Run it
 
 ```
-python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite
+python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite langfuse
 make test       # the suite
 make mutate     # every check deleted in turn; all must be KILLED by an assertion
 make hostile    # the attacker with the application's objects
@@ -148,10 +155,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 209 passed, 88 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **296 passed, 1 skipped, 4 min 31 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 215 passed, 92 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **306 passed, 1 skipped, 4 min 48 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 41/41 sabotages caught by at least one gauge |
+| `make sabotage` | 43/43 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and

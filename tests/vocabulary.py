@@ -82,10 +82,12 @@ VOCABULARY: dict[str, tuple | None] = {
                               Import("psycopg")),
     r"\bGroq\b": (Call("agent/llm.py", "complete", "urllib.request.urlopen"),
                   Call("redteam/run.py", "build_llm", "GroqLLM")),
+    r"\bLangfuse\b": (Call("agent/tracing.py", "node", "observe"),
+                       Call("agent/tracing.py", "flush", "get_client"),
+                       Import("langfuse")),
     # planned, not built: a document that names one of these as if it were here is red (K5)
     r"\bpgvector\b": None,
     r"\bfastembed\b": None,
-    r"\bLangfuse\b": None,
     r"\bragas\b": None,
     r"\bFTS\b": None,
     r"\bfull-text search\b": None,

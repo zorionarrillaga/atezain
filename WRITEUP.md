@@ -385,6 +385,18 @@ How to read them:
   and no one has re-read the hundred labels; that re-reading is the thing an outside reviewer should
   do before anything else.
 
+### What is observed, and where it goes
+
+The audit chain answers *what did this system do to a record*. It cannot answer *why did the model
+say that*, and it should not: hashing a prompt into a chain of writes would mix an observation of
+the agent with evidence about a write. So the model call is traced separately — one span per call
+and per execute pass, holding the answer and the time it took, never the record that was read.
+Those spans live in the process that made them and, if a sink is named, in a file beside it;
+`traces/export.py` joins them to the chain and writes one document per proposal. That document
+needs no account to read and does not expire, which is the point: a hosted trace is a convenience
+with a retention window, and the file is the record. On the deployed demo nothing is traced at all,
+because the input there belongs to whoever uploaded it.
+
 ## What it does not show
 
 **The three faces of the trust boundary** (`README.md › Trust boundary` has each in full):
@@ -489,10 +501,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 209 passed, 88 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 296 passed, 1 skipped, 4 min 31 s |
+| `make test` | 215 passed, 92 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 306 passed, 1 skipped, 4 min 48 s |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 41/41 sabotages caught by at least one gauge |
+| `make sabotage` | 43/43 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

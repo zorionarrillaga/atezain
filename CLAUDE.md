@@ -42,7 +42,7 @@ over it, and a red-team that measures it. `README.md` says what it is; `STATUS.m
 ## Commands
 
 ```
-python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite
+python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite langfuse
 make test       # GAUGES.md carries the counts of the last green `make all`; ATEZAIN_TEST_DSN=… make test runs both stores end to end (~4 min)
 make mutate     # every # CHECK: deleted in turn; must be KILLED by assertion (~2 min)
 make hostile    # the attacker with the application's objects; scored attempts only

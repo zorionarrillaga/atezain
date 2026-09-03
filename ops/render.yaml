@@ -31,9 +31,10 @@ services:
         sync: false
       - key: ATEZAIN_OWNER_TOKEN   # clears the SERVER's model budget fuse; nothing else
         sync: false
-      - key: LANGFUSE_PUBLIC_KEY
-        sync: false
-      - key: LANGFUSE_SECRET_KEY
-        sync: false
-      - key: LANGFUSE_HOST
-        value: https://cloud.langfuse.com
+      # NO LANGFUSE_* HERE, and that is the decision, not an omission (✋ 2026-09-03). Tracing
+      # (PLAN.md §4.5, `agent/tracing.py`) records the model call: what it was shown and what it
+      # answered. On this service that input is a stranger's uploaded rows — possibly real invoices
+      # and real customers — and sending them to a third party is not something a visitor to a demo
+      # agreed to. `Tracer.from_env` turns the hosted view on when it finds the two keys, so leaving
+      # them declared here is what would let a filled-in dashboard field ship that data silently.
+      # `tests/test_api.py::test_the_blueprint_declares_no_tracing_key` holds this file to it.

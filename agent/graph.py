@@ -28,6 +28,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from agent.executor import make_executor
+from agent.tracing import Tracer
 from agent.llm import LLM
 from policy import APPROVED, EXECUTED, HELD, Principal, PolicyService
 from records import Records
@@ -67,9 +68,12 @@ def parse_model_output(text: str) -> dict:
     return out
 
 
-def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Principal, adapter: str = "invoices-es", checkpointer=None):
+def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Principal, adapter: str = "invoices-es", checkpointer=None, tracer=None):
     system_prompt = load_prompt(adapter)
     executor = make_executor(records)
+    # Off unless the environment holds Langfuse keys, and a no-op is a working state (PLAN.md §4.5).
+    # Spans are collected in-process either way; `traces/export.py` writes them beside the chain.
+    tracer = tracer if tracer is not None else Tracer.from_env()
 
     def retrieve(state: State) -> State:
         inv = records.invoice(state["invoice_id"])
@@ -115,11 +119,16 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
 
     g = StateGraph(State)
     g.add_node("retrieve", retrieve)
-    g.add_node("think", think)
+    # The model call, and the two writes: what the chain does not carry. The keys each span may
+    # record are named here, at the call site, so a trace holds a decision and not whatever was in
+    # scope — the model's answer, never the visitor's record.
+    g.add_node("think", tracer.node("think", think, ("invoice_id", "task"),
+                                    ("summary", "recommendation", "draft", "raw_proposals")))
     g.add_node("propose", propose)
-    g.add_node("execute", execute)                 # what needs no human, before anyone is asked
+    g.add_node("execute", tracer.node("execute", execute, ("held",), ("executed", "refused")))
     g.add_node("hold", hold)
-    g.add_node("execute_decided", execute)         # what a human approved, after the resume
+    g.add_node("execute_decided", tracer.node("execute_decided", execute, ("held",),
+                                              ("executed", "refused")))
     g.add_edge(START, "retrieve")
     g.add_edge("retrieve", "think")
     g.add_edge("think", "propose")

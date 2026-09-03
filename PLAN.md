@@ -253,6 +253,12 @@ word pgvector from every document (K5). ragas: run `context_precision`/`context_
 - Tracing: Langfuse's Python SDK wraps `think` and `execute`; `traces/export.py` dumps one JSON per
   proposal to `traces/` so the red-team run is replayable without a key. Langfuse Hobby keeps
   traces 30 days; the committed export is the record.
+  **BUILT 2026-09-03, with one thing decided and one left.** Decided (✋): tracing is LOCAL — the
+  hosted view turns on from `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` in the environment, and the
+  deployed service declares neither, because the model's input there is a visitor's uploaded rows.
+  The `LANGFUSE_*` entries this section put in `render.yaml` are gone and a test keeps them gone.
+  Left: no exported run is committed, so *the committed export is the record* is not yet a fact —
+  it waits for the red-team re-run, since the outputs to export are the ones that session remakes.
 
 ### 4.6 Acceptance
 ```

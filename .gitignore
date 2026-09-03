@@ -6,3 +6,4 @@ __pycache__/
 redteam/cache/*/calls-*.txt
 var/
 ops/uptime.log
+traces/*.json        # a local export; a run is committed deliberately, not by running the tool

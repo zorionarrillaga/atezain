@@ -97,6 +97,13 @@ SABOTAGES = [
     ("the draft's basename names the letter", "records/drafts.py",
      '        artifact = self.artifact_path(target, day)\n',
      '        artifact = self._inside(Path(draft_id).name, self.root / SENT)\n'),
+    # step 4/§4.5: what tracing promises — it cannot fail a send, and it is not on the deployment
+    ('a tracer can fail a send', "agent/tracing.py",
+     '            except Exception:           # a span is not worth a send: rule 1 of this module\n                pass\n',
+     '            except Exception:\n                raise\n'),
+    ('the deployed blueprint asks for a tracing key', "ops/render.yaml",
+     '      # NO LANGFUSE_* HERE, and that is the decision, not an omission (✋ 2026-09-03).',
+     '      - key: LANGFUSE_PUBLIC_KEY\n        sync: false\n      # NO LANGFUSE_* HERE, and that is the decision, not an omission (✋ 2026-09-03).'),
     # step 4: the served application's identity closure
     ("a session id alone is its human", "api/auth.py",
      "        if not secrets.compare_digest(row[0], _hash(token)):\n            return None\n",
@@ -133,9 +140,11 @@ SABOTAGES = [
      "        return dt.datetime.fromtimestamp(self.clock(), tz=dt.timezone.utc).date().isoformat()\n",
      '        return "2026-01-01"\n'),
     # the step-6 seat's finding (2026-09-03): a write that needs no human must not wait for one
+    # 2026-09-03: §4.5 wrapped this node in a span, so the line this row breaks moved. The property
+    # is the step-6 fold's and is unchanged — the first execute pass writes what needs no human.
     ("the graph waits for a human before writing what needs none", "agent/graph.py",
-     '    g.add_node("execute", execute)                 # what needs no human, before anyone is asked\n',
-     '    g.add_node("execute", lambda state: {})        # what needs no human, before anyone is asked\n'),
+     '    g.add_node("execute", tracer.node("execute", execute, ("held",), ("executed", "refused")))\n',
+     '    g.add_node("execute", lambda state: {})\n'),
     # the documents' own numbers and prose (tests/gauges.py, 2026-09-02)
     ("a gauge count in the README edited by hand", "README.md",
      "| `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |",

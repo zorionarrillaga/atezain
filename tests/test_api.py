@@ -245,3 +245,16 @@ def test_one_sessions_token_opens_no_other_session(client):
     assert client.post(f"/sessions/{b_sid}/proposals/x/decide", json={"approve": True, "note": ""}, headers=a_h).status_code == 401
     assert client.post(f"/sessions/{b_sid}/fuse/clear", headers=a_h).status_code == 401
     assert upload(client, b_sid, a_h).status_code == 401
+
+
+def test_the_blueprint_declares_no_tracing_key():
+    """✋ 2026-09-03: tracing is local only. `agent/tracing.py` turns the hosted view on when it
+    finds `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` in the environment, so the way this
+    decision holds is that the deployed blueprint does not ask Render for them — a dashboard field
+    nobody declared cannot be filled in by accident. What would be sent is a stranger's uploaded
+    rows: the model's input on this service is their invoices, and a demo visitor agreed to no such
+    thing."""
+    from pathlib import Path
+    blueprint = (Path(__file__).resolve().parents[1] / "ops" / "render.yaml").read_text(encoding="utf-8")
+    assert "- key: LANGFUSE" not in blueprint, "the deployed service asks for no tracing key"
+    assert "NO LANGFUSE_* HERE" in blueprint, "and it says why, so the next reader does not re-add them"
