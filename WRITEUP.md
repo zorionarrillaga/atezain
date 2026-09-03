@@ -1,3 +1,8 @@
+<!-- venture-kind: writeup -->
+<!-- What this file IS, for the owner's own gate (`bash bin/venture check`), which was written
+     for letters. Letter-only rules — C2's job-application APPETITE lexicon, the inbox row, the
+     route read at source, the target's posting archive — then RUN but leave the verdict, and
+     each one is printed above it with the reason. Every other rule still judges this file. -->
 # atezain — the write-up
 
 *Atezain* is Basque for goalkeeper. This is the one document to read if you read one: what the
@@ -484,10 +489,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 192 passed, 86 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 277 passed, 1 skipped, 4 min 22 s |
+| `make test` | 201 passed, 86 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 286 passed, 1 skipped, 4 min 18 s |
 | `make mutate` | 43 checks · 43 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 36/36 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 31/31 sabotages caught by at least one gauge |
+| `make sabotage` | 36/36 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

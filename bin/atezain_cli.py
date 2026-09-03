@@ -15,6 +15,9 @@ Identity is the shell's (README §Trust boundary 1): whoever can run this can pa
 
 Meant to be called from the owner's `bin/venture` by path:
     python3 <atezain>/bin/atezain_cli.py --root <outreach dir> --db <state db> propose send <draft>
+
+`--ledger <PIPELINE.md>` adds his ledger row to what `record` writes; without it the artifact and
+this layer's own `pipeline.jsonl` are all that is touched.
 """
 from __future__ import annotations
 
@@ -63,7 +66,7 @@ def value(text: str):
 
 class Cli:
     def __init__(self, a: argparse.Namespace):
-        self.drafts = Drafts(a.root)
+        self.drafts = Drafts(a.root, ledger=a.ledger or None)
         self.store = Store(str(Path(a.db).expanduser()))
         self.policy = PolicyService(PolicyConfig.load(a.adapter), self.store)
 
@@ -93,6 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", default=os.environ.get("ATEZAIN_OUTREACH_ROOT", DEFAULT_ROOT))
     ap.add_argument("--db", default=os.environ.get("ATEZAIN_OUTREACH_DB", DEFAULT_DB))
     ap.add_argument("--adapter", default=str(ADAPTER))
+    # His ledger, named outright or not at all. Without it a send writes the artifact and this
+    # layer's own pipeline row and nothing else; with it, the draft's row in that file is flipped
+    # to **SENT** the way `bin/venture record` flips it, and a send whose row is missing refuses.
+    ap.add_argument("--ledger", default=os.environ.get("ATEZAIN_OUTREACH_LEDGER", ""),
+                    metavar="PIPELINE.md", help="the owner's PIPELINE.md; omitted means no ledger write")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("propose", help="the assistant asks; nothing happens yet")
