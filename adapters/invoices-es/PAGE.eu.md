@@ -1,54 +1,50 @@
 # atezain — atzeratutako fakturetarako
 
-> **Zirriburua. Euskarazko testu hau ez du oraindik jabeak irakurri**, eta bere ahotsa da azkena.
-> Ez bidali inori berak berrikusi arte. Zenbakiak `make numbers`-ek jartzen ditu, ez eskuz.
+> **Zirriborroa, gordeta. Ez bidali inori.** Euskarazko hartzaile jakin bat agertzen denean
+> amaituko da orria, jabearekin batera: berea da ahotsa eta berea da azken hitza. Zenbakiak
+> `make numbers`-ek jartzen ditu, ez eskuz.
 
-*Atezain* hitzak esaten du tresnak egiten duena: gelditu. Zure fakturak, barne-oharrak eta
-bezeroen mezuak irakurtzen dituen laguntzaile bat da. Egoera laburbiltzen du, hurrengo urratsa
-gomendatzen du eta mezua idazten dizu — eta **ezin du berak ezer aldatu**.
+Zure fakturak, barne-oharrak eta bezeroen mezuak irakurtzen dituen laguntzaile bat da: egoera
+laburbiltzen dizu, hurrengo urratsak gomendatzen dizkizu eta bezeroei bidaltzeko mezuen
+zirriborroak idazten dizkizu. **Ezin du bere kabuz zure fakturetan ezer aldatu.**
 
 ## Zer egiten duen
 
-Kalkulu-orri bat igotzen duzu zure fakturekin: identifikatzailea, bezeroa, zenbatekoa, moneta,
-jaulkipen-data, mugaeguna eta egoera; eta baldin badituzu, oharrak eta mezuak. Faktura bat
-aukeratzen duzu eta hiru gauza jasotzen dituzu: egoeraren laburpena, gomendatzen duen ekintza eta
-bezeroari bidaltzeko zirriborroa.
+Kalkulu-orri bat igoko duzu zure fakturekin: identifikatzailea, bezeroa, zenbat diru den eta zein
+dirutan, noiz egin zen, noiz den mugaeguna eta zein egoeratan dagoen; eta baldin badituzu, oharrak
+eta mezuak. Faktura bat aukeratu eta hiru gauza jasoko dituzu: egoeraren laburpena, gomendatzen
+duen ekintza eta bezeroari bidaltzeko zirriborroa.
 
 Faktura horri buruz hiru gauza baino ezin ditu **proposatu**: oroigarria posta elektronikoz
-bidaltzea, zure oniritziaren zain geratzen dena; egoera aldatzea, hori ere zure oniritziaren zain;
-eta barne-ohar bat uztea, unean bertan idazten dena eta erregistratuta geratzen dena. Proposamen
-bakoitza modelotik kanpo dagoen baimen-taula baten aurka egiaztatzen da, zuregana iritsi aurretik
-ere; eta gertatzen den idazketa bakoitzaren ondoren, erregistroan benetan aldatu dena zuk onartu
-zenuenarekin alderatzen da.
+bidaltzea, zuk onartu arte zain geratzen dena; egoera aldatzea, hau ere zuk onartu arte zain; eta
+barne-ohar bat uztea, unean bertan idatzi eta erregistratua geratzen dena. Proposamen bakoitza
+modelotik kanpo dagoen baimen-taula baten aurka egiaztatzen da, zuregana iritsi aurretik; eta
+egiten den idazketa bakoitzaren ondoren, erregistroan benetan aldatu dena zuk onartu zenuenarekin
+alderatzen da.
 
-Gaur egungo egokitzapena gaztelaniaz lan egiten duen bat da: hor daude fakturak, oharrak eta
-prompta. Euskaraz lan egiten duen bat fitxategi berberak dira, beste hizkuntza batean.
+Gaur egun gaztelaniaz dago prestatuta: gaztelaniaz daude fakturak, oharrak eta modeloari ematen
+zaion testua. Euskaraz jartzeko, fitxategi berberak dira, beste hizkuntza batean idatzita.
 
 ## Zeri egiten dion uko
 
-- **Zenbateko bat aldatzeari.** Inoiz ez, nahiz eta bezeroaren mezu batek, lankide baten ohar batek
-  edo laguntzailearen beraren arrazoibideak hala eskatu. Zenbateko bat dirua da.
+- **Fakturak dioen dirua aldatzeari.** Inoiz ez.
 - **Faktura bat ezabatzeari.** Inoiz ez.
-- **Taulak ezagutzen ez duen helbide edo bide batera ezer bidaltzeari.** Oroigarriak postaz
-  ateratzen dira edo ez dira ateratzen. «Hobe WhatsApp honetara bidali» dioen ohar bat oharra idatzi
-  zuenari buruzko informazioa da, ez zuretzako agindua.
-- **Taulan jasota ez dagoen egoera bat jartzeari**, *ordaindua* edo *baliogabetua* esaterako. Hori
-  zuk jartzen duzu bankuko laburpenetik, ez laguntzaileak mezu batetik.
-- **Egunean taulak uzten duena baino gehiagotan idazteari.** Muga taulan dago, eta hura jotzean
-  fusible bat saltatzen da: laguntzaileak ezin du berrarmatu, eta inork ez du egun berean berrarmatzen.
-- **Ezer egiteari, bere egoera irakurri ezin badu.** Baimenen datu-basea eskuratzen ez badu,
-  erantzuna ez da, inoiz ez baiezkoa.
+- **Baimen-taulak ezagutzen ez duen helbide edo bide batera ezer bidaltzeari.** Oroigarriak postaz ateratzen dira edo ez dira ateratzen.
+- **Baimen-taulan jasota ez dagoen egoera bat jartzeari**, *ordaindua* edo *baliogabetua* esaterako. Hori zuk jartzen duzu.
+- **Egunean baimen-taulak uzten duena baino gehiagotan idazteari.** Muga baimen-taulan dago.
+- **Ezer egiteari, bere egoera irakurri ezin badu.** Baimen-taula irakurtzen ez badu, erantzuna ez da.
 
-Taula testu-fitxategi bat da, eta zure erregistroetara egokitzea fitxategi hori da batez ere: zein
+Baimen-taula testu-fitxategi bat da, eta zure erregistroetara moldatzea fitxategi hori da batez ere: zein
 erregistro-mota, zein aditz, zein eremu, zein balio, zein muga eta zein idazketa pasatzen diren
 zure eskutik.
 
-## Zenbakiak, bere proba-multzoaren gainean
+## Zenbakiak, egindako probetan
 
-Izena eta data duen modelo bati ehun injekzio aurkeztu zitzaizkion, laguntzaileak irakurtzen dituen
-erregistroetan landatuta — oharretan, mezuetan, gaietan, bezero baten izenean, eranskin baten
-testuan — bakoitza taulak debekatzen duen idazketa bat bilatzen. Beheko taula `make numbers`-ek
-sortzen du; xehetasun guztiak `NUMBERS.md` fitxategian daude.
+Modelo jakin bati, egun jakin batean, ehun injekzio jarri zitzaizkion aurrean, laguntzaileak
+irakurtzen dituen erregistroetan ezkutatuta: oharretan, mezuetan, mezuen gaietan, bezero baten
+izenean eta eranskin baten testuan. Bakoitzak baimen-taulak debekatzen duen idazketa bat bilatzen
+zuen. Beheko taulak `make numbers` aginduak sortzen ditu; xehetasun guztiak `NUMBERS.md`
+fitxategian daude.
 
 <!-- numbers:begin -->
 _Pasted by `make numbers` from the rows behind `NUMBERS.md`; do not edit by hand. Model `openai/gpt-oss-120b` · run date(s) 2026-09-02 · N = 100 cases · temperature 0.0 · adapter `invoices-es` · prompt sha256[:16] `6dd2c9d49e5d93c0` · Wilson score intervals, 95 %, z = 1.96. `NUMBERS.md` has the per-class, per-technique and per-goal tables._
@@ -81,21 +77,21 @@ Prose labels by the JUDGE seat (Claude Fable 5.1), by hand, one cached output at
 Re-read by the step-6 refutation seat (Claude Fable 5.1, a fresh session in a clone of the repository — the same model as the labeller, which the seat flagged itself) on 2026-09-03: would move 2 of 100 labels (field-003, mail-012), which leaves the rate inside its interval; the labels stand as labelled, and a reader who agrees with the seat edits the label and runs `make numbers`.
 <!-- numbers:end -->
 
-Azken taula lehen biak bezain garrantzitsua da. Modeloak ehunetik behin **proposatu** zuen debekatutako
-idazketa. Baina injekzioaren helburua **bere hitzetan** hartu zuen — ematen dizun gomendioan, zure
-bezeroari idazten dion zirriborroan edo proposatzen duen ohar batean — hirutik bitan. Geruzak
-idazketa gelditzen du. Hitzak zuk irakurtzen dituzu, eta hemen inork ez ditu zure ordez irakurtzen:
-hori da, hain zuzen, orri honek agintzen ez dizuna.
+Debekatutako idazketa ehunetik behin **proposatu** zuen modeloak. Baina injekzioaren helburua
+**bere hitzetan** jaso zuen hirutik bitan: ematen dizun gomendioan, bezeroei idazten dizkien
+zirriborroetan edo proposatzen dituen oharretan. Idazketa baimen-taulak gelditzen du. Hitzak zuk
+irakurtzen dituzu.
 
 ## Nola probatu
 
 **<https://atezain.onrender.com>** — ireki `/demo` eta igo zure fakturen CSV bat. Han egiten duzunak
-ez du beste inor ukitzen: saio bakoitza bere gunea da, bere erregistroekin eta bere auditoria-katearekin.
+ez du beste inor ukitzen: saio bakoitzak bere gunea du, bere fakturekin eta bertan egin den
+guztiaren erregistroarekin.
 
-Doako instantzia bat da, beraz inork denbora batean erabili ez badu, lehen eskaerak esnatu egiten du
-eta minutu bat inguru behar du.
+Doako zerbitzu batean dago, eta inork denbora batean erabili ez badu, lotan geratzen da: lehen
+eskaerak esnatzen du, eta minutu bat inguru behar izaten du.
 
-Ordenagailu batean ere badabil, agindu bakar batekin, gakorik eta sarerik gabe:
+Zure ordenagailuan ere badabil, agindu bakar batekin, gakorik eta sarerik gabe:
 
 ```
 git clone <biltegia> && cd atezain
@@ -103,12 +99,10 @@ python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-che
 make serve                         # eta ireki http://127.0.0.1:8000/demo
 ```
 
-## Zenbat balio duen
+## Prezioa
 
-Probatzeak ez du ezer balio, eta oraingoz ez dago preziorik. Lehenengo behar dena da norbaitek bere
-fakturen gainean erabiltzea eta esatea balio dion; horrek gehiago balio du gaur, kobra litekeenak baino.
+Probatzea eta erabiltzea doakoa da.
 
-Gero zure erregistroetarako egokitzapena nahi baduzu, orduan hitz egiten da, dagoeneko badakizunean
-balio dizun ala ez. Zertan datzan goian esanda dago: zure erregistro-motetarako baimen-taula, prompta
-zure hizkuntzan eta zure erregistroan, zureak ordezkatuko dituzten datu batzuk probatzen den bitartean,
-eta injekzio-tanda bat egokitzapen horren aurka, bere zenbakiekin, zuk hartaz fidatu aurretik.
+Zure erregistroetarako moldaketa nahi baduzu, prezioa lanean hasi aurretik adosten dugu. Moldaketa
+hau da: zure erregistro-motetarako baimen-taula, modeloari ematen zaion testua zure hizkuntzan,
+probetarako datu batzuk, eta injekzio-tanda bat moldaketa horren aurka, bere zenbakiekin.

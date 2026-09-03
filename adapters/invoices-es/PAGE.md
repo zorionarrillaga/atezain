@@ -101,11 +101,9 @@ make serve                         # y abre http://127.0.0.1:8000/demo
 
 ## Cuánto cuesta
 
-Probarlo no cuesta nada, y ahora mismo no hay precio. Lo que hace falta primero es que alguien lo
-use sobre sus propias facturas y diga si le sirve; eso vale más, hoy, que lo que pudiera cobrarse
-por ello.
+Probarlo y usarlo no cuesta nada.
 
-Si después quieres el adaptador para tus registros, eso se habla entonces, cuando ya sepas si te
-vale. En qué consiste está dicho arriba: la tabla de permisos para tus tipos de registro, el prompt
-en tu idioma y tu registro, unos datos que hagan de los tuyos mientras se prueba, y la tanda de
-inyecciones contra ese adaptador, con sus números, antes de que confíes en él.
+Si quieres el adaptador para tus registros, el precio se acuerda antes de empezar. El adaptador es
+la tabla de permisos para tus tipos de registro, el prompt en tu idioma y tu registro, unos datos
+que hagan de los tuyos mientras se prueba, y la tanda de inyecciones contra ese adaptador, con sus
+números.

@@ -45,7 +45,7 @@ was the review of the case set above. Run `make all` first and fix nothing else 
 | ~~Flip `ATEZAIN_MODEL` to `groq`~~ **DONE 2026-09-02** | — | the URL runs `openai/gpt-oss-120b`; the injection reproduces there (step 4 row above). A first attempt silently failed: Render's reveal-value control re-fetches the stored value and discards an unsaved edit, so the change appeared saved and was not. Verified at the source, `/healthz`, not from the dashboard's word for it |
 | The seat's ✋ leftovers on the write-up | ✋ | the author's name in the prose (it is on `LICENSE` only); whether `PROVENANCE.md`'s account and P&L figures break the CV's privacy rule for every surface a buyer reaches; the CV and profile lines that say neither Postgres nor LangGraph |
 | ~~The seat's remaining MECHANISE items~~ **DONE 2026-09-02, all but one** | ✋ for the last | `GAUGES.md` + `tests/gauges.py` (the file table below): the four gauge lines written by `make all` and held across README, WRITEUP and STATUS, with CLAUDE.md required to carry none · hand counts (`N of M`, `N/M`) in the prose must have a cell or a record behind them · the owner's twenty-token rule between the repo's own prose surfaces · a self-named reading time. The one left is in his own gate, `bin/venture_send.py`'s JARGON dict: six entries — `seat`, `judgment-dense`, `builder model`, `fuse`, `stub`, `harness` — each glossed within ~200 chars of first use or warned. It changes what his letters are flagged on, so it is his edit; the words and the rule are in the seat's report, item 5 |
-| Read the Basque page before it goes to anyone | ✋ | `adapters/invoices-es/PAGE.eu.md` exists and is marked, in its own first lines, as not yet read by him. The register is the one a reader spots instantly and the voice rule is his; nothing goes out until he has read it |
+| The Basque page: HELD as a draft, and finished the day a Basque recipient exists | ✋ then ⚖ together | nothing, deliberately. He read it on 2026-09-03 and corrected close to every sentence; the register is beyond what a model writes to his standard, and he cannot write the whole thing himself. So it is cut to its claims and held. It is not a builder item and not nearly-ready: when a named Basque-language recipient appears, it is worth an hour of his, because there is a real reader on the other end |
 | ~~§4.4 retrieval with its recall measurement~~ **RETIRED 2026-09-02 (⚖)** | — | the ruling is in *What the ⚖ pass on the deployed shape found*, below: the product has no free-text question, so there is nothing for a recall number to measure; the retriever the hundred were run with is pinned by `tests/test_retrieval.py` |
 | `retrieve` by customer, and the re-run it forces | BUILDER, then ⚖ for the labels | the next red-team run. The one-method change — the same customer's other invoices' notes and emails instead of `records.search` — alters what the model reads, so it lands in the same session as `make redteam REDTEAM_MODEL=groq`, the re-reading of the hundred prose labels (⚖), `make numbers`, and a new tally in the pin. Not before: the owner's ruling leaves the labels as they stand until the project is done |
 | §4.5 tracing into Langfuse | BUILDER | nothing — the keys are in the owner's shell and the project is empty |
@@ -358,11 +358,28 @@ assertion` (34/34) · `26/26` attempts blocked · `6/6` caught by a sabotage run
   price when there are clients, and about paying for a better model when there is something to pay with.
   So `PAGE.md` and `PAGE.eu.md` say that trying it costs nothing and that there is no price yet, and neither
   invents a number or promises free forever. The adaptation is discussed when someone wants one.
+  **Refined 2026-09-03 (✋), and this is what both pages now say:** trying it and using it are free,
+  with no clock on it; a price exists only for adapting it to someone's own records, and it is
+  agreed before any work starts. He cut the paragraph that argued why there is no price yet — *what
+  is needed first is someone using it and saying whether it helps; that is worth more today than
+  what could be charged* — as saying more than a page should. No figure is named anywhere, and none
+  may be until he gives one.
 - **Basque, and why (✋, 2026-09-02).** He asked for it, for two reasons worth recording because they are
   his, not the repo's: Euskadi government programmes fund work in that direction, and some clients want it
   as differentiation. `PAGE.eu.md` is the draft; `make numbers` fills every `adapters/*/PAGE*.md` and
   `tests/numbers.py` pins each to a fresh render, so however many languages there are, the numbers in them
   cannot disagree. The prose still can, and only he can settle the register.
+  **Read by him 2026-09-03, and the finding is about the model, not the page.** He corrected close to
+  every sentence he reached: words no one uses (*zirriburua*, *moneta*, *zenbatekoa*, *jaulkipen-data*,
+  *egokitzapena*, *landatuta* for a planted injection), a definite singular where a generic plural belongs
+  (*bezeroari*, *mezua*), verbs without the dative the sentence wants, a clause joined with *eta* where the
+  sentence had ended, and twice a verb with no object a reader could find (*gelditu* — stops what?). Each
+  round of repair introduced new errors: this is a register failure and not a wording one, and patching does
+  not converge. He cannot write the whole page himself either. **Ruled the same day, with him:** the page is
+  cut to its plain claims — the arguing passages that failed hardest are gone — and HELD as a draft that goes
+  to nobody. It is finished with him when a named Basque recipient exists. A short page in a register that
+  reads as translated fails hardest with the very reader it is for, a public body in the Euskadi lane, so
+  shorter is a smaller target and not a fix. The Spanish page keeps the full version; it reads fine.
 - **The free instance spins down, and the fix is $7 a month.** Render's own banner: a cold request can wait
   50 seconds or more. `PLAN.md` §4.6 budgets "under five minutes on a cold start", so the free tier still meets
   the acceptance; what it does not meet is a prospect clicking a link in a letter and waiting a minute for a
