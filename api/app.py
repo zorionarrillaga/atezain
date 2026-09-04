@@ -312,7 +312,14 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
     who(sid, authorization)
     ok, why = limits.allow(request.client.host if request.client else "?")
     if not ok:
-        raise HTTPException(status_code=429, detail=why)
+        # WHICH limit, and that their own key is not the answer to it. A visitor who brought one has
+        # been told they are paying their own way, and is then stopped by a limit that is about this
+        # instance and not about the model — `rate_limited_minute` alone said neither (client
+        # simulation 3, STATUS.md S3-7)
+        raise HTTPException(status_code=429, detail=(
+            f"{why}: one address gets {limits.per_minute} assists a minute and {limits.per_day} a day "
+            f"on this instance. That limit is this instance's, not the model's — your own "
+            f"`X-Groq-Key` is neither counted against the server's model budget nor able to lift it."))
     st = state_of(sid)
     if st.records.invoice(invoice_id) is None:
         raise HTTPException(status_code=404, detail=f"no record {invoice_id} in this session")

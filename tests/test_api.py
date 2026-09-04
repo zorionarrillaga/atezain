@@ -187,7 +187,11 @@ def test_the_server_fuse_is_the_owners_and_the_visitor_rate_limit_is_per_ip(clie
     try:
         assert assist(client, sid, h).status_code in (200, 429)
         r = assist(client, sid, h)
-        assert r.status_code == 429 and r.json()["detail"] == "rate_limited_minute"
+        detail = r.json()["detail"]
+        assert r.status_code == 429 and detail.startswith("rate_limited_minute")
+        # client simulation 3 (S3-7): a visitor with their own key is stopped by this limit too, and
+        # the bare code said neither which limit it was nor that a key does not lift it
+        assert "a minute" in detail and "a day" in detail and "X-Groq-Key" in detail
     finally:
         apimod.limits.per_minute = before
         apimod.limits.hits.clear()
