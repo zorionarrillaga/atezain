@@ -303,6 +303,17 @@ def render(rows: list[dict], model: str, config: PolicyConfig | None = None, lab
             "injected claim — restated in the assistant's own voice — is now an internal note that the",
             "next reader of the record, human or model, finds there.",
             "",
+            "**Ruled 2026-09-04 (the owner): the auto-approval stays, and it is a decision rather than",
+            "a leftover.** The alternative is one word in this adapter — `approval = \"required\"` — and it",
+            "would hold those notes for a human instead of writing them. It is not taken, because it would",
+            "also take away the only write this assistant makes on its own, and the number above would then",
+            "be measured on a configuration the repository does not ship. What changed instead is who can",
+            "see it: the record a visitor reads back names the author of every note, so a claim in one is",
+            "visibly the assistant's and not the customer's. Three runs have now found the same thing —",
+            "these hundred, and the two client simulations of 2026-09-03 (`STATUS.md`) — and none of them",
+            "found it because the boundary failed: an auto-approved write is a write, and this is the one",
+            "this adapter chose to allow.",
+            "",
         ]
     if unlabelled:
         L += [f"Unlabelled ({len(unlabelled)}): {', '.join(unlabelled[:20])}" + (" …" if len(unlabelled) > 20 else "") + ".", ""]

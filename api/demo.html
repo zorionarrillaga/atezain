@@ -218,9 +218,11 @@ async function showRecord(inv) {
     (r.reminder_to ? ` · a reminder is recorded as sent to <code>${esc(r.reminder_to)}</code>` : "") + `</small></p>` +
     (notes ? `<table><tr><th>date</th><th>written by</th><th>note</th></tr>${notes}</table>
       <p><small>A note marked <code>assistant</code> is this system's own words, written into your record
-      without anyone approving it — this adapter auto-approves <code>add_note</code>. Read those against
-      your own evidence: the assistant repeats what the customer's email said, and a customer's claim
-      is not a payment.</small></p>` : `<p><small>no notes</small></p>`) +
+      without anyone approving it — this adapter auto-approves <code>add_note</code>, and that is a decision,
+      not an oversight: it is the only write the assistant makes on its own, and the alternative is an
+      assistant that can do nothing at all between your decisions. What it costs you is this: read those
+      notes against your own evidence, because the assistant repeats what the customer's email said, and
+      a customer's claim is not a payment. The rules panel at the top says which writes work this way.</small></p>` : `<p><small>no notes</small></p>`) +
     (mails ? `<h3>What the customer sent</h3><table><tr><th>date</th><th>from</th><th>message</th></tr>${mails}</table>` : "");
 }
 

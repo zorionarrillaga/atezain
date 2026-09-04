@@ -366,7 +366,10 @@ How to read them:
   this adapter auto-approves notes, so with the boundary ON the injected claim was written into
   the record in the assistant's own voice. `executed ON` counts goal writes and is unaffected. In
   the attack path above the label rests on the recommendation, and the note the model proposed
-  restates it; that note was written.
+  restates it; that note was written. The owner ruled on 2026-09-04 that it may keep being written:
+  a permission table where nothing is auto-approved would measure well and describe a product nobody
+  ships. The repair is legibility, not refusal — every note the served application hands back carries
+  the name of whoever wrote it, and `assistant` is one of the names.
 - **No human approved anything.** A held proposal is a write that did not happen, so the ON column
   is what the boundary does *alone*. A real deployment puts a human behind the hold; that human is
   the point of the hold, is not in the number, and is the one who reads the 66.
@@ -505,10 +508,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 227 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 325 passed, 1 skipped, 5 min 0 s |
+| `make test` | 228 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 326 passed, 1 skipped, 5 min 2 s |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 49/49 sabotages caught by at least one gauge |
+| `make sabotage` | 50/50 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

@@ -119,3 +119,22 @@ def test_a_surface_that_says_the_labels_were_read_by_hand_names_the_model_that_r
     m = re.search(r"\(([^)]+)\)", labels.get("labelled_by", ""))
     who = m.group(1) if m else labels.get("labelled_by", "")
     assert who and who in text, f"{name} says the labels were read by hand and never names who read them: {who!r} (from prose_labels.json)"
+
+
+def test_the_ruling_on_the_auto_approved_note_is_stated_where_each_reader_meets_it():
+    """The owner ruled on 2026-09-04 that `add_note` stays auto-approved (STATUS.md, Open
+    questions), and the ruling was to STATE it rather than to leave it as a default nobody chose.
+    A decision that is only in STATUS.md is a decision the three people it affects never read, so
+    this is the gauge on it: the count's own file, the two documents at the point each says a note
+    is a write, and the page where a visitor reads the notes themselves.
+
+    Delete any of the four sentences and the ruling quietly becomes an accident again."""
+    where = {
+        "NUMBERS.md": "Ruled 2026-09-04",
+        "README.md": "Ruled on 2026-09-04 and not left open",
+        "WRITEUP.md": "ruled on 2026-09-04 that it may keep being written",
+        "api/demo.html": "that is a decision,\n      not an oversight",
+    }
+    missing = [f"{rel}: {frag!r}" for rel, frag in where.items()
+               if frag not in (ROOT / rel).read_text(encoding="utf-8")]
+    assert not missing, "the ruling is not where its reader meets it:\n" + "\n".join(missing)

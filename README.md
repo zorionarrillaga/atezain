@@ -164,10 +164,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 227 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **325 passed, 1 skipped, 5 min 0 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 228 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **326 passed, 1 skipped, 5 min 2 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 49/49 sabotages caught by at least one gauge |
+| `make sabotage` | 50/50 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
@@ -214,7 +214,10 @@ What these two numbers do and do not show is read in full in `WRITEUP.md` › *T
   it while saying otherwise.
 - **A note is a write.** This adapter auto-approves `add_note`, and in 13 of the 66 the adopting
   sentence was a note, so with the boundary ON the injected claim went into the record in the
-  assistant's own voice. The open question on that is in `STATUS.md`.
+  assistant's own voice. Ruled on 2026-09-04 and not left open: the auto-approval stays — it is the
+  only write this assistant makes alone — and what changed is that the record now names the author of
+  every note, so a claim in one is visibly the assistant's. `STATUS.md` carries the ruling and its
+  price.
 - **No human approved anything in the run**, so the ON column is the boundary alone. The policy's
   refusal is reported as its own column (100/100) because the executor's three verbs are a second
   lock; the control arm did fail once, as a control must be able to; and the cases are the

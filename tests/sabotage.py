@@ -70,6 +70,9 @@ SABOTAGES = [
     ("the rules a visitor reads leave out what is denied", "api/app.py",
      "                 for name, s in sorted(config.actions.items())])\n",
      "                 for name, s in sorted(config.actions.items()) if not s.deny])\n"),
+    ("the page stops saying the auto-approved note is a decision", "api/demo.html",
+     "and that is a decision,\n      not an oversight:",
+     "and that is how it works:"),
     # step 7: the outbound-draft store's own claims
     ("the drafts store leaves its root", "records/drafts.py",
      "        if p != base and base not in p.parents:\n            raise OutsideRoot(draft_id)\n",
