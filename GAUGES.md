@@ -1,6 +1,6 @@
 # GAUGES.md
 
-Written by `make all` on 2026-09-04 (`tests/gauge_record.py`) from the last line each gauge printed;
+Written by `make all` on 2026-09-05 (`tests/gauge_record.py`) from the last line each gauge printed;
 the only source of a gauge count in `README.md`, `WRITEUP.md` and `STATUS.md` — `tests/gauges.py`
 holds them to it, and `make all` ends red if they disagree. Do not edit by hand. The `test` line
 is the run without a database; the line with `ATEZAIN_TEST_DSN` is the last run that had one —
