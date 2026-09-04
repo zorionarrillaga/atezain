@@ -17,7 +17,9 @@ below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothi
 it, one defect in the served execute path, folded the same day. Then the client simulations
 began: two on 2026-09-03, a bookkeeper's workload and an evaluator's probe set, and what they
 changed — where a reminder is allowed to go, the records a visitor can read back, the rules readable
-before you upload — went out the same day on the owner's word (`01ffa38`). `autoDeploy` stays off,
+before you upload — went out the same day on the owner's word (`01ffa38`). A third on 2026-09-04 put
+five hundred rows and a visitor's own key through it and found the door, the triage and the failure
+path rather than the boundary; that fold is committed here and is not deployed. `autoDeploy` stays off,
 so a push is still not a deploy.**
 
 See `STATUS.md` for
@@ -164,10 +166,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 228 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **326 passed, 1 skipped, 5 min 2 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 232 passed, 100 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **331 passed, 1 skipped, 5 min 4 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 50/50 sabotages caught by at least one gauge |
+| `make sabotage` | 55/55 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and

@@ -137,6 +137,29 @@ def proposals_of(st: SessionState) -> list:
     return rows
 
 
+def answered(snap) -> bool:
+    """A checkpoint is not an answer. LangGraph writes one for the thread as soon as the run
+    starts, so a run that died inside `think` — the model refusing the call — leaves a checkpoint
+    holding the input and nothing else, and `created_at is not None` then reads as *the model
+    already answered, ask nobody again* for the life of the session. Client simulation 3
+    (STATUS.md S3-5) lost seven of a visitor's records to one minute of a free tier's rate limit
+    that way: 200, `cached`, empty summary, empty draft, no proposals, and no route that could ever
+    ask again. `raw_proposals` is what `think` returns and nothing else writes; its presence is the
+    model having spoken, and an answer with no proposals in it is still an answer."""
+    return snap.created_at is not None and "raw_proposals" in snap.values
+
+
+def model_refused(e: Exception, byok: bool) -> HTTPException:
+    """The model saying no is not this service failing, and a stranger has to be able to tell the
+    two apart — with their own key the difference is whether THEY have something to fix. Simulation
+    3 (S3-4): a rate-limited call and a mistyped `X-Groq-Key` were both a bare 500."""
+    code = getattr(e, "code", None)
+    whose = "the key you sent" if byok else "the server's key"
+    return HTTPException(status_code=502, detail=(
+        f"the model did not answer ({code if code is not None else type(e).__name__}) using {whose}. "
+        f"Nothing was written, and this record can be asked again."))
+
+
 # ── sessions ─────────────────────────────────────────────────────────────────────────────────
 @app.post("/sessions", response_model=SessionOut)
 def create_session() -> SessionOut:
@@ -179,8 +202,13 @@ def parse_rows(raw: bytes, filename: str) -> list[dict]:
 
 def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
     """Every row is checked against the adapter before it becomes a record: an id the policy could
-    never act on is refused at the door, with the reason, instead of silently becoming a record
-    whose every proposal is denied later."""
+    never act on, or a date this layer cannot read, is refused at the door with the reason, instead
+    of silently becoming a record whose every proposal is denied later — or worse, one the page
+    then miscounts. The date half is client simulation 3 (STATUS.md S3-3): `due` was stored as
+    whatever string arrived, and the page answers *which of these do I chase* by comparing it to
+    `YYYY-MM-DD`, so an export written `dd/mm/aaaa` was sorted by the day of the month and its
+    past-due count was wrong in both directions without a word. A value this layer cannot check is
+    a value it does not accept."""
     import re
     pattern = config.records.get(config.actions["update_status"].record, "")
     rejected, loaded, ids = [], 0, []
@@ -190,14 +218,23 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
             rejected.append(RejectedRow(row=n, id="", why="no id"))
             continue
         if re.fullmatch(pattern, rid, re.ASCII) is None:
-            rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match the shape this adapter declares, {pattern} — the row was not loaded, the rest were"))
+            rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match the shape this adapter declares, {pattern}"))
+            continue
+        bad = next((f for f in ("issued", "due") if (row.get(f) or "").strip()
+                    and re.fullmatch(r"\d{4}-\d{2}-\d{2}", (row.get(f) or "").strip()) is None), None)
+        if bad:
+            rejected.append(RejectedRow(row=n, id=rid, why=f"{bad} must be a date written YYYY-MM-DD",
+                                        saw=(row.get(bad) or "").strip()))
             continue
         existing = st.records.invoice(rid)
         if existing is None:
+            raw = str(row.get("amount", "0")).strip()
             try:
-                amount = float(str(row.get("amount", "0")).replace(",", "."))
+                amount = float(raw.replace(",", "."))
             except ValueError:
-                rejected.append(RejectedRow(row=n, id=rid, why="amount is not a number"))
+                rejected.append(RejectedRow(row=n, id=rid, saw=raw, why=(
+                    "amount is not a number this loader reads: it takes 1234.56 or 1234,56, and a "
+                    "thousands separator makes the value ambiguous")))
                 continue
             st.records.load_seed_row({
                 "id": rid, "customer": (row.get("customer") or "").strip(), "amount": amount,
@@ -211,6 +248,12 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
             st.records.add_note_raw(rid, row.get("issued") or "uploaded", "uploaded", row["note"])
         if row.get("email_body"):
             st.records.plant_email(rid, "uploaded", row.get("email_subject", ""), row["email_body"])
+    # What happened to the OTHER rows is not something a per-row reason can know, and saying it
+    # anyway made a file where every single row was refused report, five hundred times over, that
+    # the rest had loaded (client simulation 3, STATUS.md S3-1).
+    tail = (" — the row was not loaded, the rest were" if loaded
+            else " — the row was not loaded, and no row in this file was")
+    rejected = [RejectedRow(row=r.row, id=r.id, saw=r.saw, why=r.why + tail) for r in rejected]
     return UploadOut(loaded=loaded, rejected=rejected, ids=ids)
 
 
@@ -278,7 +321,7 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
     conf = {"configurable": {"thread_id": f"{sid}:{invoice_id}"}}
     graph = st.graph(llm)
     snap = graph.get_state(conf)
-    if snap.created_at is not None:
+    if answered(snap):
         # the model already answered for this record: give back what it said, ask nobody again
         s = snap.values
         return AssistOut(invoice_id=invoice_id, summary=s.get("summary", ""),
@@ -289,7 +332,12 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
     allowed, why = limits.allow_model_call(byok)
     if not allowed:
         raise HTTPException(status_code=503, detail=why)
-    s = graph.invoke({"invoice_id": invoice_id, "task": "draft"}, config=conf)
+    try:
+        s = graph.invoke({"invoice_id": invoice_id, "task": "draft"}, config=conf)
+    except HTTPException:
+        raise
+    except Exception as e:                                      # noqa: BLE001 — see model_refused
+        raise model_refused(e, byok) from e
     return AssistOut(invoice_id=invoice_id, summary=s.get("summary", ""),
                      recommendation=s.get("recommendation", ""), draft=s.get("draft", ""),
                      proposals=[out(p) for p in proposals_of(st) if p.record_id == invoice_id],

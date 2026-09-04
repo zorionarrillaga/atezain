@@ -49,8 +49,11 @@ matter; the layer executes once and compares what actually changed with what you
   <p><small>Columns: <code>id, customer, amount, currency, issued, due, status</code> and optionally
   <code>contact</code> (the address a reminder may go to), <code>note</code>,
   <code>email_subject</code>, <code>email_body</code>. Max 500 rows, 1 MB. Ids must have the shape
-  this adapter declares — <code>F-2026-031</code> — and a row whose id does not is listed here and
-  left out; the others still load.</small></p>
+  this adapter declares — <code>F-2026-031</code> — dates are written <code>YYYY-MM-DD</code>, and
+  an amount is a plain number (<code>1234.56</code>): a thousands separator is not read, because
+  <code>1.234</code> is a different amount of money in different countries and this is not the place
+  to guess. A row that does not fit is listed here with its reason and left out; the others still
+  load.</small></p>
   <div id="uploaded"></div>
   <div id="records"></div>
 </section>
@@ -166,9 +169,19 @@ async function send(file) {
   const fd = new FormData(); fd.append("file", file);
   try {
     const out = await call(`/sessions/${SID}/upload`, { method: "POST", body: fd });
+    // Grouped by reason. A five-hundred-row export refused at the door printed the same sentence
+    // five hundred times in one paragraph, in a response larger than the file (simulation 3, S3-1).
+    const by = new Map();
+    for (const r of out.rejected) {
+      const g = by.get(r.why) || [];
+      g.push(r.saw ? `${r.id || "row " + r.row} had ${r.saw}` : (r.id || `row ${r.row}`));
+      by.set(r.why, g);
+    }
     $("#uploaded").innerHTML = `<p>${out.loaded} record(s) loaded.` +
-      (out.rejected.length ? ` <span class="denied">${out.rejected.length} refused:</span> ` +
-        out.rejected.map(r => `row ${r.row} <code>${esc(r.id)}</code> — ${esc(r.why)}`).join("; ") : "") + `</p>`;
+      (out.rejected.length ? ` <span class="denied">${out.rejected.length} refused:</span></p><ul>` +
+        [...by].map(([why, ids]) => `<li><b>${ids.length}</b> — ${esc(why)}<br><small>${
+          ids.slice(0, 5).map(esc).join(", ")}${ids.length > 5 ? `, and ${ids.length - 5} more` : ""}</small></li>`)
+          .join("") + `</ul>` : `</p>`);
     records();
   } catch (e) { $("#uploaded").innerHTML = `<p class="denied">${esc(e.message)}</p>`; }
 }
@@ -186,16 +199,20 @@ async function records() {
   // Oldest due first: the question this page is asked on a Monday morning is which ones to chase,
   // and until 2026-09-03 it answered with the ids in whatever order they were uploaded.
   rows.sort((a, b) => String(a.due).localeCompare(String(b.due)));
-  const late = rows.filter(r => r.due < today && r.status !== "paid");
+  // `r.due &&`: a record with no due date is not overdue, it is undated (simulation 3, S3-3)
+  const late = rows.filter(r => r.due && r.due < today && r.status !== "paid");
   $("#records").innerHTML =
     `<p><small>${rows.length} record(s) · <b>${late.length}</b> past due ·
-      ${money({ amount: late.reduce((s, r) => s + Number(r.amount || 0), 0), currency: rows[0].currency })} outstanding on those</small></p>` +
+      ${money({ amount: late.reduce((s, r) => s + Number(r.amount || 0), 0), currency: rows[0].currency })} outstanding on those.
+      Past due here means the due date has gone by and the status is not <code>paid</code> — which is the only
+      status word this page reads, so an invoice your own system calls <code>Cobrada</code> is counted as
+      outstanding until you write <code>paid</code> (client simulation 3, STATUS.md).</small></p>` +
     `<table><tr><th>invoice</th><th>customer</th><th class="num">amount</th><th>due</th><th>status</th><th>what this system wrote</th><th></th></tr>` +
     rows.map(r => `<tr>
       <td><code>${esc(r.id)}</code></td>
       <td>${esc(r.customer)}${r.contact ? `<br><small>${esc(r.contact)}</small>` : ""}</td>
       <td class="num">${money(r)}</td>
-      <td class="${r.due < today && r.status !== "paid" ? "overdue" : ""}">${esc(r.due)}</td>
+      <td class="${r.due && r.due < today && r.status !== "paid" ? "overdue" : ""}">${esc(r.due) || "—"}</td>
       <td>${esc(r.status)}</td>
       <td><small>${r.assistant_notes ? `${r.assistant_notes} note(s) by the assistant` : "—"}${
         r.reminder_to ? `<br>reminder recorded to ${esc(r.reminder_to)}` : ""}</small></td>

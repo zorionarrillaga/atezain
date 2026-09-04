@@ -909,3 +909,36 @@ def test_no_action_writes_a_field_another_action_is_checked_against():
     bound = {src for s in cfg.actions.values() for src in s.record_constraints.values()}
     written = {f for s in cfg.actions.values() for f in s.writes}
     assert bound == {"contact"} and not (bound & written)
+
+
+class Ticking:
+    """A clock that moves, because the real one does. Every other test here holds time still, which
+    is what an ordering defect hides behind: with one frozen instant on every row, a chain whose
+    rows are written out of order still reads as monotonic."""
+
+    def __init__(self, t=T0, step=0.001):
+        self.t, self.step = t, step
+
+    def __call__(self):
+        self.t += self.step
+        return self.t
+
+
+def test_spending_the_daily_budget_leaves_the_chain_without_an_anomaly():
+    """Client simulation 3 (STATUS.md S3-6). The budget check used to trip the fuse from inside
+    itself, so `FUSE_TRIPPED` was appended in front of the proposal it denied and stamped from a
+    later clock reading than the row that followed it: an ordinary day's budget running out made
+    the visitor's own audit panel report `audit_time_not_monotonic`. The chain has to be able to
+    say the boring truth, or nobody can read it when it says something else."""
+    cfg = PolicyConfig.load(ROOT / "adapters" / "invoices-es" / "permissions.toml").replace(daily_writes=2)
+    store = STORE_FACTORY()
+    svc = PolicyService(cfg, store, Ticking())
+    for i in range(2):
+        assert svc.propose(AGENT_P, "add_note", inv(i), {"note": "x"}).status == APPROVED
+    over = svc.propose(AGENT_P, "add_note", inv(9), {"note": "x"})
+
+    assert over.status == DENIED and over.reason == "budget_exhausted"
+    assert svc.fuse.is_tripped()
+    assert kinds(store)[-2:] == ["PROPOSAL", "FUSE_TRIPPED"]   # the row that spent it, then the trip
+    assert store.audit_anomalies() == []
+    assert store.audit_verify() is True

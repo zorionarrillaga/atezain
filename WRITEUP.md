@@ -457,7 +457,10 @@ An outside seat ran it on 2026-09-03 — one model call, a planted injection, no
 through, the chain clean — and refuted it narrowly on the execute path described above; the fold is
 in `STATUS.md`. Two client simulations followed it the same day — the thing used rather than
 attacked, once as a bookkeeper's Monday and once as an evaluator's probe set — and what they changed
-is deployed: `STATUS.md` carries both, with the session ids and what each run did. Tracing to
+is deployed. A third came the next day with five hundred rows out of an accounting program and its
+own model key: what it broke was the upload, the reckoning of what is past due, and what a refused
+model call leaves behind in a record — not the boundary, which held. `STATUS.md` carries all three,
+with the session ids and what each run did; the third one's repairs are not at the URL yet. Tracing to
 an external service, the uptime probe over seven days, and the author's own outbound going through
 the `outreach` adapter — all three are planned, in the order `PLAN.md` §9 gives and with the blocker
 named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.
@@ -508,10 +511,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 228 passed, 99 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 326 passed, 1 skipped, 5 min 2 s |
+| `make test` | 232 passed, 100 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 331 passed, 1 skipped, 5 min 4 s |
 | `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 50/50 sabotages caught by at least one gauge |
+| `make sabotage` | 55/55 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

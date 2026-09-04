@@ -98,8 +98,13 @@ def test_upload_is_bounded_and_says_what_it_could_not_read(client):
     assert upload(client, sid, h, big).status_code == 413
     r = client.post(f"/sessions/{sid}/upload", files={"file": ("x.csv", b"\xff\xfe\x00bad", "text/csv")}, headers=h)
     assert r.status_code == 415
-    assert upload(client, sid, h, "id,customer,amount,issued,due\nF-2026-001,X,not-a-number,2026-01-01,2026-02-01\n"
-                  ).json()["rejected"][0]["why"] == "amount is not a number"
+    bad = upload(client, sid, h, 'id,customer,amount,issued,due\nF-2026-001,X,"1.234,56",2026-01-01,2026-02-01\n'
+                 ).json()["rejected"][0]
+    # client simulation 3 (STATUS.md S3-2): "amount is not a number" is what a Spanish accounting
+    # export is told about 1.234,56, and 220 rows of one — 89.8% of the money in it — went that way.
+    # The value is `saw` and not part of `why`, so five hundred of these are one line on the page
+    assert bad["saw"] == "1.234,56" and "1.234,56" not in bad["why"]
+    assert "1234,56" in bad["why"] and "thousands separator" in bad["why"]
 
 
 # ── assist, decide, execute ──────────────────────────────────────────────────────────────────
@@ -337,3 +342,76 @@ def test_the_bare_url_goes_to_the_page_and_not_to_a_404(client):
     r = client.get("/", follow_redirects=False)
     assert r.status_code == 307 and r.headers["location"] == "/demo"
     assert client.get("/", follow_redirects=True).status_code == 200
+
+
+# ── what client simulation 3 found under volume (STATUS.md, 2026-09-04) ──────────────────────
+class _RefusesOnce:
+    """A model that answers the first call with an HTTP error — what a rate limit, an expired key
+    or a mistyped one all look like from here — and answers the second."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def complete(self, system: str, user: str) -> str:
+        import json
+        import urllib.error
+        self.calls += 1
+        if self.calls == 1:
+            raise urllib.error.HTTPError("https://api.groq.com/openai/v1", 429, "Too Many Requests", {}, None)
+        return json.dumps({"summary": "s", "recommendation": "r", "draft": "d",
+                           "proposals": [{"action": "add_note", "params": {"note": "n"}, "why": "w"}]})
+
+
+def test_a_model_that_refuses_the_call_is_not_a_500_and_the_record_can_be_asked_again(client, monkeypatch):
+    """Client simulation 3, S3-4 and S3-5, and the second is the one with teeth. Six of twelve
+    assists in one minute crossed the free tier's tokens-a-minute ceiling and came back as
+    FastAPI's own `500 Internal Server Error` — and the checkpoint the dead run left behind then
+    made every later attempt on those records answer `200`, `cached`, with an empty summary, an
+    empty draft and no proposals, for the life of the session. Seven records were lost that way and
+    no route could ask again."""
+    llm = _RefusesOnce()
+    monkeypatch.setattr(apimod, "model_for", lambda byok: (llm, "stub", bool(byok)))
+    sid, h = session(client)
+    upload(client, sid, h)
+    r = client.post(f"/sessions/{sid}/assist/F-2026-031", headers={**h, "X-Groq-Key": "k"})
+    assert r.status_code == 502
+    assert "429" in r.json()["detail"] and "the key you sent" in r.json()["detail"]
+
+    again = assist(client, sid, h).json()
+    assert llm.calls == 2                                   # it was asked again, not fobbed off
+    assert again["cached"] is False and again["summary"] == "s" and again["draft"] == "d"
+    assert [p["action"] for p in again["proposals"]] == ["add_note"]
+
+
+def test_a_date_this_layer_cannot_read_is_refused_at_the_door(client):
+    """S3-3: `due` was stored as whatever string arrived, and the page answers *which of these do I
+    chase* by comparing it to `YYYY-MM-DD` — so 280 records written `dd/mm/aaaa` were sorted by the
+    day of the month, 83 genuinely overdue were not flagged and 38 not yet due were."""
+    sid, h = session(client)
+    out = upload(client, sid, h, SAMPLE + "F-2026-040,Otro,10,EUR,2026-02-01,31/07/2026,open,\n").json()
+    assert out["loaded"] == 1 and out["ids"] == ["F-2026-031"]
+    assert [r["id"] for r in out["rejected"]] == ["F-2026-040"]
+    bad = out["rejected"][0]
+    assert bad["why"].startswith("due must be a date written YYYY-MM-DD") and "31/07/2026" not in bad["why"]
+    assert bad["saw"] == "31/07/2026"      # the value is its own field, so the reason groups
+
+    # five hundred rows failing the same way are ONE reason, which is what the page renders
+    many = upload(client, sid, h, "id,customer,amount,issued,due\n" + "".join(
+        f"F-2026-{i:03d},X,10,2026-01-01,{i:02d}/07/2026\n" for i in range(1, 29))).json()
+    assert many["loaded"] == 0 and len({r["why"] for r in many["rejected"]}) == 1
+    assert len({r["saw"] for r in many["rejected"]}) == 28
+
+
+def test_when_no_row_loads_the_refusal_does_not_claim_the_rest_did(client):
+    """S3-1: a 500-row export whose ids were the client's own was refused whole — 0 loaded, 500
+    rejected — and every one of the five hundred reasons ended *the row was not loaded, the rest
+    were*, in a response larger than the file that caused it."""
+    sid, h = session(client)
+    none = upload(client, sid, h, "id,customer,amount,issued,due\n"
+                  "INV-1,X,1,2026-01-01,2026-02-01\nINV-2,X,1,2026-01-01,2026-02-01\n").json()
+    assert none["loaded"] == 0 and len(none["rejected"]) == 2
+    assert all(r["why"].endswith("no row in this file was") for r in none["rejected"])
+
+    some = upload(client, sid, h, SAMPLE + "INV-9,X,1,EUR,2026-01-01,2026-02-01,open,\n").json()
+    assert some["loaded"] == 1
+    assert some["rejected"][0]["why"].endswith("the row was not loaded, the rest were")

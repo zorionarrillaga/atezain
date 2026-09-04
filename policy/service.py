@@ -102,6 +102,15 @@ class PolicyService:
                 except Denied as e:
                     p.status, p.reason = DENIED, str(e)
                 self._persist_proposal(p, by, now)
+                if p.reason == "budget_exhausted":
+                    # The fuse trips AFTER the row that spent the last of the budget is written, and
+                    # stamps itself when it is written. It used to trip from inside the check, which
+                    # put FUSE_TRIPPED in front of the proposal it denied AND with a later clock
+                    # reading than the row that follows it — so an ordinary day's budget running out
+                    # made the visitor's own chain report `audit_time_not_monotonic` (client
+                    # simulation 3, STATUS.md S3-6). Same transaction, so the trip and the row stand
+                    # or fall together; the fuse still owns its clock and nobody hands it a time.
+                    self.fuse.trip("budget_exhausted", SYSTEM_PRINCIPAL)
         except Exception as e:  # noqa: BLE001 — anything unexpected is a NO, never a YES
             # CHECK: fail_closed
             p.status, p.reason = DENIED, f"fail_closed:{type(e).__name__}"
@@ -182,8 +191,8 @@ class PolicyService:
         # ENDCHECK
         day = self._day_start(now)
         # CHECK: daily_budget_trips_fuse
+        # the trip this denial causes is pulled by `propose`, after this proposal's row is written
         if self.config.daily_writes and self.store.count_proposals_since(day, LIVE) >= self.config.daily_writes:
-            self.fuse.trip("budget_exhausted", SYSTEM_PRINCIPAL)
             raise Denied("budget_exhausted")
         # ENDCHECK
         # CHECK: action_daily_max

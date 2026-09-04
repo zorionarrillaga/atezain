@@ -13,9 +13,14 @@ class SessionOut(BaseModel):
 
 
 class RejectedRow(BaseModel):
+    """`why` is the SHAPE the row failed, with no value of the row in it, so that five hundred rows
+    failing the same way are one line and not five hundred (client simulation 3, STATUS.md S3-1).
+    `saw` is what this particular row had, which is what tells a client their export is in the
+    wrong format rather than their file being unaccountably rejected."""
     row: int
     id: str
     why: str
+    saw: str = ""
 
 
 class UploadOut(BaseModel):
