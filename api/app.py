@@ -12,8 +12,10 @@ one binds only that one.
 from __future__ import annotations
 
 import csv
+import datetime
 import io
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -200,17 +202,112 @@ def parse_rows(raw: bytes, filename: str) -> list[dict]:
     return [{(k or "").strip().lower(): (v or "") for k, v in row.items()} for row in reader]
 
 
+# ── how a file writes its numbers and dates, PROVED by the file and never guessed ────────────
+# Client simulation 3 (STATUS.md S3-2, S3-3) refused a Spanish accounting export whole: `1.234,56`
+# was "not a number" and `31/07/2026` was refused as a date. The open question was whether to READ
+# them, and the reason it was open is that guessing is not allowed here — `1.234` is one thousand
+# two hundred and thirty-four in one country and one point two three four in another, and
+# `03/04/2026` is April in Bilbao and March in Boston. A wrong guess writes a number nobody typed
+# into a record the assistant then reasons about.
+#
+# The way out is that a file usually settles its own convention, and where it does, nothing is
+# being guessed: `1.234,56` carries both marks and the rightmost is the decimal one, and a `31` in
+# the first position can only be a day. So the rule is: use a convention only where some row of
+# THIS file proves it, apply it to the whole file, tell the visitor which convention was read and
+# what proved it — and where the file proves nothing, refuse the row exactly as before and say
+# that is why. Ruled 2026-09-04 (the judgment-dense model, on the owner's *do what you think is
+# best*); the reasoning and the routes not taken are under STATUS.md Open questions.
+
+ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+SLASHED_DATE = re.compile(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})")
+
+
+def amount_convention(values) -> str:
+    """`point` if this file writes 1.234,56 — the point groups and the comma decides — `comma` if
+    it writes 1,234.56, and `""` if no row settles it. The proof is a value carrying BOTH marks:
+    the rightmost of the two is the decimal mark, in every convention there is."""
+    for v in values:
+        i, j = v.rfind("."), v.rfind(",")
+        if i >= 0 and j >= 0:
+            return "point" if j > i else "comma"
+    return ""
+
+
+def read_amount(raw: str, convention: str) -> float:
+    """The number, or ValueError('ambiguous') when this file has not settled which mark is which.
+    Never a guess: `1.234` is refused unless some other row of the same file says what a point is."""
+    v = raw.strip().replace(" ", "").replace("\u00a0", "")
+    i, j = v.rfind("."), v.rfind(",")
+    if i >= 0 and j >= 0:                                   # both marks: the rightmost decides
+        dec, grp = (",", ".") if j > i else (".", ",")
+        return float(v.replace(grp, "").replace(dec, "."))
+    mark = "." if i >= 0 else ("," if j >= 0 else "")
+    if not mark:
+        return float(v)
+    groups = {"point": ".", "comma": ","}.get(convention, "")
+    if v.count(mark) > 1 or len(v.rsplit(mark, 1)[1]) == 3:  # 1.234.567, or 1.234 — group or decimal?
+        if groups == mark:
+            return float(v.replace(mark, ""))
+        if groups:
+            return float(v.replace(mark, "."))
+        raise ValueError("ambiguous")
+    return float(v.replace(mark, "."))                       # one mark, one or two figures after it
+
+
+def date_order(values) -> str:
+    """`dmy`, `mdy`, `mixed` when the file contradicts itself, or `""` when nothing settles it.
+    The proof is a component over twelve: 31/07 can only be a day, 07/31 can only be a month."""
+    day = month = False
+    for v in values:
+        g = SLASHED_DATE.fullmatch(v.strip())
+        if g:
+            day = day or int(g.group(1)) > 12
+            month = month or int(g.group(2)) > 12
+    if day and month:
+        return "mixed"
+    return "dmy" if day else ("mdy" if month else "")
+
+
+def read_date(raw: str, order: str) -> str:
+    """The date as YYYY-MM-DD, which is what the page compares and sorts. ValueError otherwise:
+    `shape` for something that is not a date at all, `ambiguous` when the file has not settled the
+    order, and whatever `datetime.date` says about 31/02."""
+    v = raw.strip()
+    if ISO_DATE.fullmatch(v):
+        datetime.date.fromisoformat(v)
+        return v
+    g = SLASHED_DATE.fullmatch(v)
+    if not g:
+        raise ValueError("shape")
+    if order not in ("dmy", "mdy"):
+        raise ValueError("ambiguous" if order != "mixed" else "mixed")
+    a, b, y = int(g.group(1)), int(g.group(2)), int(g.group(3))
+    d, m = (a, b) if order == "dmy" else (b, a)
+    return datetime.date(y, m, d).isoformat()
+
+
+WHY_DATE_SHAPE = "{f} is not a date: write it YYYY-MM-DD, or the d/m/yyyy your own system exports"
+WHY_DATE_AMBIGUOUS = ("{f} could be read day/month or month/day and nothing in this file settles which — one "
+                      "date in it with a day past the twelfth would, and so would writing them YYYY-MM-DD")
+WHY_DATE_MIXED = ("this file's dates contradict each other — some can only be day/month and others can only be "
+                  "month/day — so no reading of the column is a safe one")
+WHY_DATE_IMPOSSIBLE = "{f} is not a date that exists"
+WHY_AMOUNT_AMBIGUOUS = ("amount could be a thousands separator or a decimal mark and nothing in this file settles "
+                        "which — one row written 1.234,56 or 1,234.56 would settle it for the whole file")
+WHY_AMOUNT_SHAPE = "amount is not a number"
+
+
 def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
     """Every row is checked against the adapter before it becomes a record: an id the policy could
-    never act on, or a date this layer cannot read, is refused at the door with the reason, instead
-    of silently becoming a record whose every proposal is denied later — or worse, one the page
-    then miscounts. The date half is client simulation 3 (STATUS.md S3-3): `due` was stored as
-    whatever string arrived, and the page answers *which of these do I chase* by comparing it to
-    `YYYY-MM-DD`, so an export written `dd/mm/aaaa` was sorted by the day of the month and its
-    past-due count was wrong in both directions without a word. A value this layer cannot check is
-    a value it does not accept."""
-    import re
+    never act on, or a date or an amount this file has not settled, is refused at the door with the
+    reason instead of silently becoming a record whose every proposal is denied later — or worse,
+    one the page then miscounts. Client simulation 3 (STATUS.md S3-2, S3-3) is why: `due` used to be
+    stored as whatever string arrived, and the page answers *which of these do I chase* by comparing
+    it to `YYYY-MM-DD`, so a `dd/mm/aaaa` export was sorted by the day of the month and its past-due
+    count was wrong in both directions without a word."""
     pattern = config.records.get(config.actions["update_status"].record, "")
+    convention = amount_convention([str(r.get("amount", "")) for r in rows])
+    order = date_order([str(r.get(f, "")) for r in rows for f in ("issued", "due")])
     rejected, loaded, ids = [], 0, []
     for n, row in enumerate(rows, start=2):                     # row 1 is the header
         rid = (row.get("id") or "").strip()
@@ -220,32 +317,41 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
         if re.fullmatch(pattern, rid, re.ASCII) is None:
             rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match the shape this adapter declares, {pattern}"))
             continue
-        bad = next((f for f in ("issued", "due") if (row.get(f) or "").strip()
-                    and re.fullmatch(r"\d{4}-\d{2}-\d{2}", (row.get(f) or "").strip()) is None), None)
-        if bad:
-            rejected.append(RejectedRow(row=n, id=rid, why=f"{bad} must be a date written YYYY-MM-DD",
-                                        saw=(row.get(bad) or "").strip()))
+        dates, bad = {}, None
+        for f in ("issued", "due"):
+            v = (row.get(f) or "").strip()
+            if not v:
+                dates[f] = ""
+                continue
+            try:
+                dates[f] = read_date(v, order)
+            except ValueError as e:
+                why = {"shape": WHY_DATE_SHAPE, "ambiguous": WHY_DATE_AMBIGUOUS,
+                       "mixed": WHY_DATE_MIXED}.get(str(e), WHY_DATE_IMPOSSIBLE)
+                bad = RejectedRow(row=n, id=rid, saw=v, why=why.format(f=f))
+                break
+        if bad is not None:
+            rejected.append(bad)
             continue
         existing = st.records.invoice(rid)
         if existing is None:
             raw = str(row.get("amount", "0")).strip()
             try:
-                amount = float(raw.replace(",", "."))
-            except ValueError:
-                rejected.append(RejectedRow(row=n, id=rid, saw=raw, why=(
-                    "amount is not a number this loader reads: it takes 1234.56 or 1234,56, and a "
-                    "thousands separator makes the value ambiguous")))
+                amount = read_amount(raw, convention)
+            except ValueError as e:
+                rejected.append(RejectedRow(row=n, id=rid, saw=raw,
+                                            why=WHY_AMOUNT_AMBIGUOUS if str(e) == "ambiguous" else WHY_AMOUNT_SHAPE))
                 continue
             st.records.load_seed_row({
                 "id": rid, "customer": (row.get("customer") or "").strip(), "amount": amount,
                 "currency": (row.get("currency") or "EUR").strip(),
-                "issued": (row.get("issued") or "").strip(), "due": (row.get("due") or "").strip(),
+                "issued": dates["issued"], "due": dates["due"],
                 "status": (row.get("status") or "open").strip(),
                 "contact": (row.get("contact") or "").strip()})
             loaded += 1
             ids.append(rid)
         if row.get("note"):
-            st.records.add_note_raw(rid, row.get("issued") or "uploaded", "uploaded", row["note"])
+            st.records.add_note_raw(rid, dates.get("issued") or "uploaded", "uploaded", row["note"])
         if row.get("email_body"):
             st.records.plant_email(rid, "uploaded", row.get("email_subject", ""), row["email_body"])
     # What happened to the OTHER rows is not something a per-row reason can know, and saying it
@@ -254,7 +360,16 @@ def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
     tail = (" — the row was not loaded, the rest were" if loaded
             else " — the row was not loaded, and no row in this file was")
     rejected = [RejectedRow(row=r.row, id=r.id, saw=r.saw, why=r.why + tail) for r in rejected]
-    return UploadOut(loaded=loaded, rejected=rejected, ids=ids)
+    # What was read, and what proved it. A layer that reinterprets somebody's money owes them the
+    # sentence saying how (client simulation 3, STATUS.md S3-2).
+    read = []
+    if order in ("dmy", "mdy"):
+        read.append(f"dates read as {'day/month/year' if order == 'dmy' else 'month/day/year'}, "
+                    f"which this file's own dates settle")
+    if convention:
+        read.append(f"amounts read with {'a point grouping and a comma deciding' if convention == 'point' else 'a comma grouping and a point deciding'}, "
+                    f"which a row of this file carrying both marks settles")
+    return UploadOut(loaded=loaded, rejected=rejected, ids=ids, read_as="; ".join(read))
 
 
 @app.get("/adapter", response_model=AdapterOut)

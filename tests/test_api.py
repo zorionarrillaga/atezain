@@ -98,13 +98,14 @@ def test_upload_is_bounded_and_says_what_it_could_not_read(client):
     assert upload(client, sid, h, big).status_code == 413
     r = client.post(f"/sessions/{sid}/upload", files={"file": ("x.csv", b"\xff\xfe\x00bad", "text/csv")}, headers=h)
     assert r.status_code == 415
-    bad = upload(client, sid, h, 'id,customer,amount,issued,due\nF-2026-001,X,"1.234,56",2026-01-01,2026-02-01\n'
+    bad = upload(client, sid, h, 'id,customer,amount,issued,due\nF-2026-001,X,"1.234",2026-01-01,2026-02-01\n'
                  ).json()["rejected"][0]
-    # client simulation 3 (STATUS.md S3-2): "amount is not a number" is what a Spanish accounting
-    # export is told about 1.234,56, and 220 rows of one — 89.8% of the money in it — went that way.
-    # The value is `saw` and not part of `why`, so five hundred of these are one line on the page
-    assert bad["saw"] == "1.234,56" and "1.234,56" not in bad["why"]
-    assert "1234,56" in bad["why"] and "thousands separator" in bad["why"]
+    # client simulation 3 (STATUS.md S3-2) and the ruling on it: `1.234` alone is one thousand two
+    # hundred and thirty-four in one country and one point two three four in another, and nothing in
+    # THIS file settles which — so it is refused, and the refusal says what would settle it. The
+    # value is `saw` and not part of `why`, so five hundred of these are one line on the page
+    assert bad["saw"] == "1.234"                      # the value it had, in its own field
+    assert "would settle it for the whole file" in bad["why"] and "1.234,56" in bad["why"]
 
 
 # ── assist, decide, execute ──────────────────────────────────────────────────────────────────
@@ -387,23 +388,58 @@ def test_a_model_that_refuses_the_call_is_not_a_500_and_the_record_can_be_asked_
     assert [p["action"] for p in again["proposals"]] == ["add_note"]
 
 
-def test_a_date_this_layer_cannot_read_is_refused_at_the_door(client):
-    """S3-3: `due` was stored as whatever string arrived, and the page answers *which of these do I
-    chase* by comparing it to `YYYY-MM-DD` — so 280 records written `dd/mm/aaaa` were sorted by the
-    day of the month, 83 genuinely overdue were not flagged and 38 not yet due were."""
+def test_a_file_that_settles_its_own_format_is_read_the_way_it_writes_it(client):
+    """The ruling on S3-2 and S3-3 (STATUS.md Open questions, 2026-09-04). Nothing is guessed, and
+    nothing has to be: `31/07/2026` has a thirty-one where only a day fits, and `1.234,56` carries
+    both marks, of which the rightmost is the decimal one in every convention there is. Those two
+    rows settle the file, and the rest of it is read the same way — including `2.500`, which alone
+    would settle nothing."""
     sid, h = session(client)
-    out = upload(client, sid, h, SAMPLE + "F-2026-040,Otro,10,EUR,2026-02-01,31/07/2026,open,\n").json()
-    assert out["loaded"] == 1 and out["ids"] == ["F-2026-031"]
-    assert [r["id"] for r in out["rejected"]] == ["F-2026-040"]
-    bad = out["rejected"][0]
-    assert bad["why"].startswith("due must be a date written YYYY-MM-DD") and "31/07/2026" not in bad["why"]
-    assert bad["saw"] == "31/07/2026"      # the value is its own field, so the reason groups
+    out = upload(client, sid, h,
+                 'id,customer,amount,currency,issued,due,status\n'
+                 'F-2026-031,Aranburu,"1.234,56",EUR,30/06/2026,31/07/2026,open\n'
+                 'F-2026-032,Goikoa,"2.500",EUR,01/07/2026,03/04/2026,open\n').json()
+    assert out["loaded"] == 2 and out["rejected"] == []
+    assert "day/month/year" in out["read_as"] and "point grouping" in out["read_as"]
 
-    # five hundred rows failing the same way are ONE reason, which is what the page renders
+    recs = {r["id"]: r for r in client.get(f"/sessions/{sid}/records", headers=h).json()}
+    assert recs["F-2026-031"]["amount"] == 1234.56 and recs["F-2026-031"]["due"] == "2026-07-31"
+    assert recs["F-2026-032"]["amount"] == 2500.00 and recs["F-2026-032"]["due"] == "2026-04-03"
+
+
+def test_a_format_this_file_does_not_settle_is_still_refused(client):
+    """The other half of the same ruling, and the reason it is not a guess. With every date in the
+    file readable both ways and no amount carrying both marks, this file has settled nothing, so
+    the rows are refused exactly as they were before the ruling — and the refusal names what would
+    have settled it."""
+    sid, h = session(client)
+    out = upload(client, sid, h,
+                 'id,customer,amount,currency,issued,due,status\n'
+                 'F-2026-031,Aranburu,"1.234",EUR,2026-06-30,2026-07-30,open\n'
+                 'F-2026-032,Goikoa,10,EUR,01/02/2026,03/04/2026,open\n').json()
+    assert out["loaded"] == 0 and out["read_as"] == ""
+    why = {r["id"]: r["why"] for r in out["rejected"]}
+    assert "would settle it for the whole file" in why["F-2026-031"]
+    assert "day/month or month/day" in why["F-2026-032"]
+
+    # rows failing the same way are ONE reason with the values beside them, which is what the page
+    # renders — a five-hundred-row export must not print five hundred lines (S3-1)
     many = upload(client, sid, h, "id,customer,amount,issued,due\n" + "".join(
-        f"F-2026-{i:03d},X,10,2026-01-01,{i:02d}/07/2026\n" for i in range(1, 29))).json()
+        f"F-2026-{i:03d},X,10,2026-01-01,{i:02d}/{i:02d}/2026\n" for i in range(1, 13))).json()
     assert many["loaded"] == 0 and len({r["why"] for r in many["rejected"]}) == 1
-    assert len({r["saw"] for r in many["rejected"]}) == 28
+    assert len({r["saw"] for r in many["rejected"]}) == 12
+
+
+def test_a_file_whose_dates_contradict_each_other_is_refused_whole(client):
+    """One file cannot be in two conventions at once: a column holding both `31/07` and `07/31` has
+    no safe reading, and picking one would silently move half the dates."""
+    sid, h = session(client)
+    out = upload(client, sid, h,
+                 'id,customer,amount,currency,issued,due,status\n'
+                 'F-2026-031,A,10,EUR,2026-01-01,31/07/2026,open\n'
+                 'F-2026-032,B,10,EUR,2026-01-01,07/31/2026,open\n').json()
+    assert out["loaded"] == 0 and out["read_as"] == ""
+    assert all("contradict each other" in r["why"] for r in out["rejected"])
 
 
 def test_when_no_row_loads_the_refusal_does_not_claim_the_rest_did(client):

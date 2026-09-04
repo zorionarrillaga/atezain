@@ -27,6 +27,7 @@ class UploadOut(BaseModel):
     loaded: int
     rejected: list[RejectedRow]
     ids: list[str]
+    read_as: str = ""      # which conventions this file settled, and what settled them; "" if none needed
 
 
 class ActionOut(BaseModel):

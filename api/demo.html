@@ -49,11 +49,12 @@ matter; the layer executes once and compares what actually changed with what you
   <p><small>Columns: <code>id, customer, amount, currency, issued, due, status</code> and optionally
   <code>contact</code> (the address a reminder may go to), <code>note</code>,
   <code>email_subject</code>, <code>email_body</code>. Max 500 rows, 1 MB. Ids must have the shape
-  this adapter declares — <code>F-2026-031</code> — dates are written <code>YYYY-MM-DD</code>, and
-  an amount is a plain number (<code>1234.56</code>): a thousands separator is not read, because
-  <code>1.234</code> is a different amount of money in different countries and this is not the place
-  to guess. A row that does not fit is listed here with its reason and left out; the others still
-  load.</small></p>
+  this adapter declares — <code>F-2026-031</code>. Dates and amounts are read the way your own system
+  writes them, but only where your file proves it: one date with a day past the twelfth settles
+  <code>31/07/2026</code> for the whole file, and one amount written <code>1.234,56</code> settles
+  what the point is doing. Where your file proves neither, the row is listed here rather than guessed
+  at — <code>1.234</code> is a different amount of money in different countries and this is not the
+  place to guess — and what was read is printed beside the count.</small></p>
   <div id="uploaded"></div>
   <div id="records"></div>
 </section>
@@ -177,7 +178,10 @@ async function send(file) {
       g.push(r.saw ? `${r.id || "row " + r.row} had ${r.saw}` : (r.id || `row ${r.row}`));
       by.set(r.why, g);
     }
+    // how this file was read, and what in it settled that: a layer that reinterprets somebody's
+    // money owes them the sentence saying how (client simulation 3, STATUS.md S3-2)
     $("#uploaded").innerHTML = `<p>${out.loaded} record(s) loaded.` +
+      (out.read_as ? ` <small>${esc(out.read_as)}.</small>` : "") +
       (out.rejected.length ? ` <span class="denied">${out.rejected.length} refused:</span></p><ul>` +
         [...by].map(([why, ids]) => `<li><b>${ids.length}</b> — ${esc(why)}<br><small>${
           ids.slice(0, 5).map(esc).join(", ")}${ids.length > 5 ? `, and ${ids.length - 5} more` : ""}</small></li>`)
