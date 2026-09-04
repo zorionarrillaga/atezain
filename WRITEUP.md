@@ -460,7 +460,7 @@ attacked, once as a bookkeeper's Monday and once as an evaluator's probe set —
 is deployed. A third came the next day with five hundred rows out of an accounting program and its
 own model key: what it broke was the upload, the reckoning of what is past due, and what a refused
 model call leaves behind in a record — not the boundary, which held. `STATUS.md` carries all three,
-with the session ids and what each run did; the third one's repairs are not at the URL yet. Tracing to
+with the session ids and what each run did. All three folds are at the URL. Tracing to
 an external service, the uptime probe over seven days, and the author's own outbound going through
 the `outreach` adapter — all three are planned, in the order `PLAN.md` §9 gives and with the blocker
 named in `STATUS.md`; none is a fact yet, and no sentence in this repo says otherwise.

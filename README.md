@@ -19,7 +19,8 @@ began: two on 2026-09-03, a bookkeeper's workload and an evaluator's probe set, 
 changed — where a reminder is allowed to go, the records a visitor can read back, the rules readable
 before you upload — went out the same day on the owner's word (`01ffa38`). A third on 2026-09-04 put
 five hundred rows and a visitor's own key through it and found the door, the triage and the failure
-path rather than the boundary; that fold is committed here and is not deployed. `autoDeploy` stays off,
+path rather than the boundary; that fold went out the same day (`0852e07`), though only after a build
+that reported success and shipped nothing — `STATUS.md` has that story. `autoDeploy` stays off,
 so a push is still not a deploy.**
 
 See `STATUS.md` for
