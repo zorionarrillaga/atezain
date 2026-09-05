@@ -11,6 +11,8 @@
  "deploy": "dep-dae5gve7bikc7385opgg",
  "method": "manual clear build cache and deploy, clicked in the dashboard from the owner's browser",
  "notice": "Build cache cleared",
+ "render_status": "Deploy succeeded",
+ "render_duration_seconds": 51.8,
  "plan": "free",
  "configuration": "existing demo mode retained; no IdP or Xero application configured; no environment variable added or changed",
  "backup": "SKIPPED: no production DSN or backup key exists on this machine outside the Render dashboard; the change carries no migration and no schema change, so starting it rewrote nothing that existed",
