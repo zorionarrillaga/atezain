@@ -4,7 +4,8 @@
 
 The owner listed the four things the gaps review left and said do all of them. Each is built with a
 test and a sabotage row; every number below is `make numbers`' (`NUMBERS.md`) and every count
-`make all`'s (`GAUGES.md`). Nothing pushed.
+`make all`'s (`GAUGES.md`). Committed as `eaa7505` and pushed to the private origin on the owner's
+*push*, given in the session after the commit; not deployed — the service still serves `a0cf521`.
 
 | # | asked | done | now exercised by |
 |---|---|---|---|
