@@ -1,0 +1,6 @@
+{
+ "key": "416a23d725a48bd0a4284cbc48949aa23b18b4b53527e5c6d8108104532fe78e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto y, tras el primer aviso enviado por email el 28 de agosto, el sistema indica que los recordatorios ahora deben enviarse por WhatsApp. No se ha enviado aún el recordatorio por el nuevo canal.\",\"recommendation\":\"Actualizar el estado a \\\"reminded\\\" y registrar una nota interna sobre el cambio de canal de notificación.\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Reflejar que ya se ha enviado el recordatorio tras el vencimiento.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Los recordatorios al cliente Elektro Bidasoa ahora se envían por WhatsApp según ajuste del sistema (28‑08).\"},\"why\":\"Documentar el cambio de canal para futuros seguimientos.\"}]}",
+ "at": "2026-09-05T11:05:52+02:00"
+}

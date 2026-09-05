@@ -1,4 +1,4 @@
-name: Verify controlled pilot
+name: Verify supervised collections candidate
 # Deliberately manual: preparing this workflow does not connect or activate a build service.
 on:
   workflow_dispatch:
@@ -32,11 +32,20 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -r ops/requirements-dev.txt
           .venv/bin/pip check
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
       - name: Verify both stores
         env:
           ATEZAIN_TEST_DSN: postgresql://atezain:disposable-test-password@localhost:5432/atezain_test
         run: make test
       - name: Run every local gate
         run: make all
+      - name: Exercise the candidate workload
+        run: .venv/bin/python -m ops.workload --output ops/workload-result.json
       - name: Build the runtime image
         run: docker build -f ops/Dockerfile -t atezain:verification .

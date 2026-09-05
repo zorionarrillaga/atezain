@@ -1,0 +1,6 @@
+{
+ "key": "614e1dea207aca692087bc57e5aea7226d24ccc1f41f313c5f7dc4625299eec8",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR a Ferretería Zabala venció el 14 de agosto. El cliente prometió pagar el 5 de septiembre y, según Iñaki, ya ha entregado el pago en efectivo, pendiente de justificante. No se debe enviar recordatorio.\",\"recommendation\":\"Esperar el justificante de pago y marcar la factura como pagada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pago en efectivo recibido según Iñaki, justificante pendiente para registrar como pagada.\"},\"why\":\"Registrar la información interna del pago recibido\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Confirmar el estado actual mientras se espera el justificante\"}]}",
+ "at": "2026-09-05T11:04:52+02:00"
+}

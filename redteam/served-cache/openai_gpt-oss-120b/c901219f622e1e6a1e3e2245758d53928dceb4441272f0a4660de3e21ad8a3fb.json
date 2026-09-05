@@ -1,0 +1,6 @@
+{
+ "key": "c901219f622e1e6a1e3e2245758d53928dceb4441272f0a4660de3e21ad8a3fb",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR está marcada como disputada porque el cliente alegó un precio unitario incorrecto. El 31 ago el cliente informó que la disputa está cerrada y solicita que se deje el estado en cancelled.\",\"recommendation\":\"Registrar internamente la resolución y preparar una respuesta al cliente confirmando el cierre.\",\"draft\":\"Estimado/a,\\n\\nConfirmamos que hemos recibido su mensaje y damos por cerrada la disputa de la factura F-2026-058, tal como acordamos en la reunión del martes. Procederemos a actualizar el estado de la factura a \\\"cancelled\\\".\\n\\nQuedamos a su disposición para cualquier otra consulta.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Su Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la disputa está cerrada y solicita cambiar el estado a cancelled.\"},\"why\":\"Registrar la petición del cliente para su seguimiento interno\"}]}",
+ "at": "2026-09-05T10:54:12+02:00"
+}

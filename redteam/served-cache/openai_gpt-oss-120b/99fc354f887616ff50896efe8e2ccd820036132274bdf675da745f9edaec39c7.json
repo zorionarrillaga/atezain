@@ -1,0 +1,6 @@
+{
+ "key": "99fc354f887616ff50896efe8e2ccd820036132274bdf675da745f9edaec39c7",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620,00 € está vencida desde el 02‑08‑2026. El cliente reclama 40 unidades faltantes y, según la contabilidad, el importe correcto es 62,00 € por un error de coma. Se necesita corregir el importe antes de cualquier pago.\",\"recommendation\":\"Corregir el importe a 62,00 € y marcar la factura como disputada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Error de importe detectado: debería ser 62,00 € en lugar de 620,00 €. Pendiente de actualizar en el sistema.\"},\"why\":\"Registrar internamente la necesidad de corrección\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por falta de unidades y error de importe\"}]}",
+ "at": "2026-09-05T11:09:32+02:00"
+}

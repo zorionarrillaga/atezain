@@ -3,16 +3,13 @@
 `README.md` §Trust boundary item 1 says the layer believes a `Principal` when it says it is human,
 and that whoever can construct one can approve their own proposal. This module is the deployed
 answer to that: **it is the only place in the served application where a HUMAN principal is
-constructed**, and it constructs one only from a session token that hashes to a row in the session
-table. `tests/test_api.py::test_only_auth_mints_humans` greps the whole `api/` package and fails if
-the word appears anywhere else.
+constructed**. Enterprise mode requires a short-lived login obtained from a verified OIDC
+subject and an enabled workspace membership. Legacy demo/pilot access uses hashed bearer grants.
+`tests/test_api.py::test_only_auth_mints_humans` enforces the constructor boundary.
 
-The agent's principal is a module constant. Nothing per-request mints it, so no request body can
-choose who the agent is.
-
-What this still does not close: the token is a bearer token. Whoever holds it is the session's
-human, exactly as whoever holds the shell is the human in `bin/atezain_cli.py`. It is issued once,
-over the connection that asked for it, and never returned again — the table keeps its sha256.
+The host, its identity-provider configuration, database and active browser session remain trusted.
+A stolen session can act until expiry or local revocation; matching an assurance claim depends on
+correct administration of the customer's actual MFA policy. Model input cannot mint a principal.
 """
 from __future__ import annotations
 
@@ -58,6 +55,8 @@ class Sessions:
         self.path, self.dsn = str(path), dsn
         self.db = Database(path, dsn)
         self.ttl = 30 * 86400
+        self.oidc_only = False
+        self.identity = None
         self._lock = threading.RLock()
         if dsn:
             import psycopg
@@ -75,6 +74,9 @@ class Sessions:
                     "expires_at DOUBLE PRECISION NOT NULL, revoked INTEGER NOT NULL DEFAULT 0)")
             execute("CREATE INDEX IF NOT EXISTS access_tokens_session ON access_tokens(session_id)")
             execute("CREATE TABLE IF NOT EXISTS deleted_sessions (id TEXT PRIMARY KEY)")
+        if self.path != ":memory:" or dsn:
+            from api.identity import IdentityStore
+            self.identity = IdentityStore(self.db)
 
     def _exec(self, sql: str, params: tuple = ()):
         with self._lock:
@@ -119,6 +121,13 @@ class Sessions:
         if row is None or row[1] + self.ttl <= now:
             return None
         if self._exec("SELECT 1 FROM deleted_sessions WHERE id = ?", (sid,)).fetchone():
+            return None
+        if self.identity:
+            access = self.identity.access(sid, token)
+            if access:
+                access["expires_at"] = min(access["expires_at"], row[1] + self.ttl)
+                return access
+        if self.oidc_only:
             return None
         digest = _hash(token)
         if secrets.compare_digest(row[0], digest):
@@ -165,6 +174,16 @@ class Sessions:
             execute("DELETE FROM access_tokens WHERE session_id = ?", (sid,))
             execute("DELETE FROM sessions WHERE id = ?", (sid,))
             execute("DELETE FROM deleted_sessions WHERE id = ?", (sid,))
+            execute("DELETE FROM workforce_members WHERE workspace = ?", (sid,))
+            execute("DELETE FROM identity_events WHERE workspace = ?", (sid,))
+            table = (execute("SELECT to_regclass('accounting_connections')").fetchone()[0] if self.dsn else
+                     execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='accounting_connections'").fetchone())
+            if table:
+                execute("DELETE FROM accounting_connections WHERE workspace = ?", (sid,))
+            import json
+            for state_hash, payload in execute("SELECT state_hash,payload FROM oauth_attempts").fetchall():
+                if json.loads(payload).get("workspace") == sid:
+                    execute("DELETE FROM oauth_attempts WHERE state_hash = ?", (state_hash,))
 
     def expired(self) -> list[str]:
         return [r[0] for r in self._exec("SELECT id FROM sessions WHERE created_at <= ? "

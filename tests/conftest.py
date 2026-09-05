@@ -23,6 +23,9 @@ for key in ("ATEZAIN_DSN", "DATABASE_URL", "ATEZAIN_MODEL", "ATEZAIN_MODE", "ATE
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGSMITH_TRACING",
             "LANGCHAIN_TRACING", "LANGCHAIN_TRACING_V2"):
     os.environ.pop(key, None)
+for key in list(os.environ):
+    if key.startswith(("ATEZAIN_OIDC_", "ATEZAIN_XERO_")) or key == "ATEZAIN_CREDENTIAL_KEY":
+        os.environ.pop(key, None)
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -33,7 +36,7 @@ from records import Records                    # noqa: E402
 from policy.store import GENESIS               # noqa: E402
 
 TABLES = "audit, proposals, executions, audit_head, fuse, proposal_requests"
-RECORD_TABLES = "invoices, notes, emails"
+RECORD_TABLES = "invoices, notes, emails, source_snapshots, source_sync, collection_cases"
 
 
 @pytest.fixture(scope="session")

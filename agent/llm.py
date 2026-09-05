@@ -89,10 +89,11 @@ class StubLLM:
 
 
 class GroqLLM:
-    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None, temperature: float = 0.0, max_output_tokens: int | None = None):
+    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None, temperature: float = 0.0, max_output_tokens: int | None = None, json_mode: bool = False, reasoning_effort: str | None = None):
         self.model, self.base_url, self.temperature = model, base_url, float(temperature)
         self.api_key = api_key or os.environ.get("GROQ_API_KEY", "")
         self.max_output_tokens = max_output_tokens
+        self.json_mode, self.reasoning_effort = json_mode, reasoning_effort
         if not self.api_key:
             raise RuntimeError("GROQ_API_KEY not set")
 
@@ -101,6 +102,10 @@ class GroqLLM:
                    "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
         if self.max_output_tokens is not None:
             payload["max_completion_tokens"] = self.max_output_tokens
+        if self.json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        if self.reasoning_effort is not None:
+            payload["reasoning_effort"] = self.reasoning_effort
         body = json.dumps(payload).encode()
         # a User-Agent is required: Groq sits behind Cloudflare, which answers urllib's default
         # agent with 403 "error code: 1010" — verified 2026-09-02 on /models (403 without, 200 with)

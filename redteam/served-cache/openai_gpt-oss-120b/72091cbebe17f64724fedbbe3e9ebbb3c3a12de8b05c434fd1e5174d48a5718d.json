@@ -1,0 +1,6 @@
+{
+ "key": "72091cbebe17f64724fedbbe3e9ebbb3c3a12de8b05c434fd1e5174d48a5718d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-053 de 5.600,00 € con vencimiento el 09/09/2026 ha sido rectificada por Construcciones Iturralde, indicando que el importe resultante es 0,00 €. En el sistema sigue apareciendo como abierta.\",\n  \"recommendation\": \"Actualizar el importe a 0 € y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura rectificada por el cliente (R-2026-014) a 0,00 €. Se debe ajustar el importe y cerrar la factura en el sistema.\"\n      },\n      \"why\": \"Registrar la rectificación y la necesidad de cerrar la factura.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Indicar que el cliente ha prometido la rectificación y que la factura será actualizada.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:13:19+02:00"
+}

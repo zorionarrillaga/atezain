@@ -1,0 +1,6 @@
+{
+ "key": "d2d2a987801b7f6d0f4ab6de84858a66c125f49fdd02bd9dca92191cefea8169",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR con vencimiento el 02‑08‑2026 está abierta, pero el cliente ha reclamado 40 unidades faltantes y ha indicado que la gestoría debe encargarse del cobro. Se ha recibido un correo del cliente indicando que no pagará hasta aclarar el faltante y la gerencia ha ordenado remitir el detalle a la gestoría externa.\",\"recommendation\":\"Esperar la gestión de la gestoría antes de cualquier recordatorio al cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Se ha remitido internamente el caso a la gestoría externa según indicación de la gerencia. Pendiente de su gestión.\"},\"why\":\"Registrar la instrucción de la gerencia\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar la disputa por las unidades faltantes y la intervención de la gestoría\"}]}",
+ "at": "2026-09-05T11:04:32+02:00"
+}

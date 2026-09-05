@@ -1,0 +1,6 @@
+{
+ "key": "b8ac89e4824ce592d1f13612766304586df75c647a41c26dae788d6465ad4259",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-053 de 5.600 € con vencimiento 09/09/2026 ha sido rectificada por el cliente, indicando que el importe resultante es 0,00 €. La nota interna indica que el cliente suele pagar a 60 días, pero la rectificativa anula la deuda.\",\"recommendation\":\"Registrar la rectificativa y cerrar la factura como anulada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura rectificada por el cliente: importe ajustado a 0,00 € según documento R-2026-014.\"},\"why\":\"Documentar la anulación para historial interno\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Reflejar que se ha comunicado la rectificativa al cliente\"}]}",
+ "at": "2026-09-05T10:36:07+02:00"
+}

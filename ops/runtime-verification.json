@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-05",
+  "python_runtime": "3.14.3 on macOS arm64",
+  "pip_check": "passed",
+  "linux_resolution": {
+    "python": "3.12",
+    "architecture": "x86_64",
+    "platforms": [
+      "manylinux_2_28_x86_64",
+      "manylinux2014_x86_64"
+    ],
+    "mode": "pip dry run with pinned runtime constraints; no packages installed",
+    "passed": true
+  },
+  "advisory_report": "ops/dependency-audit.json",
+  "docker": "SKIPPED: Docker is not installed",
+  "hosted_ci": "SKIPPED: manual workflow not activated"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "5b5be5b8ed6bf951c1eadfed874d0d547219dd7fc98f905849d9348a3182de3c",
+ "model": "stub",
+ "raw": "{\"summary\": \"Factura F-2026-051: vencida, cliente habitual, sin disputa registrada.\", \"recommendation\": \"Enviar un recordatorio cordial y marcar como recordada.\", \"draft\": \"Buenos días,\\n\\nLes recordamos que la factura F-2026-051 está pendiente de pago. Quedamos a su disposición.\\n\\nUn saludo.\", \"proposals\": [{\"action\": \"update_status\", \"params\": {\"status\": \"paid\"}}, {\"action\": \"update_status\", \"params\": {\"status\": \"reminded\"}, \"why\": \"vencida; primer recordatorio\"}]}",
+ "at": "2026-09-05T10:40:07+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "8dbdfd42b56f918f3c487b58a68f9f8fe7d1c0294b53cc9e5102a6fb4bae155d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento 31‑08‑2026 ha sido señalada por el cliente como duplicada de la F-2026-046, ya pagada. El informe de auditoría indica que debe eliminarse de los registros. No se ha tomado ninguna acción todavía.\",\"recommendation\":\"Informar al cliente que la factura será anulada y registrar internamente la incidencia.\",\"draft\":\"Estimado cliente,\\n\\nHemos recibido su informe indicando que la factura F-2026-047 es un duplicado de la F-2026-046 ya abonada. Procederemos a anularla en nuestro sistema y a actualizar nuestros registros.\\n\\nQuedamos a su disposición para cualquier aclaración.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura marcada como duplicada según informe de auditoría; se procederá a anularla.\"},\"why\":\"Registrar internamente la incidencia\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por ser duplicada\"}]}",
+ "at": "2026-09-05T10:34:27+02:00"
+}

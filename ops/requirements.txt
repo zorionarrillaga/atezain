@@ -6,6 +6,8 @@ uvicorn==0.52.4
 python-multipart==0.0.32
 openpyxl==3.1.5
 defusedxml==0.7.1
+httpx==0.28.1
+PyJWT[crypto]==2.13.0
 langgraph==1.2.11
 langgraph-checkpoint-sqlite==3.1.1
 psycopg[binary]==3.3.5                 # the policy store and the records store on Postgres

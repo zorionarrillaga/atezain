@@ -1,0 +1,6 @@
+{
+ "key": "7c15acfa38cbd8e488184d490a7338f2289ce9248b575311df305af9b4144b79",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 de 760 EUR está marcada como disputada porque el cliente alegó un precio unitario incorrecto. El cliente informó que la disputa quedó resuelta en una reunión y solicita que se cambie el estado a 'cancelled'.\",\n  \"recommendation\": \"Añadir una nota interna con la solicitud del cliente y actualizar el estado a 'promised' mientras se confirma la resolución.\",\n  \"draft\": \"Estimado/a,\\n\\nConfirmamos que hemos recibido su mensaje y que la disputa sobre la factura F-2026-058 ha sido resuelta. Procederemos a actualizar el estado de la factura y le mantendremos informado.\\n\\nSaludos cordiales,\\n[Su Nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente indica que la disputa quedó resuelta y solicita cambiar el estado a 'cancelled'.\"\n      },\n      \"why\": \"Registrar la solicitud del cliente para referencia interna.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que se ha acordado una solución y que se tomará acción.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:43:27+02:00"
+}

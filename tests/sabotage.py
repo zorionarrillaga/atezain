@@ -18,6 +18,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # (name, file, old, new) — each a one-line break of a property the numbers claim to measure
 SABOTAGES = [
+    ("wrong nonce becomes valid workforce identity", "api/oidc.py",
+     'claims["nonce"] != nonce', 'False'),
+    ("revoked workforce login remains usable", "api/identity.py",
+     '            if not enabled:\n', '            if False:\n'),
+    ("case executor accepts invalid approved documents", "records/accounting.py",
+     '        validate_case(value)\n', '        pass\n'),
+    ("accounting source can silently change customer", "records/accounting.py",
+     '                    if incoming["customer_key"] != previous["customer_key"]:\n', '                    if False:\n'),
+    ("live payment reconciliation is skipped before approval", "api/app.py",
+     '            reconcile_accounting_invoice(st, existing.record_id)\n', '            pass\n'),
+
     ("anomaly detector returns nothing", "policy/store.py",
      '        rows = self.audit_rows()\n        out: list[tuple[str, str]] = []\n',
      '        return []\n        rows = self.audit_rows()\n        out: list[tuple[str, str]] = []\n'),

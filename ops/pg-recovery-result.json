@@ -1,0 +1,21 @@
+{
+  "format": "atezain-pg-recovery-v1",
+  "date": "2026-09-05",
+  "passed": true,
+  "seconds": 58.817,
+  "backup_bytes": 52236,
+  "checks": [
+    "records",
+    "cases",
+    "source snapshots",
+    "encrypted connector credentials",
+    "workforce membership and login",
+    "identity administration events",
+    "proposals",
+    "anchored audit head",
+    "revoked access",
+    "checkpoint reuse",
+    "existing database refusal"
+  ],
+  "scope": "isolated synthetic databases on configured test PostgreSQL; no production/customer recovery claim"
+}

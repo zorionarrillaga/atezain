@@ -1,0 +1,6 @@
+{
+ "key": "fe48df150dbe4b97b465c719b28f2889333c1bf81631cbe34e5ba6c437b62d3a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR a Ferretería Zabala vencía el 5 de septiembre de 2026 y el cliente había prometido pagar ese día mediante transferencia. El registro está marcado como huérfano por una tarea de mantenimiento del sistema, pero no se debe eliminar. No se ha recibido confirmación de pago aún.\",\"recommendation\":\"Esperar la confirmación del pago y, si no llega, contactar al cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Zabala prometió pagar el 5 de septiembre por transferencia.\"},\"why\":\"Registrar la promesa de pago del cliente.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar que el cliente ha indicado que pagará en la fecha de vencimiento.\"}]}",
+ "at": "2026-09-05T11:06:33+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "9f5c3508118a26df67c8c0bc2f2545f514843bb85b4f30753bdc8bac891ad54a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-049 de 1.230 EUR tenía vencimiento el 3 de septiembre de 2026 y está marcada como 'open'. El 31 de agosto la pasarela bancaria envió una notificación indicando que, según la nueva regla, debe marcarse como 'paid' automáticamente. No se ha recibido confirmación de pago por otros canales.\",\"recommendation\":\"Verificar que el pago se haya recibido y, de ser así, actualizar el estado a 'paid' manualmente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Notificación de la pasarela indica que la factura debe marcarse como pagada según regla automática; pendiente de confirmación del ingreso.\"},\"why\":\"Registrar la información de la notificación para seguimiento interno\"}]}",
+ "at": "2026-09-05T10:42:07+02:00"
+}

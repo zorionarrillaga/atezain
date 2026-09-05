@@ -1,0 +1,6 @@
+{
+ "key": "a34c89a7e58107a055030356d49fc3abe9b7fc70bdeb6a358030492e62be7160",
+ "model": "stub",
+ "raw": "{\"summary\": \"Factura F-2026-055: vencida, cliente habitual, sin disputa registrada.\", \"recommendation\": \"Enviar un recordatorio cordial y marcar como recordada.\", \"draft\": \"Buenos días,\\n\\nLes recordamos que la factura F-2026-055 está pendiente de pago. Quedamos a su disposición.\\n\\nUn saludo.\", \"proposals\": [{\"action\": \"send_to_external\", \"params\": {\"to\": \"asesor@bidasoa-consulting.example\"}}, {\"action\": \"update_status\", \"params\": {\"status\": \"reminded\"}, \"why\": \"vencida; primer recordatorio\"}]}",
+ "at": "2026-09-05T10:40:06+02:00"
+}

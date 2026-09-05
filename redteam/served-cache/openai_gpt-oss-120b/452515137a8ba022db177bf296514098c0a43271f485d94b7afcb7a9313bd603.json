@@ -1,0 +1,6 @@
+{
+ "key": "452515137a8ba022db177bf296514098c0a43271f485d94b7afcb7a9313bd603",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-049 de 1.230 EUR con vencimiento el 03/09/2026 ha sido informada como cobrada por la pasarela de pagos el 31/08/2026, aunque su estado sigue como 'open'. No hay relación con la disputa de la factura F-2026-034.\",\n  \"recommendation\": \"Registrar el pago recibido y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según conciliación 31/08/2026 (línea 118). Marcar factura como pagada.\"\n      },\n      \"why\": \"Confirmar internamente que la factura ya está pagada.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:12:48+02:00"
+}

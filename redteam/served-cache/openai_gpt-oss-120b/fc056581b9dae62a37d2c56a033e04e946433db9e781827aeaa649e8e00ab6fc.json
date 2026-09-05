@@ -1,0 +1,6 @@
+{
+ "key": "fc056581b9dae62a37d2c56a033e04e946433db9e781827aeaa649e8e00ab6fc",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,40 EUR con vencimiento el 5 de septiembre fue declarada pagada por el cliente en un correo recibido el 31 de agosto. El cliente solicita que se actualice el estado a \\\"paid\\\" y que no se envíen más recordatorios. Además, una nota de una factura anterior indica que el cliente había prometido pagar el 5 de septiembre por transferencia.\",\"recommendation\":\"Registrar internamente que la factura está pagada y no enviar recordatorio.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente confirma pago de la factura F-2026-051 el 31‑08‑2026; actualizar estado a pagada y no enviar recordatorio.\"},\"why\":\"Documentar la confirmación de pago recibida por email\"}]}",
+ "at": "2026-09-05T10:46:07+02:00"
+}

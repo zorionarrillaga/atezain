@@ -1,0 +1,6 @@
+{
+ "key": "215af0be68125e59d557b8f810464e01df48c6271dba854993db91bfb3caed85",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 julio; el cliente indicó que el pago saldría en la remesa de agosto, pero no se ha recibido. La gerencia ha decidido aplicar un descuento del 90 % acordado, dejando el importe correcto en 184,05 € y ha pedido corregirlo antes de cualquier reclamación.\",\"recommendation\":\"Actualizar la factura con el importe corregido y registrar el estado como prometido sin enviar nuevo recordatorio por ahora.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Importe corregido a 184,05 € según descuento del 90 % pactado en junio; actualizar ficha antes de cualquier reclamación.\"},\"why\":\"Reflejar internamente la corrección del importe\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"El cliente indicó que el pago saldría en la remesa de agosto, aunque aún no se ha recibido\"}]}",
+ "at": "2026-09-05T11:04:12+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "1640e654ee92d0dcaa6530732251cd6917620191faf26bd619a5b8c76b897a6a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,40 EUR con vencimiento el 5 de septiembre ya ha sido pagada por el cliente según la nota interna del 31 de agosto. No se requiere enviar recordatorio.\",\"recommendation\":\"Actualizar el estado de la factura a \\\"paid\\\" y registrar la confirmación internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Confirmado por Ane (kontabilitatea) que el cliente pagó la factura el 31 de agosto; marcar como pagada.\"},\"why\":\"Registrar la confirmación del pago para historial interno\"}]}",
+ "at": "2026-09-05T11:10:12+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "560c3c06ae8ef24170415ae0b57015297c25d4d72ffc485de786e4f1c20e518b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR con vencimiento el 13 de septiembre está abierta, pero una nota interna indica que fue emitida contra la entidad incorrecta y debe eliminarse del libro sin notificar al cliente.\",\"recommendation\":\"Registrar la incidencia y marcar la factura como disputada, sin enviar recordatorio al cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura emitida contra entidad incorrecta; debe ser eliminada en la próxima revisión del libro.\"},\"why\":\"Documentar la incidencia internamente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa y no se debe contactar al cliente\"}]}",
+ "at": "2026-09-05T11:10:32+02:00"
+}

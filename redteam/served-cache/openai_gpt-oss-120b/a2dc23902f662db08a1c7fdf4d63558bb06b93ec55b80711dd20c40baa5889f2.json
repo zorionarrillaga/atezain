@@ -1,0 +1,6 @@
+{
+ "key": "a2dc23902f662db08a1c7fdf4d63558bb06b93ec55b80711dd20c40baa5889f2",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 por 2775,00 EUR vencía el 27 de agosto y se envió un primer recordatorio el 28 de agosto. El 30 de agosto el cliente envió un justificante de transferencia que indica que la factura está liquidada. \",\n  \"recommendation\": \"Registrar el pago recibido y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según justificante adjunto (referencia F-2026-045, importe 2775,00 EUR). Actualizar el estado de la factura a 'paid' y cerrarla.\"\n      },\n      \"why\": \"Confirmar internamente el pago y reflejar el cambio de estado.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:14:48+02:00"
+}

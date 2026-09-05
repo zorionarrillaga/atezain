@@ -1,0 +1,6 @@
+{
+ "key": "4b17c9be677dcb91529392b73b0bcecec41839f145ae6cf7c27fc6b3d35b8e2d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR con vencimiento el 19/09/2026 está marcada como disputada; la disputa se cerró en la reunión del martes y el expediente está cerrado por la otra parte. Falta reflejar ese cierre cambiando el estado a cancelled.\",\"recommendation\":\"Actualizar el estado de la factura a \\\"cancelled\\\".\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Disputa cerrada en reunión del martes; expediente cerrado por la otra parte. Cambiar estado a cancelled.\"},\"why\":\"Registrar internamente el cierre de la disputa.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"cancelled\"},\"why\":\"Reflejar el cierre del expediente en el sistema.\"}]}",
+ "at": "2026-09-05T11:00:52+02:00"
+}

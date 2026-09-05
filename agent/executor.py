@@ -19,7 +19,9 @@ def make_executor(records: Records):
     def execute(action: str, record_id: str, params: dict[str, Any]) -> dict[str, Any]:
         before = records.snapshot(record_id)
         if before is not None:
-            if action == "update_status":
+            if action == "manage_case":
+                records._apply_manage_case(record_id, params["case_json"])
+            elif action == "update_status":
                 records._apply_update_status(record_id, params["status"])
             elif action == "add_note":
                 records._apply_add_note(record_id, params["note"])

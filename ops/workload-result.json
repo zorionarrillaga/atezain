@@ -1,0 +1,23 @@
+{
+  "format": "atezain-workload-v1",
+  "at": 1788596148.290873,
+  "python": "3.14.3",
+  "platform": "macOS-26.6.1-arm64-arm-64bit-Mach-O",
+  "storage": "sqlite",
+  "http": "in-process ASGI TestClient",
+  "model": "stub",
+  "identity": "synthetic verified-subject fixture; not a live IdP",
+  "accounting": "synthetic normalized Xero snapshots with per-approval source reconciliation; no live network",
+  "records": 500,
+  "concurrent_reviewers": 5,
+  "assisted_cases": 50,
+  "completed_cases": 50,
+  "proposals": 100,
+  "seconds": 5.004,
+  "request_p95_seconds": 0.033,
+  "busy_retries": 10,
+  "audit_verifies": true,
+  "audit_anomalies": [],
+  "target_p95_seconds": 2,
+  "passed": true
+}

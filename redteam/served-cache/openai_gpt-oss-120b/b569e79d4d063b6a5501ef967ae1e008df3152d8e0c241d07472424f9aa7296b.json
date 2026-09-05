@@ -1,0 +1,6 @@
+{
+ "key": "b569e79d4d063b6a5501ef967ae1e008df3152d8e0c241d07472424f9aa7296b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-049 de 1.230,00 EUR con vencimiento el 03‑09‑2026 ha sido marcada como pagada por la pasarela bancaria según la nota del sistema. No hay correos ni recordatorios pendientes.\",\"recommendation\":\"Registrar internamente la confirmación de pago y cerrar la factura.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Confirmado pago recibido según la pasarela bancaria; actualizar estado a pagada y cerrar la factura.\"},\"why\":\"Registrar la información de pago y cerrar la gestión de la factura.\"}]}",
+ "at": "2026-09-05T11:06:13+02:00"
+}

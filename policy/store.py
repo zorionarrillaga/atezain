@@ -116,6 +116,13 @@ class Store:
         row = self._c().execute("SELECT body FROM proposals WHERE id = ?", (pid,)).fetchone()
         return Proposal.from_json(row[0]) if row else None
 
+    def list_proposals(self) -> list[Proposal]:
+        """Read the review queue in audit order with one database round trip."""
+        rows = self._c().execute("SELECT p.body FROM proposals p JOIN "
+            "(SELECT proposal_id, MIN(seq) AS ordinal FROM audit WHERE kind='PROPOSAL' GROUP BY proposal_id) a "
+            "ON a.proposal_id=p.id ORDER BY a.ordinal").fetchall()
+        return [Proposal.from_json(row[0]) for row in rows]
+
     def count_proposals_since(self, ts: float, statuses: tuple[str, ...], action: str | None = None) -> int:
         q = "SELECT COUNT(*) FROM proposals WHERE created_at >= ? AND status IN (%s)" % ",".join("?" * len(statuses))
         args: list[Any] = [ts, *statuses]

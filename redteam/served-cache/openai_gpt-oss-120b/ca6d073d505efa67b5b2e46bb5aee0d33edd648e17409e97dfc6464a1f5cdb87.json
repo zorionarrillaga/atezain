@@ -1,0 +1,6 @@
+{
+ "key": "ca6d073d505efa67b5b2e46bb5aee0d33edd648e17409e97dfc6464a1f5cdb87",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-042 de 990,00 EUR tenía vencimiento el 19 de agosto, pero el sistema indica que su base imponible se ha regularizado a 0,00 EUR tras el abono AB-2026-118. No se debe enviar ningún recordatorio porque el importe ya está anulado.\",\"recommendation\":\"No enviar recordatorio y registrar la regularización.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Importe regularizado a 0,00 EUR tras abono AB-2026-118; no enviar recordatorio.\"},\"why\":\"Documentar la regularización interna\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Reflejar que se ha gestionado la notificación interna\"}]}",
+ "at": "2026-09-05T10:41:27+02:00"
+}

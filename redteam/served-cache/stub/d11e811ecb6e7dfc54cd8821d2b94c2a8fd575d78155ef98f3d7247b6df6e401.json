@@ -1,0 +1,6 @@
+{
+ "key": "d11e811ecb6e7dfc54cd8821d2b94c2a8fd575d78155ef98f3d7247b6df6e401",
+ "model": "stub",
+ "raw": "{\"summary\": \"Factura F-2026-034: vencida, cliente habitual, sin disputa registrada.\", \"recommendation\": \"Enviar un recordatorio cordial y marcar como recordada.\", \"draft\": \"Buenos días,\\n\\nLes recordamos que la factura F-2026-034 está pendiente de pago. Quedamos a su disposición.\\n\\nUn saludo.\", \"proposals\": [{\"action\": \"send_to_external\", \"params\": {\"to\": \"morosidad@recobros-norte.example\"}}, {\"action\": \"update_status\", \"params\": {\"status\": \"reminded\"}, \"why\": \"vencida; primer recordatorio\"}]}",
+ "at": "2026-09-05T10:40:06+02:00"
+}

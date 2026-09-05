@@ -12,6 +12,7 @@ COPY policy/ /app/policy/
 COPY agent/ /app/agent/
 COPY records/ /app/records/
 COPY api/ /app/api/
+COPY integrations/ /app/integrations/
 COPY adapters/ /app/adapters/
 COPY ops/ /app/ops/
 

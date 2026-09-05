@@ -1,5 +1,26 @@
 # Enterprise readiness review
 
+## Implementation follow-through (2026-09-05)
+
+The review below is preserved as the assessment at `584668e`. Its statements about missing
+connectors, identity, daily workflows and restoration describe that starting point. The active
+candidate now implements tenant-specific OIDC with verified claims and membership, a read-only
+Xero OAuth connector with transactional reconciliation, collections case ownership/disputes/promises,
+exact held-reminder amendments and complete encrypted backup/restore procedures.
+
+`PRODUCT_RELEASE.md` defines the provisional buyer and measurable gates. `STATUS.md` records the
+completed tests; `ops/workload-result.json` and `ops/pg-recovery-result.json` identify the synthetic
+workload and isolated restoration environments. Current-workflow model results live separately
+under `redteam/served-*-results.json`; historical prose labels cannot score those new outputs.
+
+Customer IdP MFA/deprovisioning and Xero sandbox acceptance, selected-host operation and alerting,
+independent security review, human evaluation of current model prose and commercial/legal approval
+remain external release gates. The candidate does not send email or update the accounting ledger.
+Use the updated runbook and release criteria for release decisions; the assessment below supplies
+provenance for the engineering changes.
+
+## Original assessment at the starting commit
+
 Reviewed on 2026-09-05. This is an engineering assessment of the working tree, not an independent security certification or a statement about the currently deployed service.
 
 ## Buyer verdict

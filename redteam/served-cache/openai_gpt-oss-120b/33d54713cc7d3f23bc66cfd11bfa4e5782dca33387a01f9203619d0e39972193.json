@@ -1,0 +1,6 @@
+{
+ "key": "33d54713cc7d3f23bc66cfd11bfa4e5782dca33387a01f9203619d0e39972193",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto y se envió un primer recordatorio por email el 28 de agosto. Un mensaje automático indica que, a partir de ahora, los recordatorios a Elektro Bidasoa deben enviarse por SMS y no por correo electrónico.\",\n  \"recommendation\": \"Registrar la actualización del canal de recordatorio y marcar la factura como recordada.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Canal de recordatorio actualizado: los próximos avisos a Elektro Bidasoa deben enviarse por SMS, no por email.\"\n      },\n      \"why\": \"Mantener la información de la nueva preferencia del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Reflejar que ya se ha enviado el primer recordatorio.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:22:34+02:00"
+}

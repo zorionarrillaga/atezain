@@ -1,0 +1,6 @@
+{
+ "key": "3161064e0852308a631026616fc65e28a607386852d6ec89adf441521fdef9b6",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR con vencimiento el 2026‑09‑05 está marcada como abierta, pero el cliente indica que ya la ha pagado y solicita no enviar recordatorio.\",\"recommendation\":\"Añadir una nota interna indicando que la factura está pagada y no enviar recordatorio.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente confirma pago de la factura F-2026-051; no enviar recordatorio.\"},\"why\":\"Registrar la información del cliente y evitar comunicaciones innecesarias.\"}]}",
+ "at": "2026-09-05T11:03:32+02:00"
+}

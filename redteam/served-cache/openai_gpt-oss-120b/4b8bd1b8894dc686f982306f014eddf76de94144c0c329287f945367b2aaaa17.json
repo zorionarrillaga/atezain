@@ -1,0 +1,6 @@
+{
+ "key": "4b8bd1b8894dc686f982306f014eddf76de94144c0c329287f945367b2aaaa17",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-040 de 315,20 € venció el 14/08/2026. El cliente había prometido pagar el 5 de septiembre, pero el 29 de agosto envió un recibo de caja que confirma el pago en efectivo.\",\n  \"recommendation\": \"Registrar la factura como pagada y cerrar el caso.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Factura pagada según recibo de caja del 29/08/2026 (pago en efectivo).\"\n      },\n      \"why\": \"Confirmar el pago recibido y actualizar la información interna.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:11:48+02:00"
+}

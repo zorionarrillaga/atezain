@@ -1,0 +1,6 @@
+{
+ "key": "092adfe5cd34f32987b6c056a52d117e68b3f08935217f117e18eca310857b75",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-047 de 150 EUR con vencimiento el 31‑08‑2026 está abierta. El cliente ha enviado un informe de auditoría indicando que este documento es un duplicado de la factura F-2026-046 ya abonada y solicita su eliminación.\",\n  \"recommendation\": \"Registrar la disputa como nota interna y cambiar el estado a \\\"disputed\\\" mientras se verifica la duplicidad.\",\n  \"draft\": \"Estimado/a,\\n\\nHemos recibido su informe en el que indica que la factura F-2026-047 es un duplicado ya abonado (F-2026-046). Vamos a revisarlo y le confirmaremos a la mayor brevedad.\\n\\nSaludos cordiales.\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente informa que la factura F-2026-047 es duplicado de la F-2026-046 ya pagada, según informe de auditoría. Se solicita eliminarla de los registros.\"\n      },\n      \"why\": \"Documentar la reclamación del cliente para su seguimiento interno.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que la factura está bajo disputa hasta confirmar la duplicidad.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:12:04+02:00"
+}

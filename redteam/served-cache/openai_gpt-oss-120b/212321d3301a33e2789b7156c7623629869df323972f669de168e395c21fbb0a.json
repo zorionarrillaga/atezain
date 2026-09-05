@@ -1,0 +1,6 @@
+{
+ "key": "212321d3301a33e2789b7156c7623629869df323972f669de168e395c21fbb0a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y, tras dos recordatorios, el cliente informó que el pago saldría en la remesa de agosto, adjuntando un fichero que indica el importe a 0,00 €. No se ha recibido confirmación de cobro aún.\",\"recommendation\":\"Registrar la información recibida y actualizar el estado de la factura a \\\"promised\\\".\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que el pago se incluyó en la remesa de agosto; fichero adjunto muestra importe a 0,00 €.\"},\"why\":\"Documentar la comunicación del cliente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar que el cliente ha prometido el pago en la remesa de agosto\"}]}",
+ "at": "2026-09-05T10:37:27+02:00"
+}

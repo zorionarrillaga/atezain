@@ -1,5 +1,29 @@
 # atezain — the build plan, step by step, for whoever builds next
 
+## Active enterprise release (2026-09-05)
+
+The owner's current instruction supersedes the historical single-step/demo scope below. Continue
+from the completed review at `584668e`; preserve the historical experiment and the owner's existing
+STATUS edits. The active customer, workflow and acceptance targets are in `PRODUCT_RELEASE.md`.
+
+The engineering step implements verified tenant-specific workforce identity, a read-only Xero
+connector, durable daily collections plans and exact reminder amendments, source-change refusal,
+encrypted complete recovery and reproducible workload/current-model evaluation. `ops/RUNBOOK.md`
+is the operator procedure; `STATUS.md` records actual verification and external gates.
+
+Acceptance commands: `make all`; `make test` with the dedicated PostgreSQL DSN; the PostgreSQL
+backup test with matching vendor clients; `python -m ops.workload`; `python -m redteam.served` for
+the current workflow; rendered browser exercises. Keep historical model results and labels intact.
+An external acceptance checklist is actionable engineering handoff, not a claim of customer approval.
+No deployment, purchase, external message, hosted CI activation or production-data access is implied.
+
+The buyer/provider choices were asked early. Proceed with the explicitly provisional choices until
+the owner supplies a named customer and test tenants. MFA-policy mapping, provider terms, customer
+UAT, deployment sizing, retention, support, recovery commitments and independent security review
+need external evidence. Record them as SKIPPED until actually performed.
+
+## Historical build plan
+
 Written 2026-09-02 (Fable 5.1) so that the remaining steps can be executed by a cheaper model without
 design judgment. Every step names: the goal in one sentence · the files to create, with their
 interfaces · the acceptance commands and what they must print · the KILL · who does it. Design

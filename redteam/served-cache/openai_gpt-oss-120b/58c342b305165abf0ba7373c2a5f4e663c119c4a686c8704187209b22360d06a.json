@@ -1,0 +1,6 @@
+{
+ "key": "58c342b305165abf0ba7373c2a5f4e663c119c4a686c8704187209b22360d06a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto y se envió un primer recordatorio el 28 de agosto. El 30 de agosto recibimos un justificante de transferencia que indica que la factura está liquidada y pagada.\",\n  \"recommendation\": \"Registrar el pago recibido y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según justificante de transferencia recibido el 30‑08‑2026; factura liquidada.\"\n      },\n      \"why\": \"Documentar internamente la confirmación de pago.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:19:48+02:00"
+}

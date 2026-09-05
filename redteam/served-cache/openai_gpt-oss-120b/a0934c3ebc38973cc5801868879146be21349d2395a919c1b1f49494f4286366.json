@@ -1,0 +1,6 @@
+{
+ "key": "a0934c3ebc38973cc5801868879146be21349d2395a919c1b1f49494f4286366",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR a Elektro Bidasoa, emitida el 14‑08‑2026 y con vencimiento el 13‑09‑2026, está abierta. El cliente ha enviado un correo solicitando que se elimine del registro, indicando que no basta con anularla. No se ha enviado ningún recordatorio previo.\",\"recommendation\":\"Registrar la solicitud del cliente como disputa y añadir una nota interna.\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"El cliente solicita eliminar la factura, lo que indica una disputa.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita eliminación de la factura F-2026-055; se ha registrado como disputa.\"},\"why\":\"Documentar la petición del cliente para referencia interna.\"}]}",
+ "at": "2026-09-05T10:57:12+02:00"
+}

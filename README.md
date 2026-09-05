@@ -8,21 +8,35 @@ The model proposes record changes; a separate policy checks them; a human decide
 the executor reports the observed effect. Execution claims prevent a proposal from being invoked again,
 while uncertain outcomes remain visible and require investigation.
 
-**Current status: a controlled-pilot candidate, with the readiness gaps documented in
-[ENTERPRISE_REVIEW.md](ENTERPRISE_REVIEW.md).** The working tree adds scoped and expiring access,
-revocation, bounded imports, durable budgets, workflow recovery, customer-scoped retrieval, a review
-workspace, exports and deletion. Pilot mode requires approval for every permitted write. The demo
-adapter still auto-approves notes and discloses that choice.
+**Current status: a supervised collections engineering candidate.** The target buyer, daily workflow
+and measurable release gates are in [PRODUCT_RELEASE.md](PRODUCT_RELEASE.md). Enterprise mode adds
+verified OIDC workforce subjects, workspace membership, read-only Xero synchronization, daily
+ownership/dispute/promise tracking and exact reminder amendments. Every permitted write needs human
+approval. A changed accounting snapshot or follow-up plan invalidates an older proposal.
 
 These changes have not been deployed. The historical public demo is at
-<https://atezain.onrender.com/demo>; `STATUS.md` records its deployment history. The operational
-instructions for the revised application are in [ops/RUNBOOK.md](ops/RUNBOOK.md). There is no claim of
-SSO, real email delivery, an enterprise SLA, compliance certification, or measured competitive superiority.
+<https://atezain.onrender.com/demo>; `STATUS.md` records its deployment history. Configuration and
+recovery procedures are in [ops/RUNBOOK.md](ops/RUNBOOK.md). Customer IdP/Xero sandbox acceptance,
+hosted operation, independent security review and commercial commitments remain external release
+gates. Email delivery, payment processing, an enterprise SLA and compliance certification are outside
+this candidate's implemented scope.
 
 `WRITEUP.md` explains the original experiment. Its named-model numbers describe that earlier
-configuration, not the revised served retrieval or all-approval pilot policy.
+configuration. The current served configuration has a separate [boundary evaluation](redteam/served-live-results.json);
+its malformed-output refusals and unreviewed prose are explicitly distinguished from useful answers.
 
 ## What is built
+
+- `api/oidc.py` and `api/identity.py` — signed workforce identity, browser-bound authorization code
+  flow, short-lived sessions, CSRF protection and membership revocation. Assurance depends on the
+  customer's configured MFA policy. The host still authenticates and authorizes the person.
+- `integrations/xero.py` and `records/accounting.py` — encrypted OAuth credentials, verified tenant
+  selection, stable customer/source identifiers, transactional source snapshots and reconciliation
+  before approval. Ingestion is a trusted host import path; models cannot invoke it. Approved local
+  notes, reminders and follow-up plans still go through the policy executor. Xero remains the ledger.
+- `ops/recovery.py`, `ops/pg_backup.py` and `ops/workload.py` — encrypted complete backups, isolated
+  restore verification and a reproducible synthetic workload. Saved reports describe their actual
+  environment; they do not establish a hosted service commitment.
 
 - `policy/` — the boundary. Permissions as data (`adapters/*/permissions.toml`: actions, the fields
   each may write, allowed values, the record type and id shape each may touch — shape, not
@@ -63,11 +77,12 @@ configuration, not the revised served retrieval or all-approval pilot policy.
   instance cannot race past the budget — there is a test that proves it with two connections, and
   it is the one property the SQLite store structurally cannot have. The whole policy suite runs on
   both when `ATEZAIN_TEST_DSN` names a database, and skips the Postgres arm loudly when it does not.
-- `api/` — the same layer behind HTTP: a session is a namespace (its own records, its own audit
-  chain, its own fuse) opened by a bearer token; you upload a CSV of your own invoices, ask for an
+- `api/` — the same layer behind HTTP: a session is a workspace namespace (its own records, audit
+  chain and fuse), opened through verified workforce membership in enterprise mode or bearer grants
+  in the legacy demo/pilot modes; you upload a CSV of your own invoices, ask for an
   assist, see what it drafts and what it holds, decide, read the chain, and read your records back
-  with every note saying who wrote it — the assistant's own included, which is the one write this
-  adapter needs no human for. `api/auth.py` is the
+  with every note saying who wrote it — the assistant's own included. Demo policy permits automatic
+  notes; pilot and enterprise modes require approval. `api/auth.py` is the
   only place in the served application where a human principal is constructed, and a test greps the
   package to keep it that way. Runs locally on SQLite and the stub model with `make serve`, and on
   Postgres when `DATABASE_URL` names one — the served shape, live since 2026-09-02 (*Try it*).
@@ -166,16 +181,16 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 291 passed, 110 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **400 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
-| `make mutate` | 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
+| `make test` | 348 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **462 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make mutate` | 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 58/58 sabotages caught by at least one gauge |
+| `make sabotage` | 63/63 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
 never read — precisely because there was no block to delete), and it mutates `policy/` only. The
 hostile test's concurrency attempt is timing-dependent; the deterministic interleaving test in the
-suite is what sees a removed lock. The sabotage pass covers thirty-six properties, not all of them.
+suite is what sees a removed lock. The sabotage pass covers its listed properties; missing checks remain possible.
 Two seats found, between them, 29 breaches and 12 gauge defects; the numbers above are what is
 left after both, not what was true before either. A third seat, on the deployed thing (2026-09-03),
 got nothing forbidden through it and found that the served application left an auto-approved note
@@ -228,10 +243,11 @@ What these two numbers do and do not show is read in full in `WRITEUP.md` › *T
 
 ## Trust boundary
 
-The HTTP application now adds workspace roles and expiry around this boundary. A viewer cannot
-propose or decide; reviewers can prepare and approve changes; owners manage imports, access and
-lifecycle. Each reviewer token has its own audit identity. This is credential attribution, not verified
-workforce identity. The safety layer's original host assumptions below still apply.
+The HTTP application adds workspace roles and expiry around this boundary. A viewer cannot propose
+or decide; reviewers prepare and approve changes; owners manage imports, access and lifecycle.
+Enterprise mode verifies an OIDC subject and its configured assurance, then checks explicit membership.
+Demo/pilot tokens establish possession only. The host and customer identity-provider administration
+remain trusted; the policy layer itself does not authenticate people.
 
 
 Three things this layer trusts and cannot check. They are the host's job, and the numbers above
@@ -239,16 +255,14 @@ do not cover them.
 
 1. **Identity.** A `Principal` says whether it is a human. The layer believes it. Whoever can
    construct `Principal("owner", HUMAN)` can approve their own proposal, and the chain will show a
-   clean human decision. In the served application (`api/`, at the URL since 2026-09-02) the only
-   place a `HUMAN` principal is constructed is `api/auth.py`, from a bearer token issued once per
-   session and kept only as a hash; a test greps the package and fails if the word appears anywhere
-   else, and the agent's principal is a module constant no request can choose. What that closes is
-   the mint, not identity: the token *is* the identity — whoever holds a session's token is its
-   human, the way whoever holds the shell is the human at the CLI — and there is no account behind
-   it. In a process that holds the objects, as this repo's tests do, the mint is one line, and
-   `make hostile` shows exactly that write going through, unscored, in its output. The service's
-   own bindings (`config`, `store`, `clock`, `fuse`) cannot be swapped by whoever holds it; whoever
-   holds the **store** is root (item 3).
+   clean human decision. In the application, the only principal mint is `api/auth.py`; a test greps
+   the package to keep it there. Enterprise mode reaches that mint through signed OIDC verification,
+   short-lived login and an enabled issuer/subject workspace membership. The customer must validate
+   the configured MFA-policy mapping. A stolen active session acts until expiry or revocation, and
+   an administrator can grant access to the wrong subject. Legacy demo/pilot bearer grants and the
+   local CLI retain their possession-based identity model. A process holding the objects can still
+   construct a principal directly: `make hostile` shows that root action unscored. The service's
+   own bindings cannot be swapped through its public properties; whoever holds the store is root.
 2. **The executor.** The layer compares what the executor *reports* with what was approved, as
    canonical JSON. The executor this repo ships reports a before/after diff of the record it was
    asked to change, so a write that touched nothing, or touched more than was approved, is a

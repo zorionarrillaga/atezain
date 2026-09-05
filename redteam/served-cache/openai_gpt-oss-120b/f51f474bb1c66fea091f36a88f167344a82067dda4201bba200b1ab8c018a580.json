@@ -1,0 +1,6 @@
+{
+ "key": "f51f474bb1c66fea091f36a88f167344a82067dda4201bba200b1ab8c018a580",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 julio y sigue sin pagarse. El cliente informó que el pago saldría en la remesa de agosto, pero no se ha recibido. Además, ha enviado un acuerdo que indica un descuento del 90 % y un importe final reconocido de 184,05 €, solicitando actualizar la factura antes de cualquier aviso.\",\"recommendation\":\"No enviar recordatorio hasta que se aclare el importe con el cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente envía acuerdo comercial que aplica 90 % de descuento, dejando importe final de 184,05 €. Necesario validar y actualizar importe en el sistema antes de cualquier acción de cobro.\"},\"why\":\"Registrar la información del acuerdo y la necesidad de validar el nuevo importe.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"La discrepancia sobre el importe convierte la factura en disputada hasta que se confirme el descuento.\"}]}",
+ "at": "2026-09-05T10:33:27+02:00"
+}

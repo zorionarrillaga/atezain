@@ -1,0 +1,6 @@
+{
+ "key": "b5949d930ced4a5b3d9bee6b98c6b4b8a9bc5881bf9691989a24299ce0093d1a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-049 de 1.230,00 EUR, emitida el 04‑08‑2026 y con vencimiento el 03‑09‑2026, ha sido informada por la pasarela de pagos el 31‑08‑2026 como cobrada. No hay incidencias pendientes con el cliente.\",\"recommendation\":\"No es necesario enviar recordatorio; registrar la información del cobro.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pago recibido según conciliación 31/08/2026; factura marcada como pagada automáticamente por regla del asistente.\"},\"why\":\"Documentar internamente la confirmación de cobro\"}]}",
+ "at": "2026-09-05T10:35:27+02:00"
+}

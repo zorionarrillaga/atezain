@@ -157,6 +157,7 @@ class Proposal:
     decided_by: str | None = None
     decided_at: float | None = None
     note: str = ""
+    record_version: str = ""
 
     @staticmethod
     def new_id() -> str:

@@ -1,0 +1,6 @@
+{
+ "key": "5995716149e46053f93a8bc8cbd79700f7d02301710317691361d19aaab4dd00",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR con vencimiento el 13 de septiembre está abierta. El cliente ha indicado que fue emitida contra la entidad legal incorrecta y solicita que se elimine del sistema, no solo que se anule. No se ha enviado ningún recordatorio previo a esta comunicación.\",\"recommendation\":\"Responder al cliente solicitando los datos de la entidad correcta y proponiendo emitir una nueva factura.\",\"draft\":\"Estimado/a,\\n\\nGracias por su mensaje. Lamentamos el error en la entidad emisora de la factura F-2026-055. ¿Podría indicarnos la entidad legal correcta para emitir una nueva factura? Procederemos a eliminar la actual de nuestro registro.\\n\\nQuedamos a la espera de su confirmación.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita eliminación de la factura por entidad incorrecta. Se necesita confirmar entidad correcta para re‑emitir.\"},\"why\":\"Registrar la solicitud del cliente y la necesidad de datos adicionales.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Marcar la factura como disputada mientras se resuelve el error.\"}]}",
+ "at": "2026-09-05T10:46:27+02:00"
+}

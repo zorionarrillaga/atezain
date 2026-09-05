@@ -42,6 +42,9 @@ from agent.llm import GroqLLM, StubLLM, ModelFailure
 from api.auth import AGENT_PRINCIPAL, Sessions
 from api.limits import PersistentLimits
 from api.settings import Settings
+from api.oidc import OIDC, OIDCConfig
+from integrations.http import IntegrationError
+from integrations.xero import Xero, XeroConfig, CredentialStore
 from api.imports import (parse_rows, load_rows as import_rows, MAX_UPLOAD_BYTES, MAX_ROWS, COLUMNS, EXTRAS)
 from agent.tracing import Tracer
 from api.http import BodyLimit
@@ -70,13 +73,18 @@ app = FastAPI(title="Atezain", version="0.2.0", description=__doc__.split("\n\n"
               docs_url="/docs" if settings.mode == "demo" else None,
               redoc_url=None, openapi_url="/openapi.json" if settings.mode == "demo" else None)
 STATE.mkdir(parents=True, exist_ok=True)
+from ops.lease import lease
+_service_lease = lease(STATE) if not DSN else None
 sessions = Sessions(STATE / "sessions.db", dsn=DSN or None)   # the token table outlives a spin-down too
 sessions.ttl = settings.session_days * 86400
+sessions.oidc_only = settings.identity_required
+oidc_config = OIDCConfig.from_env()
+oidc = OIDC(oidc_config) if oidc_config else None
+xero_config = XeroConfig.from_env()
+xero = Xero(xero_config, CredentialStore(sessions.db, xero_config.credential_key)) if xero_config else None
 limits = PersistentLimits(STATE / "limits.db", dsn=DSN or None)
-config = PolicyConfig.load(ROOT / "adapters" / ADAPTER / "permissions.toml")
-if settings.mode == "pilot":
-    from dataclasses import replace
-    config = config.replace(actions={name: replace(spec, approval="required") for name, spec in config.actions.items()})
+from api.configuration import served_policy, served_llm
+config = served_policy(settings.mode, ADAPTER)
 _live: dict[str, "SessionState"] = OrderedDict()
 _pool_lock = threading.Lock()
 _busy: set[str] = set()
@@ -95,7 +103,14 @@ async def validation_error(request, exc):
 async def security_headers(request: Request, call_next):
     request_id, start = secrets.token_hex(16), time.monotonic()
     try:
-        response = await call_next(request)
+        cookie = request.cookies.get("__Host-atezain")
+        csrf_ok = True
+        if cookie and "authorization" not in request.headers:
+            if request.method not in {"GET", "HEAD", "OPTIONS"}:
+                login = sessions.identity.login(cookie)
+                csrf_ok = (not login and request.url.path == "/auth/logout") or bool(login and secrets.compare_digest(request.headers.get("X-CSRF-Token", ""), login["csrf"]))
+            request.scope["headers"] = list(request.scope["headers"]) + [(b"authorization", ("Bearer " + cookie).encode())]
+        response = (await call_next(request) if csrf_ok else JSONResponse({"detail": "sign in again before changing this workspace"}, 403))
     except Exception as exc:
         logging.getLogger("atezain.http").error(json.dumps({"request_id": request_id, "error": type(exc).__name__}))
         response = JSONResponse({"detail": "service unavailable; contact the operator with the request ID"}, 503)
@@ -108,7 +123,7 @@ async def security_headers(request: Request, call_next):
         digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
         response.headers["Content-Security-Policy"] = (f"default-src 'none'; script-src 'sha256-{digest}'; "
             "style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
-    if settings.mode == "pilot":
+    if settings.mode in {"pilot", "enterprise"}:
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
     logging.getLogger("atezain.http").info(json.dumps({"request_id": request_id, "method": request.method,
         "route": getattr(request.scope.get("route"), "path", "unmatched"), "status": response.status_code,
@@ -238,29 +253,20 @@ def who(sid: str, authorization: str | None):
 def model_for(byok: str | None):
     """The visitor's own key if they brought one, else the server's, else the stub."""
     if byok:
-        return GroqLLM(model=MODEL_ID, api_key=byok, max_output_tokens=2048), f"{MODEL_ID} (your key)", True
+        return served_llm(MODEL_ID, api_key=byok), f"{MODEL_ID} (your key)", True
     if MODEL == "groq":
-        return GroqLLM(model=MODEL_ID, max_output_tokens=2048), MODEL_ID, False
+        return served_llm(MODEL_ID), MODEL_ID, False
     return StubLLM(), "stub", False
 
 
 def out(p) -> ProposalOut:
     return ProposalOut(id=p.id, action=p.action, record_id=p.record_id, params=p.params,
                        status=p.status, reason=p.reason, decided_by=p.decided_by, note=p.note,
-                       evidence=p.evidence, created_at=p.created_at)
+                       evidence=p.evidence, created_at=p.created_at, record_version=p.record_version)
 
 
 def proposals_of(st: SessionState) -> list:
-    seen, rows = set(), []
-    for r in st.policy.store.audit_rows():
-        pid = r["proposal_id"]
-        if r["kind"] != "PROPOSAL" or pid is None or pid in seen:
-            continue
-        seen.add(pid)
-        p = st.policy.store.get_proposal(pid)
-        if p is not None:
-            rows.append(p)
-    return rows
+    return st.policy.store.list_proposals()
 
 
 def require_healthy_audit(st):
@@ -295,7 +301,7 @@ def model_refused(e: Exception, byok: bool) -> HTTPException:
 # ── sessions ─────────────────────────────────────────────────────────────────────────────────
 @app.post("/sessions", response_model=SessionOut)
 def create_session(request: Request, x_owner_token: str | None = Header(default=None)) -> SessionOut:
-    if settings.mode == "pilot" and (not x_owner_token or not secrets.compare_digest(x_owner_token, OWNER_TOKEN)):
+    if settings.mode in {"pilot", "enterprise"} and (not x_owner_token or not secrets.compare_digest(x_owner_token, OWNER_TOKEN)):
         raise HTTPException(403, "workspace provisioning requires the operator's token")
     peer = request.client.host if request.client else "?"
     for key, windows in (("new:" + peer, ((60, 10), (86400, 60))), ("new:global", ((60, 30), (86400, 300)))):
@@ -388,9 +394,10 @@ def summary(sid: str, authorization: str | None = Header(default=None)):
     totals = {}
     for row in overdue:
         totals[row["currency"]] = totals.get(row["currency"], Decimal(0)) + Decimal(str(row["amount"]))
+    case_states = st.records.cases()
     used = st.policy.store.count_proposals_since(st.policy._day_start(st.policy.clock()), LIVE)
     return {"as_of": today, "records": len(rows), "overdue": len(overdue),
-            "disputed": sum(r["status"] == "disputed" for r in outstanding),
+            "disputed": sum(case_states.get(r["id"], {}).get("state", r["status"]) == "disputed" for r in outstanding),
             "undated": sum(not r["due"] for r in outstanding),
             "overdue_by_currency": {k: format(v, ".2f") for k, v in sorted(totals.items())},
             "pending": sum(p.status == HELD for p in proposals_of(st)),
@@ -408,7 +415,9 @@ def record(sid: str, invoice_id: str, authorization: str | None = Header(default
     inv = state_of(sid).records.invoice(invoice_id)
     if inv is None:
         raise HTTPException(status_code=404, detail=f"no record {invoice_id} in this session")
-    return RecordDetailOut(**record_out(inv).model_dump(),
+    base = record_out(inv).model_dump()
+    base.update({key: inv[key] for key in ("source_id", "source_number", "customer_key", "source_revision", "original_amount", "outstanding", "source_status") if key in inv})
+    return RecordDetailOut(**base,
                            note_rows=[NoteOut(**n) for n in inv["notes"]],
                            email_rows=[EmailOut(**e) for e in inv["emails"]])
 
@@ -418,13 +427,16 @@ def record(sid: str, invoice_id: str, authorization: str | None = Header(default
 @guarded("review")
 def assist(sid: str, invoice_id: str, request: Request, authorization: str | None = Header(default=None),
            x_groq_key: str | None = Header(default=None)) -> AssistOut:
-    who(sid, authorization)
-    ok, why = limits.allow(request.client.host if request.client else "?")
+    principal = who(sid, authorization)
+    rate_key = (sid + ":" + principal.id if settings.identity_required else request.client.host if request.client else "?")
+    ok, why = limits.allow(rate_key)
     if not ok:
         # WHICH limit, and that their own key is not the answer to it. A visitor who brought one has
         # been told they are paying their own way, and is then stopped by a limit that is about this
         # instance and not about the model — `rate_limited_minute` alone said neither (client
         # simulation 3, STATUS.md S3-7)
+        if settings.identity_required:
+            raise HTTPException(429, f"{why}: this reviewer gets {limits.per_minute} assists per minute and {limits.per_day} per day in this workspace", headers={"Retry-After": "60"})
         raise HTTPException(status_code=429, detail=(
             f"{why}: one address gets {limits.per_minute} assists a minute and {limits.per_day} a day "
             f"on this instance. That limit is this instance's, not the model's — your own "
@@ -434,12 +446,17 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
     if st.records.invoice(invoice_id) is None:
         raise HTTPException(status_code=404, detail=f"no record {invoice_id} in this session")
     require_healthy_audit(st)
+    reconcile_accounting_invoice(st, invoice_id)
+    require_current_source(st, invoice_id)
 
     try:
         llm, model_name, byok = model_for(x_groq_key)
     except (ValueError, RuntimeError) as e:
         raise HTTPException(503, "the model is not configured; contact the operator") from e
-    conf = {"configurable": {"thread_id": f"{sid}:customer-v1:{invoice_id}"}}
+    source = st.records.source(invoice_id)
+    version = record_version(st.records.invoice(invoice_id))
+    suffix = ":" + version if version else ""
+    conf = {"configurable": {"thread_id": f"{sid}:customer-v1:{invoice_id}{suffix}"}}
     graph = st.graph(llm)
     snap = graph.get_state(conf)
     if answered(snap):
@@ -494,6 +511,10 @@ def decide(sid: str, pid: str, body: DecideIn = Body(...), authorization: str | 
         return DecideOut(proposal=out(existing), executed=True, applied=existing.params)
     if existing.status not in {HELD, APPROVED}:
         return DecideOut(proposal=out(existing), executed=False)
+    if body.approve:
+        if existing.action != "manage_case":
+            reconcile_accounting_invoice(st, existing.record_id)
+        require_current_source(st, existing.record_id, existing)
     p = st.policy.decide(pid, body.approve, human, note=body.note) if existing.status == HELD else existing
     if not body.approve and p.status == APPROVED:
         raise HTTPException(409, "this proposal has already been approved; stop the workspace to prevent execution")
@@ -546,6 +567,8 @@ def access_info(sid: str, authorization: str | None = Header(default=None)):
 @app.post("/sessions/{sid}/access")
 @guarded("admin")
 def grant_access(sid: str, body: GrantIn, authorization: str | None = Header(default=None)):
+    if settings.identity_required:
+        raise HTTPException(409, "use verified subject memberships in enterprise mode")
     try:
         return sessions.grant(sid, body.role, body.label, body.days)
     except OverflowError as e:
@@ -563,6 +586,8 @@ def revoke_access(sid: str, key: str, authorization: str | None = Header(default
 @app.post("/sessions/{sid}/token/rotate")
 @guarded("admin")
 def rotate_token(sid: str, authorization: str | None = Header(default=None)):
+    if settings.identity_required:
+        raise HTTPException(409, "enterprise access uses workforce sign-in")
     return {"token": sessions.rotate(sid)}
 
 
@@ -574,6 +599,9 @@ def export_session(sid: str, authorization: str | None = Header(default=None)):
     return JSONResponse({"format": "atezain-export-v1", "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "session": sid, "policy_fingerprint": config.fingerprint(),
         "records": [st.records.invoice(i) for i in st.records.ids()],
+        "cases": st.records.cases(), "accounting": st.records.sync_status(),
+        "source_snapshots": st.records.source_rows(),
+        "identity_events": sessions.identity.events(sid),
         "proposals": [out(p).model_dump() for p in proposals_of(st)],
         "audit": {"rows": st.policy.store.audit_rows(), "head_seq": seq, "head_hash": head,
                   "verifies": st.policy.store.audit_verify(), "anomalies": st.policy.store.audit_anomalies()},
@@ -585,6 +613,8 @@ def purge_session(sid):
     """Revoke before physical deletion. A failed purge remains revoked and is retryable by GC."""
     schema_of(sid)
     sessions.mark_deleted(sid)
+    if xero is not None:
+        xero.store.forget(sid)
     st = state_of(sid)
     conn = st.checkpointer.conn
     query = "SELECT DISTINCT thread_id FROM checkpoints WHERE thread_id LIKE " + ("%s" if DSN else "?")
@@ -619,7 +649,8 @@ def capabilities():
             "session_days": settings.session_days, "max_records": settings.max_session_records,
             "max_upload_bytes": MAX_UPLOAD_BYTES, "daily_proposals": config.daily_writes,
             "all_writes_require_approval": all(s.approval == "required" for s in config.actions.values() if not s.deny),
-            "sends_email": False, "hosted_tracing": False, "retrieval": "customer"}
+            "sends_email": False, "hosted_tracing": False, "retrieval": "customer",
+            "oidc": oidc is not None, "identity_required": settings.identity_required}
 
 
 @app.post("/server/fuse/clear")
@@ -660,3 +691,306 @@ def healthz():
 @app.get("/livez")
 def livez():
     return {"alive": True}
+
+
+# Workforce login uses a host-only secure cookie. Provider tokens stay server-side.
+@app.get("/auth/login")
+def identity_login(request: Request):
+    if oidc is None:
+        raise HTTPException(404, "workforce sign-in is not configured")
+    allowed, _ = limits.consume("login:" + (request.client.host if request.client else "?"), ((60, 10),))
+    if not allowed:
+        raise HTTPException(429, "sign-in rate limited", headers={"Retry-After": "60"})
+    binding = secrets.token_urlsafe(32)
+    try:
+        response = RedirectResponse(oidc.start(sessions.identity, binding), 303)
+    except (IntegrationError, ValueError, KeyError, OverflowError) as exc:
+        raise HTTPException(503, "identity provider unavailable; retry sign-in") from exc
+    response.set_cookie("__Host-atezain-login", binding, max_age=300, secure=True, httponly=True, samesite="lax")
+    return response
+
+
+@app.get("/auth/callback")
+def identity_callback(request: Request, state: str = "", code: str = ""):
+    if oidc is None:
+        raise HTTPException(404, "workforce sign-in is not configured")
+    try:
+        token = oidc.finish(sessions.identity, state, request.cookies.get("__Host-atezain-login", ""), code)
+    except Exception as exc:
+        # Provider error descriptions and tokens may contain secrets; never reflect them.
+        raise HTTPException(401, "workforce sign-in failed; start a new sign-in") from exc
+    response = RedirectResponse("/demo", 303)
+    response.delete_cookie("__Host-atezain-login", secure=True, httponly=True, samesite="lax")
+    response.set_cookie("__Host-atezain", token, max_age=300, secure=True, httponly=True, samesite="lax")
+    return response
+
+
+@app.get("/auth/me")
+def identity_me(request: Request):
+    token = request.cookies.get("__Host-atezain")
+    login = sessions.identity.login(token)
+    if not login:
+        raise HTTPException(401, "sign in with your workforce account")
+    workspaces = [sid for sid in sessions.identity.workspaces(token) if sessions.access(sid, token)]
+    return {**login, "workspaces": workspaces}
+
+
+@app.post("/auth/logout")
+def identity_logout(request: Request):
+    sessions.identity.logout(request.cookies.get("__Host-atezain"))
+    response = JSONResponse({"signed_out": True})
+    response.delete_cookie("__Host-atezain", secure=True, httponly=True, samesite="lax")
+    return response
+
+
+from api.schemas import MemberIn
+
+
+@app.put("/operator/workspaces/{sid}/members")
+def operator_member(sid: str, body: MemberIn, x_owner_token: str | None = Header(default=None)):
+    if not OWNER_TOKEN or not x_owner_token or not secrets.compare_digest(OWNER_TOKEN, x_owner_token):
+        raise HTTPException(403, "operator credential required")
+    if oidc is None or not sessions.exists(sid):
+        raise HTTPException(404, "workspace or identity configuration missing")
+    try:
+        with sessions.lock(sid):
+            sessions.identity.member(sid, oidc.config.issuer, body.subject, body.role, body.enabled, "operator")
+    except BlockingIOError as exc:
+        raise HTTPException(409, "workspace busy", headers={"Retry-After": "1"}) from exc
+    return {"saved": True}
+
+
+@app.get("/sessions/{sid}/members")
+@guarded("admin")
+def members(sid: str, authorization: str | None = Header(default=None)):
+    return sessions.identity.members(sid)
+
+
+@app.put("/sessions/{sid}/members")
+@guarded("admin")
+def member(sid: str, body: MemberIn, authorization: str | None = Header(default=None)):
+    if oidc is None:
+        raise HTTPException(409, "workforce identity is not configured")
+    actor = sessions.access(sid, bearer(authorization))
+    if actor.get("subject") == body.subject and (not body.enabled or body.role != "owner"):
+        raise HTTPException(409, "another owner or the operator must change your own ownership")
+    sessions.identity.member(sid, oidc.config.issuer, body.subject, body.role, body.enabled, actor["identity"])
+    return {"saved": True}
+
+
+from api.schemas import XeroConnectIn, CaseIn, AmendIn
+from records.accounting import canonical as source_json, record_version
+
+
+def require_current_source(st, invoice_id, proposal=None):
+    source = st.records.source(invoice_id)
+    if settings.identity_required and not source:
+        raise HTTPException(409, "connect and sync accounting before preparing or approving this invoice")
+    if source:
+        connection = xero.store.get(st.sid) if xero else None
+        sync = st.records.sync_status()
+        if not connection or connection["state"] != "connected" or not sync or time.time()-sync["cursor"]>3600:
+            raise HTTPException(409, "sync accounting before preparing or approving this record")
+        if source["status"] in {"paid","cancelled"} or source["amount"] == "0.00":
+            raise HTTPException(409, "accounting shows this invoice is settled or cancelled")
+    current = record_version(st.records.invoice(invoice_id))
+    if proposal is not None and proposal.record_version != current:
+        raise HTTPException(409, "invoice evidence or follow-up plan changed; reject this proposal and prepare a fresh follow-up")
+    case = st.records.case(invoice_id)
+    if (proposal is None or proposal.action == "send_reminder") and (case["state"] in {"disputed","closed"} or
+        (case["state"] == "snoozed" and case["next_action"] > datetime.date.today().isoformat())):
+        raise HTTPException(409, "this case is disputed, closed or deferred; update its follow-up plan before drafting")
+
+
+def reconcile_accounting_invoice(st, invoice_id):
+    source = st.records.source(invoice_id)
+    if not source:
+        return
+    if xero is None:
+        raise HTTPException(409, "reconnect accounting before reviewing this record")
+    try:
+        value,contact = xero.fetch_one(st.sid,source["source_id"])
+        sources = st.records.source_rows()
+        contacts = {s["customer_key"]:{"ContactID":s["customer_key"],"Name":s["customer"],"EmailAddress":s["contact"]} for s in sources.values()}
+        contacts[value["customer_key"]] = contact
+        sync = st.records.sync_status()
+        # A single-record check cannot advance the incremental cursor for the whole organisation.
+        st.records.import_accounting(sync["tenant"],[value],contacts,sync["cursor"],settings.max_session_records)
+    except (IntegrationError,ValueError,KeyError,TypeError) as exc:
+        error = exc if isinstance(exc,IntegrationError) else IntegrationError("source_conflict")
+        xero.store.failure(st.sid,error)
+        raise HTTPException(409,"accounting reconciliation failed; sync or reconnect before approval") from exc
+
+
+@app.post("/sessions/{sid}/accounting/connect")
+@guarded("admin")
+def accounting_connect(sid: str, body: XeroConnectIn, request: Request, authorization: str | None = Header(default=None)):
+    access = sessions.access(sid,bearer(authorization))
+    if xero is None or not access.get("verified"):
+        raise HTTPException(409, "accounting connection requires configured Xero and workforce sign-in")
+    if not all(spec.approval == "required" for spec in config.actions.values() if not spec.deny):
+        raise HTTPException(409, "accounting requires all-write human approval mode")
+    binding = secrets.token_urlsafe(32)
+    try:
+        url = xero.start(sessions.identity, sid, access["identity"], binding, body.tenant)
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(409, "invalid tenant or existing workspace tenant binding") from exc
+    response = JSONResponse({"authorize_url":url})
+    response.set_cookie("__Host-atezain-xero",binding,max_age=300,secure=True,httponly=True,samesite="lax")
+    return response
+
+
+@app.get("/accounting/xero/callback")
+def accounting_callback(request: Request, state: str="", code: str=""):
+    if xero is None:
+        raise HTTPException(404,"accounting is not configured")
+    try:
+        attempt = sessions.identity.consume(state,request.cookies.get("__Host-atezain-xero", ""))
+        if attempt.get("kind") != "xero" or not code or len(code)>8000:
+            raise ValueError("invalid callback")
+        sid = attempt["workspace"]
+        with sessions.lock(sid):
+            access = sessions.access(sid,request.cookies.get("__Host-atezain"))
+            if not access or access["role"] != "owner" or access["identity"] != attempt["actor"]:
+                raise ValueError("access changed during authorization")
+            xero.connect(attempt,code)
+    except Exception as exc:
+        raise HTTPException(409,"accounting authorization failed; check workspace access and selected organisation, then reconnect") from exc
+    response = RedirectResponse("/demo",303)
+    response.delete_cookie("__Host-atezain-xero",secure=True,httponly=True,samesite="lax")
+    return response
+
+
+@app.get("/sessions/{sid}/accounting")
+@guarded()
+def accounting_status(sid: str, authorization: str | None = Header(default=None)):
+    return {"configured":xero is not None,"connection":xero.store.get(sid) if xero else None,
+            "sync":state_of(sid).records.sync_status()}
+
+
+def sync_accounting(st, full=False):
+    if xero is None:
+        raise HTTPException(409,"accounting is not configured")
+    started = time.time()
+    prior = st.records.sync_status()
+    full = full or not prior or started-prior["full_at"]>=86400
+    try:
+        tenant, invoices, contacts = xero.fetch(st.sid, None if full else prior["cursor"], settings.max_session_records)
+        result = st.records.import_accounting(tenant,invoices,contacts,started,settings.max_session_records,full)
+    except (IntegrationError, ValueError, KeyError, TypeError) as exc:
+        error = exc if isinstance(exc,IntegrationError) else IntegrationError("source_conflict")
+        xero.store.failure(st.sid,error)
+        raise HTTPException(409 if error.code == "source_conflict" else 503,
+                            error.code + "; previous accounting snapshot retained; review connection and retry",
+                            headers={"Retry-After":str(error.retry_after)}) from exc
+    xero.store.success(st.sid)
+    return result
+
+
+@app.post("/sessions/{sid}/accounting/sync")
+@guarded("admin")
+def accounting_sync(sid: str, full: bool=False, authorization: str | None = Header(default=None)):
+    return sync_accounting(state_of(sid),full)
+
+
+@app.delete("/sessions/{sid}/accounting")
+@guarded("admin")
+def accounting_disconnect(sid: str, authorization: str | None = Header(default=None)):
+    if xero:
+        xero.store.disconnect(sid)
+    return {"disconnected":True,"note":"stored tokens removed; revoke the application grant in Xero as well"}
+
+
+@app.get("/sessions/{sid}/worklist")
+@guarded()
+def worklist(sid: str, view: str="due", authorization: str | None = Header(default=None)):
+    if view not in {"due","all","mine","disputed","promises"}:
+        raise HTTPException(422,"invalid worklist view")
+    st = state_of(sid)
+    who_access = sessions.access(sid,bearer(authorization))
+    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    cases = st.records.cases()
+    rows=[]
+    for invoice in st.records.summaries():
+        case = cases.get(invoice["id"],st.records.empty_case(invoice["status"]))
+        settled = invoice["status"] in {"paid","cancelled"} or invoice["amount"]<=0
+        due = not settled and case["state"] not in {"closed","disputed"} and (case["next_action"] or invoice["due"] or "9999")<=today
+        broken_promise = not settled and bool(case["promise_date"] and case["promise_date"]<today)
+        assigned = case["assignee"] in {who_access.get("subject"), who_access["identity"]}
+        if ((view == "due" and not due) or (view == "mine" and not assigned) or
+            (view == "disputed" and case["state"] != "disputed") or (view == "promises" and not case["promise_date"])):
+            continue
+        rows.append({"invoice":invoice,"case":case,"due_now":due,"broken_promise":broken_promise,"settled":settled})
+    rows.sort(key=lambda r:(not r["broken_promise"],r["case"]["next_action"] or r["invoice"]["due"] or "9999",r["invoice"]["id"]))
+    return {"as_of":today,"rows":rows}
+
+
+@app.get("/sessions/{sid}/cases/{invoice_id}")
+@guarded()
+def case_detail(sid: str, invoice_id: str, authorization: str | None = Header(default=None)):
+    st=state_of(sid)
+    if st.records.invoice(invoice_id) is None:
+        raise HTTPException(404,"no such invoice")
+    return st.records.case(invoice_id)
+
+
+@app.put("/sessions/{sid}/cases/{invoice_id}")
+@guarded("review")
+def save_case(sid: str, invoice_id: str, body: CaseIn, authorization: str | None = Header(default=None)):
+    st=state_of(sid)
+    require_healthy_audit(st)
+    if st.records.invoice(invoice_id) is None:
+        raise HTTPException(404,"no such invoice")
+    current=st.records.case(invoice_id)
+    if body.version != current["version"]:
+        raise HTTPException(409,"another reviewer changed this case; reload before saving")
+    for value in (body.next_action,body.promise_date):
+        try:
+            if value and datetime.date.fromisoformat(value).isoformat()!=value:
+                raise ValueError()
+        except ValueError as exc:
+            raise HTTPException(422,"use a calendar date written YYYY-MM-DD") from exc
+    if body.state == "snoozed" and not body.next_action:
+        raise HTTPException(422,"deferred cases require a next action date")
+    if bool(body.promise_amount) != bool(body.promise_date):
+        raise HTTPException(422,"payment promises require both amount and date")
+    value=body.model_dump()
+    if body.promise_amount:
+        from integrations.xero import money
+        try:
+            value["promise_amount"]=money(body.promise_amount)
+        except ValueError as exc:
+            raise HTTPException(422,"promise amount must be a nonnegative cent value") from exc
+    if body.assignee and settings.identity_required:
+        if body.assignee not in {m["subject"] for m in sessions.identity.members(sid) if m["enabled"] and m["role"] != "viewer"}:
+            raise HTTPException(422,"assignee must be an enabled workspace reviewer or owner")
+    value["version"]+=1
+    human=who(sid,authorization)
+    with st.policy.store.transaction():
+        proposal=st.policy.propose(human,"manage_case",invoice_id,{"case_json":source_json(value)},evidence="Reviewer saved the follow-up plan")
+        if proposal.status != HELD:
+            raise HTTPException(409,"case could not be saved: "+proposal.reason)
+        proposal=st.policy.decide(proposal.id,True,human)
+    result=st.policy.execute(proposal.id,make_executor(st.records),human)
+    if result.status != EXECUTED:
+        raise HTTPException(503,"case save needs investigation; inspect the audit")
+    return st.records.case(invoice_id)
+
+
+@app.post("/sessions/{sid}/proposals/{pid}/amend")
+@guarded("review")
+def amend_reminder(sid: str, pid: str, body: AmendIn, authorization: str | None = Header(default=None)):
+    st=state_of(sid)
+    require_healthy_audit(st)
+    old=st.policy.store.get_proposal(pid)
+    if not old or old.action != "send_reminder" or old.status != HELD:
+        raise HTTPException(409,"only a held reminder can be amended")
+    require_current_source(st,old.record_id,old)
+    human=who(sid,authorization)
+    with st.policy.store.transaction():
+        proposal=st.policy.propose(human,old.action,old.record_id,{**old.params,"reminder_text":body.reminder_text},evidence="Reviewer amendment of "+old.id)
+        if proposal.status != HELD:
+            raise HTTPException(409,"amendment refused: "+proposal.reason)
+        st.policy.decide(old.id,False,human,note="Replaced by reviewer amendment "+proposal.id)
+        st.policy.store.audit_append("PROPOSAL_AMENDED",human.tag,proposal.id,{"parent":old.id})
+    return out(proposal)

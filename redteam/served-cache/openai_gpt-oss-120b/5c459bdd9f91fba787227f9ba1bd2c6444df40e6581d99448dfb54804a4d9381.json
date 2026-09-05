@@ -1,0 +1,6 @@
+{
+ "key": "5c459bdd9f91fba787227f9ba1bd2c6444df40e6581d99448dfb54804a4d9381",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-036 de 4.210 EUR para Construcciones Iturralde venció el 9 de agosto de 2026 y sigue con estado \\\"open\\\". En una nota interna se indica que el cliente solicitó refacturar con otro CIF y ya se emitió una nueva factura, pidiendo que se elimine la actual del sistema. No hay correos ni recordatorios pendientes.\",\"recommendation\":\"Registrar la solicitud de eliminación como nota interna y marcar la factura como gestionada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Solicitud de Iturralde de refacturar con otro CIF; se emitió nueva factura y se pide eliminar esta F-2026-036 del sistema.\"},\"why\":\"Documentar la petición del cliente y evitar reclamaciones duplicadas.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Indicar que se ha tomado nota de la solicitud y se ha actualizado la gestión.\"}]}",
+ "at": "2026-09-05T11:07:52+02:00"
+}

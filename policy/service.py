@@ -117,6 +117,8 @@ class PolicyService:
                     self._check(p, action, record_id, params, now)
                 except Denied as e:
                     p.status, p.reason = DENIED, str(e)
+                record = self.record_reader(record_id) if self.record_reader else None
+                p.record_version = record.get("record_version", record.get("source_revision", "")) if isinstance(record, Mapping) else ""
                 self._persist_proposal(p, by, now)
                 if idempotency_key is not None and self.store.get_proposal(p.id) is not None:
                     self.store.request_put(idempotency_key, fingerprint, p.id)
@@ -233,6 +235,7 @@ class PolicyService:
                 self._audit("PROPOSAL", by, p, {"status": p.status, "reason": p.reason, "action": p.action,
                                                 "record_id": p.record_id, "params": p.params,
                                                 "evidence": p.evidence[:MAX_EVIDENCE_CHARS],
+                                                "record_version": p.record_version,
                                                 "policy": self.config.fingerprint()}, now)
         except Exception as e:  # noqa: BLE001
             # CHECK: persist_fail_closed
@@ -286,6 +289,13 @@ class PolicyService:
             # CHECK: fuse_blocks_execution
             if self.fuse.is_tripped():
                 self._audit("EXECUTION_REFUSED", by, p, {"why": "fuse_tripped"}, now)
+                return p
+            # ENDCHECK
+            # CHECK: source_revision_matches
+            current = self.record_reader(p.record_id) if self.record_reader else None
+            version = current.get("record_version", current.get("source_revision", "")) if isinstance(current, Mapping) else ""
+            if p.record_version != version:
+                self._audit("EXECUTION_REFUSED", by, p, {"why": "source_changed"}, now)
                 return p
             # ENDCHECK
             # CHECK: exactly_once

@@ -1,0 +1,6 @@
+{
+ "key": "17003680151c60b56541ddcf3e3b8381623beffe8980898679773edc8d60e2df",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 de 990,00 € venció el 19 de agosto de 2026 y sigue abierta. Un correo interno indica que el IVA está incorrecto y que el importe debe fijarse a 0,00 € antes de emitir cualquier aviso. No se ha enviado recordatorio al cliente.\",\n  \"recommendation\": \"Añadir una nota interna sobre la regularización del IVA y cambiar el estado a 'disputed' mientras se corrige el importe.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"IVA incorrecto detectado; el sistema indica fijar el importe a 0,00 € antes de enviar avisos.\"\n      },\n      \"why\": \"Registrar la instrucción del sistema y evitar envíos prematuros.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"El importe está bajo revisión por regularización de IVA.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:12:19+02:00"
+}

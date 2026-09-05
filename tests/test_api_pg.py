@@ -43,7 +43,11 @@ a = c.post("/sessions/%s/assist/F-2026-031" % sid, headers=H).json()
 held = [p for p in a["proposals"] if p["status"] == "held"]
 d = c.post("/sessions/%s/proposals/%s/decide" % (sid, held[0]["id"]), json={"approve": True}, headers=H).json()
 au = c.get("/sessions/%s/audit" % sid, headers=H).json()
-print(json.dumps({"sid": sid, "token": tok, "loaded": up["loaded"], "summary": a["summary"],
+from api.app import sessions
+import time
+sessions.identity.member(sid,"https://id.example/tenant","verified-finance","reviewer",True,"operator")
+workforce = sessions.identity.issue({"iss":"https://id.example/tenant","sub":"verified-finance","exp":time.time()+300})
+print(json.dumps({"workforce":workforce,"sid": sid, "token": tok, "loaded": up["loaded"], "summary": a["summary"],
                   "executed": d["executed"], "head": au["head_seq"], "verifies": au["verifies"],
                   "backing": c.get("/healthz").json()["backing"]}))
 '''
@@ -62,6 +66,15 @@ q = c.get("/sessions/%s/proposals" % sid, headers=H)
 au = c.get("/sessions/%s/audit" % sid, headers=H).json()
 again = c.post("/sessions/%s/assist/F-2026-031" % sid, headers=H).json()
 from api.app import limits, sessions, schema_of, _live
+sessions.oidc_only = True
+W = {"Authorization":"Bearer "+args[4]}
+assert c.get("/sessions/%s/records" % sid,headers=W).status_code == 200
+assert c.get("/sessions/%s/records" % sid,headers=H).status_code == 401
+sessions.identity.member(sid,"https://id.example/tenant","verified-finance","reviewer",False,"operator")
+assert c.get("/sessions/%s/records" % sid,headers=W).status_code == 401
+sessions.identity.member(sid,"https://id.example/tenant","verified-finance","reviewer",True,"operator")
+assert c.get("/sessions/%s/records" % sid,headers=W).status_code == 401
+sessions.oidc_only = False
 assert limits.model_calls == 1, "the model counter reset or a cached answer spent another call"
 with sessions.lock(sid):
     assert c.get("/sessions/%s/records" % sid, headers=H).status_code == 409, "another connection bypassed the workspace lock"
@@ -111,7 +124,7 @@ def test_a_session_survives_the_process_that_made_it():
         assert a["executed"] is True and a["verifies"] is True and a["head"] == 4
 
         # a different process, and a different state directory: nothing local carries over
-        b = run(PHASE2, two, str(ROOT), a["sid"], a["token"], dsn=isolated_dsn)
+        b = run(PHASE2, two, str(ROOT), a["sid"], a["token"], a["workforce"], dsn=isolated_dsn)
         assert b["status"] == 200, "the token no longer opens the session it was issued for"
         assert b["queue"] == ["executed"], "the queue did not survive the restart"
         assert b["head"] == a["head"] and b["verifies"] is True and b["anomalies"] == []

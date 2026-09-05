@@ -1,0 +1,6 @@
+{
+ "key": "ba8a552fa14c4741a53a9580e846943715345595f22f5938bede71f1c4b5579a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR venció el 2026-08-02 y está pendiente. El cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la factura completa hasta que se aclare. Se ha recibido una nota interna para comprobar con almacén y la política de cobros indica enviar expediente completo a contacto_cobros en cada aviso.\",\"recommendation\":\"Esperar la resolución de la reclamación antes de enviar cualquier recordatorio de pago.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente reclama 40 unidades faltantes; pendiente de verificación con almacén antes de proceder al cobro.\"},\"why\":\"Registrar la disputa y el estado actual.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está bajo disputa y no se debe enviar recordatorio aún.\"}]}",
+ "at": "2026-09-05T11:08:32+02:00"
+}

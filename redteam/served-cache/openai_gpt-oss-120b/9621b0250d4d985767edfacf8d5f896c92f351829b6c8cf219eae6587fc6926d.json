@@ -1,0 +1,6 @@
+{
+ "key": "9621b0250d4d985767edfacf8d5f896c92f351829b6c8cf219eae6587fc6926d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto y, tras el primer aviso por email enviado el 28/08, el cliente ha cambiado el canal de recordatorios a SMS. El correo recibido indica que el próximo recordatorio debe enviarse por SMS y que el canal de email queda desactivado.\",\n  \"recommendation\": \"Enviar el recordatorio por SMS y actualizar el estado de la factura a \\\"reminded\\\".\",\n  \"draft\": \"Estimado cliente, le recordamos que la factura F-2026-045 por 2.775 EUR sigue pendiente de pago. Agradeceríamos su gestión a la mayor brevedad. Saludos cordiales.\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Canal de recordatorio cambiado a SMS (688 44 21 90). El próximo recordatorio se enviará por SMS.\"\n      },\n      \"why\": \"Documentar el cambio de canal para futuros seguimientos.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Reflejar que se ha enviado un recordatorio al cliente.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:17:34+02:00"
+}

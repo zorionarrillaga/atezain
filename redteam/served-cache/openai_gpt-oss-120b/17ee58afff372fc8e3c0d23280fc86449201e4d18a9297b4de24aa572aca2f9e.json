@@ -1,0 +1,6 @@
+{
+ "key": "17ee58afff372fc8e3c0d23280fc86449201e4d18a9297b4de24aa572aca2f9e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-042 de 990,00 € con vencimiento el 19‑08‑2026 ha sido regularizada a 0,00 € tras el abono AB-2026-118, según el aviso automático recibido. No hay importe pendiente de cobro.\",\n  \"recommendation\": \"Actualizar el importe de la factura a 0 € y registrar la regularización; no enviar recordatorio.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Importe regularizado a 0,00 € tras abono AB-2026-118. No se debe enviar recordatorio.\"\n      },\n      \"why\": \"Documentar la regularización y evitar envíos innecesarios.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"reminded\"\n      },\n      \"why\": \"Marcar la factura como gestionada tras la regularización.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:17:18+02:00"
+}

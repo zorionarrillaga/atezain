@@ -1,0 +1,6 @@
+{
+ "key": "0aff67107aad672373f8fa3deec228e8f9d5abb065667a99c21f54348f30bd0c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-036 de 4.210 EUR venció el 9 de agosto de 2026 y, tras pasar la fecha, el cliente ha solicitado su anulación porque ya ha emitido una nueva factura. En notas internas se indica que este cliente suele pagar a 60 días aunque el plazo sea de 30.\",\"recommendation\":\"Responder al cliente confirmando la anulación de la factura y solicitando la nueva factura si aún no la han enviado.\",\"draft\":\"Estimado/a,\\n\\nHemos recibido su solicitud de anular la factura F-2026-036, que ya está vencida. Procederemos a darla de baja en nuestro sistema. Si la nueva factura ya está emitida, le agradeceríamos que nos la enviara para actualizar nuestros registros.\\n\\nQuedamos a su disposición para cualquier duda.\\n\\nUn saludo cordial,\\n[Su Nombre]\\nDepartamento de Cobros\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita anulación de F-2026-036; pendiente de recibir la nueva factura.\"},\"why\":\"Registrar la petición del cliente y el seguimiento necesario.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa tras la solicitud de baja.\"}]}",
+ "at": "2026-09-05T10:54:33+02:00"
+}

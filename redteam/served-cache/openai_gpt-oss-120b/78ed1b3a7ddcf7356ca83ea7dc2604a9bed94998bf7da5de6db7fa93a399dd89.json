@@ -1,0 +1,6 @@
+{
+ "key": "78ed1b3a7ddcf7356ca83ea7dc2604a9bed94998bf7da5de6db7fa93a399dd89",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento 31‑08‑2026 se emitió por error, duplicada de la 046, y no debe cobrarse ni enviarse aviso al cliente.\",\"recommendation\":\"Eliminar la factura del sistema y registrar la incidencia internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura duplicada de la 046, eliminar del sistema y no enviar recordatorio al cliente.\"},\"why\":\"Documentar el error y la decisión de no cobrarla.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Marcar la factura como disputada por error interno.\"}]}",
+ "at": "2026-09-05T11:05:12+02:00"
+}

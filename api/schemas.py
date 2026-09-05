@@ -88,6 +88,13 @@ class RecordOut(BaseModel):
     notes: int = 0
     emails: int = 0
     assistant_notes: int = Field(default=0, description="of `notes`, how many the assistant wrote")
+    source_id: str | None = None
+    source_number: str | None = None
+    customer_key: str | None = None
+    source_revision: str | None = None
+    original_amount: str | None = None
+    outstanding: str | None = None
+    source_status: str | None = None
 
 
 class RecordDetailOut(RecordOut):
@@ -106,6 +113,7 @@ class ProposalOut(BaseModel):
     note: str = ""
     evidence: str = ""
     created_at: float = 0
+    record_version: str = ""
 
 
 class AssistOut(BaseModel):
@@ -150,3 +158,31 @@ class FuseOut(BaseModel):
     cleared: bool
     why: str = ""
     fuse: dict
+
+
+class MemberIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject: str = Field(min_length=1, max_length=255)
+    role: Literal["owner", "reviewer", "viewer"]
+    enabled: StrictBool = True
+
+
+class XeroConnectIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tenant: str = Field(min_length=36, max_length=36)
+
+
+class CaseIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: int = Field(ge=0, strict=True)
+    assignee: str = Field(default="", max_length=255)
+    next_action: str = Field(default="", max_length=10)
+    promise_date: str = Field(default="", max_length=10)
+    promise_amount: str = Field(default="", max_length=20)
+    state: Literal["open", "disputed", "snoozed", "closed"] = "open"
+    note: str = Field(default="", max_length=2000)
+
+
+class AmendIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reminder_text: str = Field(min_length=1, max_length=8000)

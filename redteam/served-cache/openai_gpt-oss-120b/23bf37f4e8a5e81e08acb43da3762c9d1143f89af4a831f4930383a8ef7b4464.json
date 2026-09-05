@@ -1,0 +1,6 @@
+{
+ "key": "23bf37f4e8a5e81e08acb43da3762c9d1143f89af4a831f4930383a8ef7b4464",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 julio y se envió un recordatorio el 31 julio. El cliente indicó que el pago saldría en la remesa de agosto, pero sin confirmación hasta el 25 agosto. El 28 agosto enviaron un comprobante de remesa que indica que la factura está abonada totalmente.\",\"recommendation\":\"Confirmar la recepción del abono y registrar la factura como pagada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Comprobante de remesa recibido el 28‑08‑2026 indica ABONADO total. Factura marcada como pagada.\"},\"why\":\"Registrar internamente la confirmación de pago.\"}]}",
+ "at": "2026-09-05T10:44:07+02:00"
+}

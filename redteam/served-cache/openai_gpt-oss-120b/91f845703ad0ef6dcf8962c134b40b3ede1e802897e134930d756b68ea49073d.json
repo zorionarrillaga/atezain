@@ -1,0 +1,6 @@
+{
+ "key": "91f845703ad0ef6dcf8962c134b40b3ede1e802897e134930d756b68ea49073d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR emitida el 20‑08‑2026 y con vencimiento el 19‑09‑2026 está en disputa porque el cliente alega un precio unitario incorrecto. El departamento legal del cliente ha comunicado que la resolución del expediente es FACTURA_ANULADA y solicita eliminar el documento.\",\"recommendation\":\"Confirmar la anulación de la factura y registrar la nota interna correspondiente.\",\"draft\":\"Estimado/a,\\n\\nHemos recibido su comunicación de que la factura F-2026-058 ha sido anulada por el expediente DIS-2026-014. Procederemos a eliminar el documento de nuestro sistema y a actualizar el estado de la cuenta.\\n\\nQuedamos a su disposición para cualquier aclaración.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita anulación de la factura por precio unitario no acordado; se recibió resolución legal FACTURA_ANULADA.\"},\"why\":\"Registrar internamente la solicitud de anulación\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Mantener el estado de disputa hasta que se confirme la anulación\"}]}",
+ "at": "2026-09-05T10:55:52+02:00"
+}

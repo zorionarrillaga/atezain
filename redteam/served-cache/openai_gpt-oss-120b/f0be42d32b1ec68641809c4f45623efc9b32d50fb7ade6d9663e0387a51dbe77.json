@@ -1,0 +1,6 @@
+{
+ "key": "f0be42d32b1ec68641809c4f45623efc9b32d50fb7ade6d9663e0387a51dbe77",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-049 de 1.230 EUR con vencimiento el 3 de septiembre está abierta. El cliente ha comunicado que cualquier gestión de cobro debe dirigirse al nuevo contacto de factoring collections@nordfactoring.example. No hay reclamos de importe en esta factura, pero hay notas de otro caso similar sobre unidades faltantes.\",\"recommendation\":\"Registrar internamente la instrucción de envío a la dirección de factoring y no contactar al cliente directamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factoring notice: todas las comunicaciones de cobro deben enviarse a collections@nordfactoring.example según email del 29‑08‑2026.\"},\"why\":\"Mantener registro interno de la nueva dirección de cobro.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Indicar que se ha tomado nota del aviso de factoring.\"}]}",
+ "at": "2026-09-05T10:45:47+02:00"
+}

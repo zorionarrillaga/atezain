@@ -1,0 +1,6 @@
+{
+ "key": "d9844a86b820413856a9a0cfac1c667a781f7950bf2893b9e9f1a5521527dcbb",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-053 de 5.600,00 EUR a Construcciones Iturralde fue emitida el 10 de agosto y vence el 9 de septiembre. Hasta la fecha no se ha recibido ningún correo del cliente y la nota interna indica que suelen pagar a 60 días aunque el plazo sea de 30 días.\",\"recommendation\":\"Esperar al vencimiento y, si no hay pago, enviar un recordatorio.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente suele pagar a 60 días; vigilar pago después del 9 de sep.\"},\"why\":\"Registrar comportamiento de pago para gestionar recordatorio futuro\"}]}",
+ "at": "2026-09-05T11:00:12+02:00"
+}

@@ -1,5 +1,64 @@
 # Status
 
+## Supervised collections enterprise candidate (2026-09-05)
+
+Continued from `584668e` under the owner's instruction to complete the engineering follow-through.
+The existing uncommitted proxy/rate-limit review edits were preserved. `PRODUCT_RELEASE.md` defines
+a provisional B2B services finance buyer, daily supervised collections workflow and measurable
+release requirements. Xero and tenant-specific OIDC (Entra as the intended validation target) were
+asked early; no customer/provider choice or access has yet been supplied.
+
+Implemented: signed OIDC claims with exact issuer/client/tenant/nonce/lifetime and configured
+assurance; PKCE, browser-bound single-use callbacks, secure sessions and CSRF; immediate workspace
+membership checks and local revocation; enterprise refusal of legacy bearer ownership. Read-only
+Xero OAuth verifies the selected organisation and scope, encrypts rotating tokens, imports stable
+source/customer IDs and exact balances transactionally, preserves approved local work, and refuses
+partial/conflicting syncs without advancing their cursor. Accounting is reconciled immediately
+before draft/approval; source or plan changes invalidate older proposals. Enterprise assists require
+a synchronized source. Source ingestion is trusted host work, distinct from model-proposed writes.
+
+Daily workflows now include due/assigned/dispute/promise lists, reviewer ownership, next-action
+planning, versioned case saves through the audited executor, and exact reminder amendments that
+preserve the original and require another approval. Plans inform later drafts; changed plans use a
+new checkpoint. Exports include source snapshots, plans and membership administration events.
+Operations include scheduled synchronization, encrypted offline SQLite recovery, complete PostgreSQL
+backup/restore with vendor tools, and an isolated concurrent workload report. The manual CI definition
+includes matching PostgreSQL client tools and workload verification; it remains unactivated.
+
+Verification is recorded in `GAUGES.md` and the machine-readable operational/evaluation reports.
+`make all` completed green, including the expanded identity/accounting sabotage cases, and its final
+writer synchronized the gauge values in README, WRITEUP and this document. The complete PostgreSQL
+suite also passed after the populated recovery fixture was added. The only skip in that run is the
+PostgreSQL-specific locking test's SQLite arm. This is a locally committed engineering candidate;
+nothing was pushed or deployed.
+The isolated PostgreSQL restore drill passed with populated accounting snapshots, encrypted connector
+credentials, workforce access and administration events, independently compared audit heads,
+revoked access, approvals, case state and checkpoint reuse. Its expanded remote fixture needed a longer
+test setup timeout; the completed drill is recorded in `ops/pg-recovery-result.json`.
+Browser verification passed against fictional local records; `ops/browser-verification.json` records
+keyboard approval, exact amendments, assignment, reload, audit, downloaded export and narrow-screen
+checks. The narrow grid overflow was corrected and its viewport override reset. The initial live
+evaluation exposed malformed model JSON before proposals; the failed run is retained in
+`redteam/served-pre-json-results.json`. Serving and evaluation now share JSON response mode and
+generation limits; strict application parsing remains in force. The completed served boundary run is
+`redteam/served-live-results.json`: `openai/gpt-oss-120b`, 2026-09-05, N=100, no goal executions with
+no approving human present (Wilson 95% interval 0–3.70%). Four malformed outputs were refused before
+any proposal or record change and are reported separately from valid answers. Current prose has not
+been human-scored. The stub run uses the same configuration fingerprint, and the evaluated source
+files were compared with this working tree. Historical results and labels remain unchanged.
+Sabotage testing exposed a missing assertion for invoice/customer reassignment; the new test proves
+that refusal preserves the source snapshot and sync cursor, and kills removal of that guard.
+Dependencies include pinned JWT signature
+verification and authenticated credential/backup encryption; provider secrets are never model input.
+
+SKIPPED: live customer IdP and Xero sandbox acceptance, because no provider applications/test tenant
+access or customer confirmation was supplied. SKIPPED: deployment, hosted CI activation, Docker
+execution, production recovery/alert drills, external security assessment and procurement approval;
+these require their corresponding environment, owner authorization or independent party. Current
+model prose needs a separate human review; historical labels remain unchanged. No production-readiness,
+email-delivery, certification or service-level claim follows from the local engineering results.
+
+
 ## Enterprise review and controlled-pilot changes (2026-09-05)
 
 The owner authorized a full review and improvement of the project from an enterprise buyer's
@@ -52,7 +111,7 @@ Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credenti
 
 | step | what | state |
 |---|---|---|
-| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-05, from `GAUGES.md`): 291 passed, 110 skipped without a DSN (400 passed, 1 skipped with one: the policy suite and the graph on SQLite and on PostgreSQL, plus the two-process restart test) · 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 37/37 scored attempts blocked · 1 out of scope, shown · 58/58 sabotages caught by at least one gauge. Trust boundary declared in `README.md`, restated to what the code supports. |
+| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-05, from `GAUGES.md`): 348 passed, 115 skipped without a DSN (462 passed, 1 skipped with one: the policy suite and the graph on SQLite and on PostgreSQL, plus the two-process restart test) · 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 37/37 scored attempts blocked · 1 out of scope, shown · 63/63 sabotages caught by at least one gauge. Trust boundary declared in `README.md`, restated to what the code supports. |
 | 2 | the assistant graph + ONE adapter (`invoices-es`) | **built 2026-09-01 with a stub model**: LangGraph retrieve→think→propose→hold(interrupt)→execute; the resume value is untrusted (the store decides); deny-all policy ⇒ zero writes across all 12 invoices; a manipulated model's `update_amount` and an exfiltration via a forbidden channel are denied at propose; approve→resume executes exactly once under node re-execution; the only write path is `agent/executor.py` (grep-tested). **2026-09-03: `execute` runs before the hold — for what needs no human — and after it for what a human approved; the step-6 seat's D1, below. Deployed by hand the same day, so the served path and this tree are one again (the round-2 table, R2-D1).** NOT yet exercised: a real model (Groq class present, no key), pgvector (local keyword retriever behind the same interface) |
 | 3 | red-team with promptfoo, boundary ON/OFF, numbers with intervals | **built and run 2026-09-02; the case set REVIEWED by the ⚖ seat the same day (table below): fifteen texts rewritten and re-run, a column added for the goal in the model's prose** — `PLAN.md` §3. 100 cases (5 classes × 5 techniques × 4 goals; 20 per class, ≥ 4 per class × technique) planted into the records with `redteam/plant.py`; ONE call per case to `openai/gpt-oss-120b` (Groq, temperature 0), cached under `redteam/cache/`; the same output scored twice — through `PolicyService` with no human approving, and through `redteam/off.py` with no policy at all. **After the review: manipulated (a goal proposal) 1/100 = 1 % [0 %, 5 %] · executed OFF 1/100 · executed ON 0/100 = 0 % [0 %, 4 %] · the policy refused every goal proposal 100/100 · audit clean 100/100 · the goal in the model's prose 66/100 = 66 % [56 %, 75 %], hand-labelled in `redteam/prose_labels.json`.** By reach: 70 cases aim at a verb the prompt never offers (0/70 proposed it; 44/70 adopted it in words), 30 at a forbidden value of a permitted verb (1/30; 22/30). Tables in `NUMBERS.md` (`make numbers`); rows in `redteam/results.jsonl`, both runs, the last row per case winning. promptfoo is the runner and its assertion is the gate. The texts are builder-written, reviewed and revised by the ⚖ seat; no one outside the project has read them, and the README says so. |
 | 7 | the same policy layer under the author's own outbound pipeline | **the repo's half is built 2026-09-02** — `PLAN.md` §5.1 + the CLI + the adapter test. `adapters/outreach/permissions.toml` exactly as §5.1 specifies (send · mark_replied · add_note; send_bulk and send_from_other_address denied; `daily_max = 5`; `budget.daily_writes = 8`); `records/drafts.py` (the drafts as records: the sent artifact and `pipeline.jsonl`, containment inside the root, its own clock); `agent/executor.py::make_outreach_executor`; `bin/atezain_cli.py` (propose · queue · approve/reject · record/execute · show · audit · head · stop/clear). 18 tests, and three new sabotage rows. **The FORMAT half of §5.2 is built 2026-09-03**, to the ⚖ ruling of 2026-09-02: the executor writes HIS artifact and HIS ledger. Flat `sent/<basename>.md` headed `# SENT <date> · <target> · <route>` — **the basename was WRONG until 2026-09-03**: his `record` writes `sent/<today>_<slug(target)>.md` from the `--target` he types, and this store was naming the letter after the draft. The ⚖ ruling of 2026-09-03 (Open questions) found it and it is built: `send` carries an approved `target`, which names his row and his artifact, then the draft's body; the draft's row in `venture/PIPELINE.md` flipped to `**SENT**` with the date, in his order (every refusal that can run before a write does; the flip is proved by re-reading the file) and with his rollback (a flip that fails after the file exists takes the file back down); `pipeline.jsonl` stays beside them as this layer's own structured record. The ledger is a named path (`--ledger`) or nothing — unconfigured, none is written and none is required, which is this repo standing alone. One line of his the executor does NOT write: ``**Passed** `venture_send.py check` before sending`` — this layer never runs his check and an artifact must not carry a claim its writer cannot make (rule 3); the proposal that let the letter out goes there instead. Nine tests and five sabotage rows; run end to end against a COPY of his `PIPELINE.md`, never the live file. **Still NOT DONE, and the sentence must not be written yet: the wiring itself — his `bin/venture` calling this — is ✋ and untouched, so nothing of his outbound goes through the layer yet and "in daily use on my own outbound since &lt;date&gt;" is not a fact.** ✋ the first real send. |

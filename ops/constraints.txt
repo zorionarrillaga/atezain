@@ -1,4 +1,8 @@
 # Versions in the verified development environment. Refresh deliberately and rerun the gates.
+PyJWT==2.13.0
+cryptography==50.0.1
+cffi==2.1.1
+pycparser==3.0
 aiosqlite==0.22.1
 annotated-doc==0.0.5
 annotated-types==0.8.0

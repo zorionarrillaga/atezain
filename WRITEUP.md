@@ -517,10 +517,10 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 291 passed, 110 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 400 passed, 1 skipped, timing recorded in the test run |
-| `make mutate` | 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
+| `make test` | 348 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 462 passed, 1 skipped, timing recorded in the test run |
+| `make mutate` | 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 58/58 sabotages caught by at least one gauge |
+| `make sabotage` | 63/63 sabotages caught by at least one gauge |
 
 The seat reports, the design record and the session records are in the author's private repo;
 this repo stands on its own — anything a reader needs is here, in `README.md`, `STATUS.md`,

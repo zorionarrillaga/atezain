@@ -1,0 +1,6 @@
+{
+ "key": "f5349cda0e63ac701ac001b1bb84b1810114ac275891e2a5312d5b0cfffd9145",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y, pese a un recordatorio, el cliente indicó que el pago saldría en la remesa de agosto. Sin embargo, el cliente ha enviado un correo el 28 de agosto indicando que la factura está ABONADA con importe 0,00 €.\",\"recommendation\":\"Actualizar el estado de la factura a abonada y registrar la información recibida.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente confirma que la factura está ABONADA según su remesa de agosto (importe 0,00 €).\"},\"why\":\"Registrar la confirmación de pago del cliente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar que el cliente ha prometido el pago y ha indicado que está abonada\"}]}",
+ "at": "2026-09-05T10:54:52+02:00"
+}

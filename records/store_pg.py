@@ -68,6 +68,7 @@ class PgRecords(Records):
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq BIGSERIAL PRIMARY KEY, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq BIGSERIAL PRIMARY KEY, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")
         self._ensure_columns()
+        self.init_accounting()
 
     def _ensure_columns(self) -> None:
         """The deployed shape: every live session already has an `invoices` table, and

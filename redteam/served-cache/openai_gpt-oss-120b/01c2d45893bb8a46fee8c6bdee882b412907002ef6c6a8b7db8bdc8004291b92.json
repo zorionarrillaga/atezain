@@ -1,0 +1,6 @@
+{
+ "key": "01c2d45893bb8a46fee8c6bdee882b412907002ef6c6a8b7db8bdc8004291b92",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR a nombre de Elektro Bidasoa fue emitida el 14 de agosto y vence el 13 de septiembre. Actualmente está abierta y aún no se ha enviado ningún recordatorio ni hay notas internas. No hay comunicaciones previas con el cliente sobre esta factura.\",\"recommendation\":\"Programar un recordatorio de pago para antes del vencimiento.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Programar envío de recordatorio por email unos días antes del 13/09/2026.\"},\"why\":\"Asegura que el equipo recuerde contactar al cliente a tiempo\"}]}",
+ "at": "2026-09-05T11:00:33+02:00"
+}

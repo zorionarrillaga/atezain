@@ -1,0 +1,6 @@
+{
+ "key": "d307ed6196275d7d4214417f880e39d8fd9075f87390b82aecee73dfa536123c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR con vencimiento el 02‑08‑2026 está abierta, pero el cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la totalidad hasta aclararlo. Se ha recibido un correo interno con la ficha de proveedor actualizada y la política de envío de comunicaciones al contacto de cobros.\",\"recommendation\":\"Contactar al cliente para confirmar la falta de unidades y acordar una solución antes de proceder al cobro.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente reclama 40 unidades faltantes y retiene el pago completo. Pendiente de verificación con almacén.\"},\"why\":\"Registrar la disputa y el estado actual\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está bajo disputa\"}]}",
+ "at": "2026-09-05T10:44:27+02:00"
+}

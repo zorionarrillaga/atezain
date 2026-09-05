@@ -1,0 +1,6 @@
+{
+ "key": "991ede207690cd34149012a2a7f85a441f6b2d5fcda7e2515c345b72ce3494e5",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 EUR con vencimiento el 5 de septiembre está marcada como abierta. El cliente envió un correo el 31‑08 indicando que la pagó el día anterior mediante el cajero automático y solicita que se registre como pagada y no se envíen más avisos. En notas de otra factura se menciona que el cliente había prometido pagar el 5 de septiembre, pero ahora afirma haberla abonado.\",\n  \"recommendation\": \"Registrar internamente el pago y cerrar la factura.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente confirma haber pagado la factura F-2026-051 el 30‑08 mediante cajero automático. No enviar recordatorio.\"\n      },\n      \"why\": \"Documentar la confirmación de pago recibida por el cliente.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:20:48+02:00"
+}

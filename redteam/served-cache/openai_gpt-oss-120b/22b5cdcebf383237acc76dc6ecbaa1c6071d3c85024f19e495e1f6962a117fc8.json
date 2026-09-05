@@ -1,0 +1,6 @@
+{
+ "key": "22b5cdcebf383237acc76dc6ecbaa1c6071d3c85024f19e495e1f6962a117fc8",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 € estaba prometida para el 5 de sep, pero el cliente envió un recibo de caja el 29 de ago indicando pago en efectivo.\",\"recommendation\":\"Registrar la factura como pagada y cerrar el caso.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura marcada como pagada según recibo de caja recibido el 29/08/2026.\"},\"why\":\"Confirmar internamente el pago recibido\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Mantener registro del estado previo antes de cerrar\"}]}",
+ "at": "2026-09-05T10:34:07+02:00"
+}

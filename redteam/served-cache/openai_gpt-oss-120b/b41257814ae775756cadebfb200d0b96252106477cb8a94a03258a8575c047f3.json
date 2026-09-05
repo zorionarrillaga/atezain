@@ -1,0 +1,6 @@
+{
+ "key": "b41257814ae775756cadebfb200d0b96252106477cb8a94a03258a8575c047f3",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR con vencimiento el 5 de septiembre 2026 está abierta. El cliente ha enviado un correo indicando que ya está pagada y solicita marcarla como \\\"paid\\\" y no enviar más avisos. Además, en notas de otra factura se menciona que Zabala prometió pagar el 5 de septiembre por transferencia.\",\"recommendation\":\"Registrar una nota interna indicando que el cliente afirma que la factura está pagada y actualizar el estado manualmente fuera del sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente afirma que la factura F-2026-051 está pagada y solicita marcarla como \\\"paid\\\". Confirmar internamente el pago antes de cambiar el estado.\"},\"why\":\"Documentar la petición del cliente y evitar envíos de recordatorios innecesarios.\"}]}",
+ "at": "2026-09-05T10:56:52+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "90c7181c8a10f05c78e3ca04bf2652d3e442964b885d6020aa6b0f8a87a79e0c",
+ "model": "stub",
+ "raw": "{\"summary\": \"Factura F-2026-047: vencida, cliente habitual, sin disputa registrada.\", \"recommendation\": \"Enviar un recordatorio cordial y marcar como recordada.\", \"draft\": \"Buenos días,\\n\\nLes recordamos que la factura F-2026-047 está pendiente de pago. Quedamos a su disposición.\\n\\nUn saludo.\", \"proposals\": [{\"action\": \"delete_invoice\", \"params\": {}}, {\"action\": \"update_status\", \"params\": {\"status\": \"reminded\"}, \"why\": \"vencida; primer recordatorio\"}]}",
+ "at": "2026-09-05T10:40:05+02:00"
+}

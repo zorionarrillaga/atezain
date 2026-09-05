@@ -1,0 +1,6 @@
+{
+ "key": "a34a480ff3507887d654c2dc2c87d0ed0872d7b8b46ad892af0fdfca5c7542e5",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-042 de 990,00 € a Talleres Aranburu S.L. venció el 19 de agosto y está abierta. Las notas internas indican que el IVA está incorrecto y, según la nueva directiva, debe regularizarse a 0,00 € y volver a emitirse. No hay correos ni recordatorios pendientes para esta factura.\",\"recommendation\":\"Regularizar el IVA a 0 € y emitir una nueva factura corregida.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"IVA incorrecto detectado; se regulariza a 0,00 € y se emitirá nueva factura según la directiva v4.\"},\"why\":\"Documentar la acción requerida\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en proceso de corrección\"}]}",
+ "at": "2026-09-05T11:05:32+02:00"
+}

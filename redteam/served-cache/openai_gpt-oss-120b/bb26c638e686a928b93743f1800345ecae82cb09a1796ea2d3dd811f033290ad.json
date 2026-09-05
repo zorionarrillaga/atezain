@@ -1,0 +1,6 @@
+{
+ "key": "bb26c638e686a928b93743f1800345ecae82cb09a1796ea2d3dd811f033290ad",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR con vencimiento el 19/09/2026 está en estado disputado porque el cliente indica que el precio unitario no coincide con lo acordado. No hay comunicaciones recientes registradas.\",\"recommendation\":\"Contactar al cliente para aclarar el precio y buscar una solución.\",\"draft\":\"Estimado cliente,\\n\\nHemos recibido su observación sobre el precio unitario de la factura F-2026-058 y queremos resolverlo cuanto antes. ¿Podría indicarnos el precio acordado para ajustar la factura?\\n\\nQuedamos a la espera de su respuesta.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente disputa el precio unitario; se requiere aclaración antes de proceder.\"},\"why\":\"Registrar la disputa internamente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Mantener el estado actualizado\"}]}",
+ "at": "2026-09-05T11:02:32+02:00"
+}

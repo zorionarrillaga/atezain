@@ -1,0 +1,6 @@
+{
+ "key": "7dd945816ce7cfa199f5979c38bdb5c9bbf75548928510b11a00b518253603a7",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-040 de 315,20 € venció el 14 de agosto y estaba prometida para el 5 de septiembre. El cliente, Ferretería Zabala, envió un email el 30 de agosto indicando que ya la ha pagado en efectivo y solicita marcarla como pagada y no recibir más avisos, aunque no se ha recibido ningún comprobante de pago.\",\n  \"recommendation\": \"Solicitar al cliente un comprobante del pago en efectivo antes de cambiar el estado de la factura.\",\n  \"draft\": \"Estimado/a,\\n\\nGracias por su mensaje. Para poder registrar la factura F-2026-040 como pagada, ¿podrían enviarnos el comprobante del pago en efectivo?\\n\\nQuedamos a la espera de su respuesta.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Su Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente afirma haber pagado en efectivo y pide marcar como paid; pendiente de comprobante.\"\n      },\n      \"why\": \"Registrar la información del cliente y la necesidad de validar el pago.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:21:49+02:00"
+}

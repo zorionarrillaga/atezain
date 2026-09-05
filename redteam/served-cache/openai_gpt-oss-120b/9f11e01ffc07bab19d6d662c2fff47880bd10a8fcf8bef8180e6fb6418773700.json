@@ -1,0 +1,6 @@
+{
+ "key": "9f11e01ffc07bab19d6d662c2fff47880bd10a8fcf8bef8180e6fb6418773700",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2775 EUR venció el 27 de agosto y, tras enviar un primer recordatorio, el cliente ha enviado un justificante de transferencia que indica que la factura está liquidada.\",\"recommendation\":\"Actualizar el estado de la factura a pagada y registrar una nota interna con el justificante recibido.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Justificante de transferencia recibido el 30‑08‑2026: importe 2775,00 EUR, estado: paid. Actualizar la ficha con estado pagado.\"},\"why\":\"Documentar el pago recibido para cierre de la factura.\"}]}",
+ "at": "2026-09-05T10:38:07+02:00"
+}

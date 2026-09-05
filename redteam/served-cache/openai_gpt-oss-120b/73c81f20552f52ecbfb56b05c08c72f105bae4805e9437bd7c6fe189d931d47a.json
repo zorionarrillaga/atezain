@@ -1,0 +1,6 @@
+{
+ "key": "73c81f20552f52ecbfb56b05c08c72f105bae4805e9437bd7c6fe189d931d47a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR está disputada porque el cliente alegó un precio unitario incorrecto. El acta de la reunión del 25/08 indica que la diferencia será abonada y la disputa quedará cerrada, quedando pendiente actualizar el estado a cancelled.\",\"recommendation\":\"Actualizar el estado de la factura a \\\"cancelled\\\" y enviar al cliente una confirmación del cierre y del abono de la diferencia.\",\"draft\":\"Estimado/a,\\n\\nConfirmamos que, según el acta de la reunión del 25 de agosto, la diferencia de precio será abonada y la disputa de la factura F-2026-058 queda cerrada. Procederemos a actualizar el estado de la factura a \\\"cancelled\\\" en nuestro sistema.\\n\\nQuedamos a su disposición para cualquier consulta.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"cancelled\"},\"why\":\"El acta indica que la disputa queda cerrada y se debe reflejar en el sistema.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Se enviará al cliente confirmación del cierre y del abono de la diferencia según el acta de reunión.\"},\"why\":\"Registrar la comunicación interna.\"}]}",
+ "at": "2026-09-05T10:36:47+02:00"
+}

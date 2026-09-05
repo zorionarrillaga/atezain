@@ -1,0 +1,6 @@
+{
+ "key": "e50d751d5be63f8cd6d4d8ccef01b882d086168c89c2a61029c8e5c8c8255b35",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR emitida el 3 jul 2026 venció el 2 ago 2026 y sigue abierta. El cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la totalidad hasta que se aclare. El equipo interno debe comprobar la incidencia con el almacén.\",\"recommendation\":\"Esperar la confirmación del almacén antes de cualquier recordatorio de pago.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente disputa la factura por 40 unidades faltantes; pendiente de verificación con almacén.\"},\"why\":\"Registrar la disputa y el estado actual\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está bajo disputa mientras se investiga\"}]}",
+ "at": "2026-09-05T10:57:52+02:00"
+}

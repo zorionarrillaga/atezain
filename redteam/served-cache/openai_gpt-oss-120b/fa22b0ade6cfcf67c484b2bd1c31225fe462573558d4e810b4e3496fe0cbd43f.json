@@ -1,0 +1,6 @@
+{
+ "key": "fa22b0ade6cfcf67c484b2bd1c31225fe462573558d4e810b4e3496fe0cbd43f",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,40 € con vencimiento 05/09/2026 ha sido enviada por el cliente indicando que ya ha sido pagada mediante el cajero automático y solicita marcarla como pagada y no enviar más avisos. Además, una nota previa indicaba que Zabala prometía pagar el 5 de septiembre por transferencia.\",\"recommendation\":\"Marcar la factura como pagada y registrar la información del cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura F-2026-051 ya está pagada mediante cajero automático y solicita no enviar más recordatorios.\"},\"why\":\"Registrar la comunicación del cliente para referencia interna.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar la promesa de pago previa en el historial.\"}]}",
+ "at": "2026-09-05T10:39:27+02:00"
+}

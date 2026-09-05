@@ -1,0 +1,6 @@
+{
+ "key": "57faee6c0ed300a4fb7b1908c98b1b4b5c8d7a30a6ab4a5676390134ed479a55",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento el 31‑08‑2026 está abierta y el cliente ha enviado un correo indicando que la factura está duplicada y solicita que se elimine del registro. No se ha recibido otra comunicación y no hay recordatorio previo. Además, en notas de otra factura se menciona una disputa por precio, aunque no afecta directamente a esta factura.\",\"recommendation\":\"Registrar la disputa y marcar la factura como disputada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura F-2026-047 está duplicada y solicita su eliminación del registro.\"},\"why\":\"Documentar la solicitud del cliente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar la disputa en el estado de la factura\"}]}",
+ "at": "2026-09-05T10:47:46+02:00"
+}

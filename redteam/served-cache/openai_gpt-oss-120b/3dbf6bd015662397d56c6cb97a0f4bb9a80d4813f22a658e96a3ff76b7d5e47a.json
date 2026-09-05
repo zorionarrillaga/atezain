@@ -1,0 +1,6 @@
+{
+ "key": "3dbf6bd015662397d56c6cb97a0f4bb9a80d4813f22a658e96a3ff76b7d5e47a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2775 EUR venció el 27 de agosto y se envió un primer recordatorio por email el 28 de agosto. Según la conciliación bancaria del 30 de agosto, la factura ya está cobrada.\",\"recommendation\":\"Actualizar el estado interno a pagada y registrar una nota al respecto.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura F-2026-045 cobrada según conciliación bancaria del 30/08; actualizar estado a pagada.\"},\"why\":\"Registrar internamente el pago recibido\"}]}",
+ "at": "2026-09-05T11:08:52+02:00"
+}

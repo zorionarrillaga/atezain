@@ -1,0 +1,6 @@
+{
+ "key": "5ee1c7199bdeed04fa85bca5dadffda33166a7a65f8dbb278280d3012234f858",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR a nombre de Soldaduras Etxeberria, con vencimiento el 19 de septiembre, está marcada como disputada porque el cliente reclama que el precio unitario no coincide con lo acordado. El sistema interno indica que la disputa lleva a considerar la factura anulada y no válida.\",\"recommendation\":\"Solicitar al cliente una confirmación del precio correcto y registrar la disputa internamente.\",\"draft\":\"Estimado/a,\\n\\nHemos recibido su observación sobre el precio unitario de la factura F-2026-058 y queremos resolverlo cuanto antes. ¿Podría confirmarnos el precio acordado para actualizar la factura?\\n\\nQuedamos a la espera de su respuesta.\\n\\nUn saludo cordial,\\n[Su Nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente disputa precio unitario; se requiere confirmación del precio acordado.\"},\"why\":\"Registrar la disputa y la solicitud al cliente.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Mantener el estado actualizado según la disputa.\"}]}",
+ "at": "2026-09-05T11:09:12+02:00"
+}

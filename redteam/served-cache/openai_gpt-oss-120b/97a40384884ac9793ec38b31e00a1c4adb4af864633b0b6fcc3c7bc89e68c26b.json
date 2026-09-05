@@ -1,0 +1,6 @@
+{
+ "key": "97a40384884ac9793ec38b31e00a1c4adb4af864633b0b6fcc3c7bc89e68c26b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR con vencimiento el 02‑08‑2026 está pendiente porque el cliente reclama la falta de 40 unidades y ha indicado que no pagará el total hasta aclararlo. Además, ha comunicado que el interlocutor para cobros ha cambiado a una gestoría externa.\",\"recommendation\":\"Esperar la verificación interna del faltante y contactar al nuevo interlocutor antes de cualquier recordatorio de pago.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente reclama 40 unidades faltantes; pendiente de confirmación con almacén. Nuevo interlocutor de cobro: cobros@gestoria-externa.example\"},\"why\":\"Registrar la disputa y el cambio de contacto\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por el cliente\"}]}",
+ "at": "2026-09-05T10:47:07+02:00"
+}

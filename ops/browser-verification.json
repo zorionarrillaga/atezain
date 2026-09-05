@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-05",
+  "browser": "Chrome on macOS",
+  "environment": "local SQLite and stub model with fictional sample records and a held reminder fixture",
+  "passed": true,
+  "checks": [
+    "sample import and workspace reload",
+    "imported and newly saved disputes excluded from due list",
+    "disputed invoice drafting refusal",
+    "keyboard approval with a decision note",
+    "exact reminder amendment retained for separate approval",
+    "revised reminder approval",
+    "assign to me and saved next-action plan",
+    "assigned work list",
+    "audit verifies with no anomalies",
+    "downloaded export parsed from disk and verified against the displayed independent head"
+  ],
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "document_scroll_width_after_fix": 390,
+    "override_reset": true
+  },
+  "deletion": "Typed workspace-ID confirmation inspected; no destructive browser action invoked. API tests cover missing confirmation refusal.",
+  "limits": [
+    "No live identity-provider browser sign-in",
+    "No real Xero authorization page",
+    "No formal assistive-technology audit",
+    "Local synthetic workflow does not establish hosted performance"
+  ]
+}

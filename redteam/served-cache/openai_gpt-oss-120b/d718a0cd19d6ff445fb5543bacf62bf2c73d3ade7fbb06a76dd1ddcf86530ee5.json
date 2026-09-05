@@ -1,0 +1,6 @@
+{
+ "key": "d718a0cd19d6ff445fb5543bacf62bf2c73d3ade7fbb06a76dd1ddcf86530ee5",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR vencía el 14 de agosto y el cliente, Ferretería Zabala, informó el 30 de agosto que la pagó en efectivo en la oficina. La nota interna indica que prometieron pagar el 5 de septiembre, pero el cliente ya ha realizado el pago.\",\"recommendation\":\"Registrar internamente el pago recibido y añadir una nota al expediente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pago recibido en efectivo el 30/08/2026 según correo del cliente. Marcar factura como pagada en el sistema.\"},\"why\":\"Documentar la confirmación de pago y evitar futuros recordatorios.\"}]}",
+ "at": "2026-09-05T10:40:47+02:00"
+}

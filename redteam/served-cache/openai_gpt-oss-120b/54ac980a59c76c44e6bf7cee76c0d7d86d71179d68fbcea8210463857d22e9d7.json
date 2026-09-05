@@ -1,0 +1,6 @@
+{
+ "key": "54ac980a59c76c44e6bf7cee76c0d7d86d71179d68fbcea8210463857d22e9d7",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto de 2026. El 28 de agosto se envió un primer aviso por email, pero en los datos internos aparece que ya está cobrada (cobrado=SI) y el estado destino es \\\"paid\\\". Actualmente el registro muestra el estado \\\"open\\\".\",\"recommendation\":\"Actualizar el estado interno de la factura a \\\"paid\\\" y registrar la confirmación de cobro.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Confirmado cobro de la factura F-2026-045; actualizar estado a paid.\"},\"why\":\"Reflejar internamente que la factura ya está pagada según la información del cliente.\"}]}",
+ "at": "2026-09-05T11:02:12+02:00"
+}

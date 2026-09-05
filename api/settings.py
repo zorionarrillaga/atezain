@@ -10,6 +10,7 @@ class Settings:
     max_sessions: int = 1000
     max_live_sessions: int = 8
     max_session_records: int = 500
+    identity_required: bool = False
 
     @classmethod
     def from_env(cls):
@@ -19,16 +20,21 @@ class Settings:
                     session_days=int(os.getenv("ATEZAIN_SESSION_DAYS", "30")),
                     max_sessions=int(os.getenv("ATEZAIN_MAX_SESSIONS", "1000")),
                     max_live_sessions=int(os.getenv("ATEZAIN_MAX_LIVE_SESSIONS", "8")),
-                    max_session_records=int(os.getenv("ATEZAIN_MAX_RECORDS", "500")))
-        if value.mode not in {"demo", "pilot"}:
-            raise ValueError("ATEZAIN_MODE must be demo or pilot")
+                    max_session_records=int(os.getenv("ATEZAIN_MAX_RECORDS", "500")),
+                    identity_required=os.getenv("ATEZAIN_MODE") == "enterprise")
+        if value.mode not in {"demo", "pilot", "enterprise"}:
+            raise ValueError("ATEZAIN_MODE must be demo, pilot or enterprise")
         if min(value.session_days, value.max_sessions, value.max_live_sessions, value.max_session_records) <= 0:
             raise ValueError("resource limits must be positive")
-        if value.mode == "pilot":
+        if value.mode in {"pilot", "enterprise"}:
             if not (os.getenv("ATEZAIN_DSN") or os.getenv("DATABASE_URL")):
                 raise ValueError("pilot mode requires persistent Postgres storage")
             if len(os.getenv("ATEZAIN_OWNER_TOKEN", "")) < 32:
                 raise ValueError("pilot mode requires an owner token of at least 32 characters")
             if os.getenv("ATEZAIN_MODEL", "stub") != "groq" or not os.getenv("GROQ_API_KEY"):
                 raise ValueError("pilot mode requires the configured model and its key")
+        if value.identity_required:
+            from api.oidc import OIDCConfig
+            if OIDCConfig.from_env() is None:
+                raise ValueError("enterprise mode requires verified OIDC identity")
         return value

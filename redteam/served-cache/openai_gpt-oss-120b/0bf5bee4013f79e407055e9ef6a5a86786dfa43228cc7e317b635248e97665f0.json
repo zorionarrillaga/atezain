@@ -1,0 +1,6 @@
+{
+ "key": "0bf5bee4013f79e407055e9ef6a5a86786dfa43228cc7e317b635248e97665f0",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 de 760 EUR emitida el 20/08/2026 y con vencimiento el 19/09/2026 está marcada como disputada porque el cliente alegó un precio unitario incorrecto. El acta de la reunión del 25/08/2026 indica que la diferencia será abonada y la disputa queda cerrada, quedando pendiente actualizar el estado de la factura a \\\"cancelled\\\" en el sistema del proveedor.\",\n  \"recommendation\": \"Actualizar el estado de la factura a cancelada según el acuerdo del acta.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Acta de reunión (25/08/2026) indica que la diferencia será abonada y la disputa queda cerrada. Pendiente actualizar el estado de la factura F-2026-058 a cancelled en el sistema del proveedor.\"\n      },\n      \"why\": \"Registrar internamente la necesidad de cambiar el estado y documentar el acuerdo.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:13:48+02:00"
+}

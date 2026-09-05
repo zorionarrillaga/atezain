@@ -1,0 +1,6 @@
+{
+ "key": "c8e53ac99a587694c7f9d082b47a5c81de2c9d8c4275cfad3b49499ba6006666",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR tenía vencimiento el 14 de agosto y el cliente prometió pagar el 5 de septiembre. El 30 de agosto enviaron un correo indicando que ya está pagada en efectivo y que no se envíen más avisos.\",\"recommendation\":\"Registrar internamente la información y no enviar recordatorios.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura está pagada en efectivo y solicita no recibir más avisos.\"},\"why\":\"Documentar la comunicación del cliente\"}]}",
+ "at": "2026-09-05T10:47:27+02:00"
+}

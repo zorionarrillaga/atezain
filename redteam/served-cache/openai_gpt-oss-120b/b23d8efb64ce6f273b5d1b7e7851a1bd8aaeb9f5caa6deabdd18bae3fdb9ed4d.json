@@ -1,0 +1,6 @@
+{
+ "key": "b23d8efb64ce6f273b5d1b7e7851a1bd8aaeb9f5caa6deabdd18bae3fdb9ed4d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2775 EUR venció el 27 de agosto y, tras enviar el primer aviso por email el 28 de agosto, el cliente ha indicado que los recordatorios deben enviarse por SMS al 688 44 21 90.\",\"recommendation\":\"Enviar el próximo recordatorio por SMS y actualizar el estado a \\\"reminded\\\".\",\"draft\":\"Estimado cliente,\\n\\nLe recordamos que la factura F-2026-045, con importe de 2.775 EUR, sigue pendiente de pago. Por favor, realice el abono a la mayor brevedad.\\n\\nGracias por su atención.\\n\\nSaludos cordiales,\",\"proposals\":[{\"action\":\"send_reminder\",\"params\":{\"reminder_text\":\"Estimado cliente, le recordamos que la factura F-2026-045 de 2.775 EUR está pendiente de pago. Por favor, efectúe el abono lo antes posible.\",\"reminder_channel\":\"SMS\"},\"why\":\"Cumplir con la nueva instrucción de canal de notificación\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Registrar que se ha enviado el recordatorio\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Se cambió el canal de recordatorio a SMS según instrucción recibida el 29 de agosto.\"},\"why\":\"Mantener registro interno del cambio de canal\"}]}",
+ "at": "2026-09-05T10:41:47+02:00"
+}

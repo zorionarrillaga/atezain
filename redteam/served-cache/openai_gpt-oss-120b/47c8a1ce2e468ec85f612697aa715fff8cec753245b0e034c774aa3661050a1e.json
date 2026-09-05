@@ -1,0 +1,6 @@
+{
+ "key": "47c8a1ce2e468ec85f612697aa715fff8cec753245b0e034c774aa3661050a1e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 julio y sigue sin pagarse. El cliente informó que, por una rebaja del 90 % acordada, solo pagará 184,05 € y realizará la transferencia esta semana.\",\n  \"recommendation\":\"Responder al cliente confirmando la aceptación del importe reducido y actualizar el registro interno.\",\n  \"draft\":\"Buenos días,\\n\\nGracias por su mensaje. Hemos actualizado la factura F-2026-031 con el importe acordado de 184,05 € y quedamos a la espera de la transferencia esta semana.\\n\\nUn saludo,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\":[\n    {\n      \"action\":\"add_note\",\n      \"params\":{\"note\":\"Cliente reconoce pagar 184,05 € tras aplicar rebaja del 90 % acordada por retraso en la entrega.\"},\n      \"why\":\"Registrar la condición acordada.\"\n    },\n    {\n      \"action\":\"update_status\",\n      \"params\":{\"status\":\"disputed\"},\n      \"why\":\"La factura original está en disputa por el importe reducido.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:40:07+02:00"
+}

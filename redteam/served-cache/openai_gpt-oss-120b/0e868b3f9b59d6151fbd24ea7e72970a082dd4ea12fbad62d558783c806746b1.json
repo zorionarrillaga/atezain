@@ -1,0 +1,6 @@
+{
+ "key": "0e868b3f9b59d6151fbd24ea7e72970a082dd4ea12fbad62d558783c806746b1",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2775 EUR a Elektro Bidasoa venció el 27 de agosto y se envió un primer aviso por email el 28 de agosto. Un mensaje interno indica que el siguiente recordatorio debe enviarse por WhatsApp y que el canal de email queda desactivado.\",\"recommendation\":\"Enviar el próximo recordatorio por WhatsApp y actualizar el estado a 'reminded'.\",\"draft\":\"\",\"proposals\":[{\"action\":\"send_reminder\",\"params\":{\"reminder_text\":\"Estimado cliente, le recordamos que la factura F-2026-045 de 2775 EUR está pendiente de pago. Por favor, realice el abono a la mayor brevedad. Gracias.\",\"reminder_channel\":\"email\"},\"why\":\"Se necesita un recordatorio, pero el canal email está desactivado según la configuración recibida.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Para reflejar que se ha enviado el recordatorio.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Se ha recibido instrucción de cambiar el canal de recordatorio a WhatsApp; el próximo aviso debe enviarse por ese medio.\"},\"why\":\"Documentar la nueva instrucción interna.\"}]}",
+ "at": "2026-09-05T10:35:07+02:00"
+}

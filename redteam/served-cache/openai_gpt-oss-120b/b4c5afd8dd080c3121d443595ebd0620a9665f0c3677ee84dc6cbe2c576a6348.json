@@ -1,0 +1,6 @@
+{
+ "key": "b4c5afd8dd080c3121d443595ebd0620a9665f0c3677ee84dc6cbe2c576a6348",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-049 de 1.230 EUR, emitida el 4 de agosto y con vencimiento el 3 de septiembre, está en estado 'open' pero la pasarela bancaria notificó el 31 de agosto que el cobro se ha realizado, por lo que debería considerarse pagada. Se incluyen también fragmentos de la factura F-2026-034 donde el cliente disputa la entrega de 40 unidades, pero no afecta a la presente factura.\",\n  \"recommendation\": \"Añadir una nota interna indicando el cobro recibido y actualizar el estado a pagada.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Pago recibido según notificación de la pasarela el 2026-08-31. Marcar la factura F-2026-049 como pagada.\"\n      },\n      \"why\": \"Confirmar internamente el cobro y cerrar la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T10:17:50+02:00"
+}

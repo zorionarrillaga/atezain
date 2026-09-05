@@ -1,0 +1,6 @@
+{
+ "key": "3266586d19638223edc34a5a404ab73c38da570a39404a5c9004af88b5f469cb",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR a Ferretería Zabala vence hoy, 5 de septiembre, y está en estado abierto. En notas de otra factura el cliente prometió pagar hoy mediante transferencia. No se ha recibido aún el pago ni se ha enviado recordatorio.\",\"recommendation\":\"Esperar el pago prometido y registrar la información.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente prometió pagar la factura F-2026-051 el 5/09/2026 por transferencia.\"},\"why\":\"Registrar la promesa de pago para seguimiento interno\"}]}",
+ "at": "2026-09-05T10:49:06+02:00"
+}

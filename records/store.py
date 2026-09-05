@@ -17,6 +17,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
+from records.accounting import AccountingRecords, canonical
 
 
 class _Rows(list):
@@ -53,7 +54,7 @@ class _Serialised:
         return getattr(self._conn, name)
 
 
-class Records:
+class Records(AccountingRecords):
     def __init__(self, path: str = ":memory:", clock: Callable[[], float] = time.time):
         # check_same_thread=False for the same reason `policy/store.py` does it: a served
         # request runs in whatever worker thread the server hands it, and the connection
@@ -67,6 +68,7 @@ class Records:
         self.conn.execute("CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, author TEXT, text TEXT)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS emails (seq INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, ts TEXT, direction TEXT, sender TEXT, subject TEXT, body TEXT)")
         self._ensure_columns()
+        self.init_accounting()
 
     # ── columns added after a database already existed ───────────────────────────────────────
     def _ensure_columns(self) -> None:
@@ -151,7 +153,13 @@ class Records:
                 inv[k] = v
         inv["notes"] = [dict(zip(("ts", "author", "text"), r)) for r in self.conn.execute("SELECT ts, author, text FROM notes WHERE invoice_id = ? ORDER BY seq", (invoice_id,))]
         inv["emails"] = [dict(zip(("ts", "direction", "sender", "subject", "body"), r)) for r in self.conn.execute("SELECT ts, direction, sender, subject, body FROM emails WHERE invoice_id = ? ORDER BY seq", (invoice_id,))]
-        return inv
+        plan = self.case(invoice_id)
+        if plan["version"]:
+            from records.accounting import record_version
+            inv["collection_case"] = plan
+            self.overlay_source(inv, self.source(invoice_id))
+            inv["record_version"] = record_version(inv)
+        return self.overlay_source(inv, self.source(invoice_id))
 
     def ids(self) -> list[str]:
         return [r[0] for r in self.conn.execute("SELECT id FROM invoices ORDER BY id")]
@@ -167,16 +175,19 @@ class Records:
             "ON i.id = e.invoice_id ORDER BY i.due, i.id")
         keys = ("id", "customer", "amount", "currency", "issued", "due", "status", "contact", "reminder_to",
                 "reminder_channel", "notes", "emails", "assistant_notes")
-        return [dict(zip(keys, r)) for r in rows]
+        sources = self.source_rows()
+        return [self.overlay_source(dict(zip(keys, r)), sources.get(r[0])) for r in rows]
 
     def customer_context(self, invoice_id: str, k: int = 5) -> list[dict]:
         """Related source material is scoped by the uploaded customer identifier, never keywords."""
         snippets = []
         for table, column in (("notes", "text"), ("emails", "body")):
             rows = self.conn.execute(f"SELECT r.invoice_id, r.{column} FROM {table} r "
-                "JOIN invoices i ON i.id = r.invoice_id WHERE i.customer = "
-                "(SELECT customer FROM invoices WHERE id = ?) AND i.id <> ? ORDER BY r.seq DESC LIMIT ?",
-                (invoice_id, invoice_id, k))
+                "JOIN invoices i ON i.id = r.invoice_id LEFT JOIN source_snapshots s ON s.invoice_id=i.id "
+                "WHERE ((s.customer_key IS NOT NULL AND s.customer_key=(SELECT customer_key FROM source_snapshots WHERE invoice_id=?)) "
+                "OR (s.customer_key IS NULL AND NOT EXISTS (SELECT 1 FROM source_snapshots WHERE invoice_id=?) "
+                "AND i.customer=(SELECT customer FROM invoices WHERE id=?))) AND i.id <> ? ORDER BY r.seq DESC LIMIT ?",
+                (invoice_id, invoice_id, invoice_id, invoice_id, k))
             snippets.extend({"invoice_id": rid, "source": table, "text": text} for rid, text in rows)
         return snippets[:k]
 
@@ -200,7 +211,8 @@ class Records:
         if inv is None:
             return None
         return {**{k: inv[k] for k in self.FIELDS[1:]}, **{k: inv.get(k) for k in self.LATER},
-                "notes": [n["text"] for n in inv["notes"]], "emails": len(inv["emails"])}
+                "notes": [n["text"] for n in inv["notes"]], "emails": len(inv["emails"]),
+                "case_json": canonical(self.case(invoice_id))}
 
     @staticmethod
     def diff(before: dict | None, after: dict | None) -> dict:

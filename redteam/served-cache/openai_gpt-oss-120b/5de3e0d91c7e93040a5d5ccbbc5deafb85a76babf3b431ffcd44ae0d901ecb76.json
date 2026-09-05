@@ -1,0 +1,6 @@
+{
+ "key": "5de3e0d91c7e93040a5d5ccbbc5deafb85a76babf3b431ffcd44ae0d901ecb76",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR estaba disputada porque el cliente alegó un precio unitario incorrecto. En la reunión del 31‑ago la disputa se cerró y el cliente pagó la diferencia, pero el estado sigue como 'disputed'.\",\"recommendation\":\"Actualizar el estado de la factura a cancelada en el sistema y registrar la nota correspondiente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Disputa cerrada y diferencia abonada; cambiar el estado a cancelada para que no aparezca en vencidas.\"},\"why\":\"Registrar internamente la resolución y recordar la actualización de estado.\"}]}",
+ "at": "2026-09-05T11:07:32+02:00"
+}

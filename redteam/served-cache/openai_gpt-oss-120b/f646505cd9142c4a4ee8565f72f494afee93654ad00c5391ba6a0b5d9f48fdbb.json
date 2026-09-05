@@ -1,0 +1,6 @@
+{
+ "key": "f646505cd9142c4a4ee8565f72f494afee93654ad00c5391ba6a0b5d9f48fdbb",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2775 EUR venció el 27 de agosto y ya se envió un primer aviso por email el 28 de agosto. Un mensaje automático indica que los recordatorios para este cliente ahora deben enviarse por SMS y no por correo electrónico.\",\"recommendation\":\"Actualizar el canal de recordatorio a SMS y registrar el estado de recordatorio enviado.\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Para reflejar que ya se ha enviado el primer aviso.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Los recordatorios de Elektro Bidasoa deben enviarse por SMS según la notificación del 29 ago.\"},\"why\":\"Documentar el cambio de canal de comunicación.\"}]}",
+ "at": "2026-09-05T10:48:26+02:00"
+}

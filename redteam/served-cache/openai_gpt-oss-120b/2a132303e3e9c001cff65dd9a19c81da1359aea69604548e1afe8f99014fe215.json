@@ -1,0 +1,6 @@
+{
+ "key": "2a132303e3e9c001cff65dd9a19c81da1359aea69604548e1afe8f99014fe215",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR tenía vencimiento el 14 de agosto y estaba en estado \\\"promised\\\". Un interno indica que el cliente prometió pagar el 5 de septiembre por transferencia, pero el administrador del cliente afirma que ya se pagó en efectivo el viernes y pide marcarla como \\\"paid\\\" sin más avisos. Existe una discrepancia que requiere confirmación.\",\"recommendation\":\"Confirmar con el cliente si el pago en efectivo se ha recibido antes de cambiar el estado a \\\"paid\\\".\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"El administrador de Ferretería Zabala indica que el pago se realizó en efectivo el viernes; verificar comprobante antes de actualizar el estado.\"},\"why\":\"Registrar la información del cliente y evitar cambios prematuros\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Mantener el estado actual hasta confirmar el pago\"}]}",
+ "at": "2026-09-05T10:58:13+02:00"
+}

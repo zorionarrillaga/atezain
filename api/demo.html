@@ -202,6 +202,10 @@
         gap: 1.2rem;
         align-items: start;
       }
+      .grid > *,
+      .onboarding > * {
+        min-width: 0;
+      }
       .metrics {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -463,7 +467,7 @@
               allows.
             </p>
             <div class="row">
-              <button class="primary" id="new">Start a demo workspace</button
+              <a id="workforce-login" class="primary" href="/auth/login" hidden>Sign in with your work account</a><button class="primary" id="new">Start a demo workspace</button
               ><button id="resume-toggle">Open an existing workspace</button>
             </div>
             <p id="provision-note" class="muted" hidden>
@@ -484,7 +488,7 @@
             </div>
           </div>
         </div>
-        <form id="resume" class="stack" hidden>
+        <div id="workforce-workspaces" class="stack" hidden></div><form id="resume" class="stack" hidden>
           <div class="sep"></div>
           <label class="field"
             >Workspace ID<input
@@ -518,6 +522,7 @@
             ></small>
           </div>
           <div class="row">
+            <a href="/auth/login" id="renew-login" hidden>Renew work sign-in</a>
             <button id="reload">Refresh</button
             ><button id="export">Export records &amp; audit</button
             ><button id="forget">Sign out on this device</button>
@@ -557,6 +562,10 @@
           </button>
         </nav>
         <section id="invoices-panel" role="tabpanel">
+          <section class="card"><div class="row between"><h2>Today’s follow-ups</h2>
+            <select id="work-view" aria-label="Follow-up list"><option value="due">Due now</option><option value="mine">Assigned to me</option><option value="disputed">Disputes</option><option value="promises">Payment promises</option><option value="all">All cases</option></select></div>
+            <p class="muted">Track the next action and its owner. A promise is a customer claim; the accounting balance remains the source for payment.</p>
+            <div id="daily-work" class="tablewrap"></div></section>
           <div class="grid">
             <div>
               <section class="card" id="import-card">
@@ -666,7 +675,18 @@
                     follow-up.
                   </p>
                 </div>
-                <div id="answers"></div>
+                <div id="answers"></div><form id="case-form" class="stack" hidden>
+                  <div class="sep"></div><h3>Follow-up plan</h3>
+                  <label class="field">Assigned reviewer<input id="case-assignee" maxlength="255" placeholder="Reviewer subject ID or team name" /></label>
+                  <button type="button" id="case-claim">Assign to me</button>
+                  <label class="field">Next action date<input id="case-next" type="date" /></label>
+                  <label class="field">Case state<select id="case-state"><option value="open">Open</option><option value="disputed">Disputed</option><option value="snoozed">Deferred</option><option value="closed">Closed</option></select></label>
+                  <label class="field">Promised payment date<input id="case-promise-date" type="date" /></label>
+                  <label class="field">Promised amount (invoice currency)<input id="case-promise-amount" inputmode="decimal" placeholder="0.00" /></label>
+                  <label class="field">Review note<textarea id="case-note" maxlength="2000"></textarea></label>
+                  <button class="primary" id="case-save" type="submit">Save and approve this plan</button>
+                  <small>This records your follow-up decision. It does not mark a payment or send a message.</small>
+                </form>
               </section>
             </aside>
           </div>
@@ -701,13 +721,19 @@
             <h2>Workspace access</h2>
             <button id="copy-access">Copy my access details</button>
           </div>
-          <p class="muted">
+          <p class="muted" id="access-explanation">
             An access token is a credential. Create a separate token for each
             reviewer or viewer. The audit identifies the token that approved a
             change; this workspace does not verify a person's identity through
             SSO.
           </p>
           <div id="owner-controls">
+            <section id="accounting-controls"><h3>Accounting source · Xero</h3><p id="accounting-state" class="muted"></p>
+              <form id="accounting-connect" class="row"><label class="field">Xero organisation ID<input id="xero-tenant" required maxlength="36" placeholder="Organisation UUID" /></label><button type="submit">Connect Xero</button></form>
+              <div class="row"><button id="accounting-sync">Sync invoices and contacts</button><button id="accounting-full">Reconcile all source invoices</button><button id="accounting-disconnect">Disconnect</button></div>
+              <small>Read-only accounting access. Nothing is sent to Xero. Existing notes and follow-up decisions remain local.</small></section><div class="sep"></div>
+            <section id="membership-controls" hidden><h3>Verified workforce members</h3><p class="muted">Use the subject identifier issued to this application by your identity provider. Email addresses do not grant access.</p>
+              <form id="member-form" class="row"><label class="field">Subject identifier<input id="member-subject" required maxlength="255" /></label><label class="field">Role<select id="member-role"><option value="reviewer">Reviewer</option><option value="viewer">Viewer</option><option value="owner">Owner</option></select></label><button type="submit">Grant access</button></form><div id="members"></div></section>
             <form id="grant-form" class="row">
               <input
                 id="grant-label"
@@ -767,7 +793,7 @@
         Atezain is a supervised evaluation workspace. Drafts may repeat
         unsupported claims from customer messages. Check them against your
         source records before approving or sending. No email delivery, payment
-        processing, SSO or compliance certification is provided here.
+        processing or compliance certification is provided here.
       </footer>
     </main>
     <script>
@@ -787,6 +813,8 @@
       const KEY = "atezain.session";
       let SID = null,
         TOKEN = null,
+        CSRF = null,
+        CASE = null,
         ACCESS = null,
         CAPS = null,
         ROWS = [],
@@ -810,6 +838,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         const r = await fetch(path, {
           ...opts,
           headers: {
+            ...(CSRF ? { "X-CSRF-Token": CSRF } : {}),
             ...(opts.headers || {}),
             ...(TOKEN ? { Authorization: "Bearer " + TOKEN } : {}),
           },
@@ -850,6 +879,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         }
       }
       function save() {
+        if (ACCESS?.verified) return;
         const data = JSON.stringify({ sid: SID, token: TOKEN });
         try {
           sessionStorage.setItem(KEY, data);
@@ -867,7 +897,8 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           localStorage.removeItem(KEY);
           sessionStorage.removeItem(KEY);
         } catch (e) {}
-        SID = TOKEN = ACCESS = SHOWN = null;
+        SID = TOKEN = ACCESS = SHOWN = CSRF = CASE = null;
+        $("#case-form").hidden = true;
         ROWS = [];
         QUEUE = [];
         $("#workspace").hidden = true;
@@ -885,8 +916,16 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         $("#owner-controls").hidden = !owner;
         $("#not-owner").hidden = owner;
         $("#import-card").hidden = !owner;
+        $("#case-save").disabled = readOnly || BUSY;
+        $("#case-claim").disabled = readOnly || BUSY;
+        $("#renew-login").hidden = !ACCESS.verified;
+        $("#grant-form").hidden = !!CAPS?.identity_required;
+        $("#rotate").hidden = !!CAPS?.identity_required;
+        $("#copy-access").hidden = !!ACCESS.verified;
+        $("#membership-controls").hidden = !ACCESS.verified;
+        if (ACCESS.verified) $("#access-explanation").textContent = "Access is linked to your verified identity provider subject. Membership is checked on each request. Sign-in expires after five minutes; renew it to continue.";
         document
-          .querySelectorAll("[data-decide],#ask")
+          .querySelectorAll("[data-decide],[data-amend],#ask")
           .forEach((b) => (b.disabled = readOnly || BUSY));
         $("#prev").disabled = PAGE === 0;
         $("#next").disabled = (PAGE + 1) * 20 >= filtered().length;
@@ -897,7 +936,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         $("#identity").textContent =
           ACCESS.role +
           " access · expires " +
-          new Date(ACCESS.expires_at * 1000).toLocaleDateString();
+          new Date(ACCESS.expires_at * 1000).toLocaleString() + (ACCESS.verified ? " · verified subject " + ACCESS.subject : "");
         $("#workspace").hidden = false;
         $("#welcome").hidden = true;
         await refresh();
@@ -914,6 +953,9 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         renderMetrics();
         renderAudit(audit);
         renderGrants();
+        await refreshDailyWork();
+        await refreshAccounting();
+        if (ACCESS.verified && ACCESS.role === "owner") await refreshMembers();
         renderPermissions();
       }
       function selectTab(name) {
@@ -923,12 +965,19 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         document
           .querySelectorAll("[data-tab]")
           .forEach((e) =>
-            e.setAttribute("aria-selected", String(e.dataset.tab === name)),
+            {e.setAttribute("aria-selected", String(e.dataset.tab === name));e.tabIndex=e.dataset.tab === name ? 0 : -1;},
           );
       }
       document
         .querySelectorAll("[data-tab]")
         .forEach((b) => (b.onclick = () => selectTab(b.dataset.tab)));
+      document.querySelectorAll("[data-tab]").forEach((b,index,list) => {
+        b.tabIndex=index===0 ? 0 : -1;
+        b.onkeydown=e => {const offset=e.key==="ArrowRight" ? 1 : e.key==="ArrowLeft" ? -1 : 0;
+          if (!offset && !["Home","End"].includes(e.key)) return;
+          e.preventDefault(); const next=e.key==="Home" ? list[0] : e.key==="End" ? list[list.length-1] : list[(index+offset+list.length)%list.length];
+          selectTab(next.dataset.tab);next.focus();};
+      });
       $("#resume-toggle").onclick = () => {
         $("#resume").hidden = !$("#resume").hidden;
         if (!$("#resume").hidden) $("#resume-id").focus();
@@ -958,12 +1007,13 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
             "Workspace opened. Load the sample invoices, then save your access details from Access & controls.",
           );
         });
-      $("#forget").onclick = () => {
+      $("#forget").onclick = () => run(async () => {
+        if (ACCESS?.verified) await call("/auth/logout", {method:"POST"});
         signout();
         notice(
           "Signed out on this device. Server data remains until you delete it or the operator purges it.",
         );
-      };
+      });
       $("#reload").onclick = () => run(refresh);
       function money(amount, currency) {
         return (
@@ -1094,10 +1144,19 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
       async function showRecord(id) {
         SHOWN = id;
         const r = await call(url("/records/" + encodeURIComponent(id)));
-        $("#review-heading").textContent = r.id;
+        $("#review-heading").textContent = r.source_number || r.id;
+        CASE = await call(url("/cases/" + encodeURIComponent(id)));
+        $("#case-form").hidden = false;
+        $("#case-assignee").value = CASE.assignee;
+        $("#case-next").value = CASE.next_action;
+        $("#case-state").value = CASE.state;
+        $("#case-promise-date").value = CASE.promise_date;
+        $("#case-promise-amount").value = CASE.promise_amount;
+        $("#case-note").value = CASE.note;
         $("#answers").textContent = "";
         $("#record").innerHTML =
           `<p><b>${esc(r.customer)}</b><br>${esc(money(r.amount, r.currency))} · ${esc(r.status)}<br><small>Due ${esc(r.due) || "not supplied"} · ${esc(r.contact) || "no reminder address"}</small></p><button class="primary" id="ask">Prepare a follow-up</button><details><summary>Source notes and messages (${r.note_rows.length + r.email_rows.length})</summary><div>${r.note_rows.map((n) => `<p class="source"><small>${esc(n.ts)} · ${esc(n.author)}</small><br>${esc(n.text)}</p>`).join("")}${r.email_rows.map((e) => `<p class="source"><small>${esc(e.sender)} · ${esc(e.subject)}</small><br>${esc(e.body)}</p>`).join("") || '<p class="muted">No email messages.</p>'}</div></details>`;
+        if (r.source_id) $("#record").insertAdjacentHTML("afterbegin", `<p class="notice">Xero balance: ${esc(r.outstanding)} ${esc(r.currency)} remaining from ${esc(r.original_amount)}. Source ${esc(r.source_number)}. Accounting is checked again before approval.</p>`);
         $("#ask").onclick = () => run(() => ask(id));
         renderPermissions();
       }
@@ -1123,6 +1182,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         );
       }
       const actionNames = {
+        manage_case: "Save follow-up plan",
         update_status: "Update invoice status",
         add_note: "Add an assistant note",
         send_reminder: "Record a reminder",
@@ -1138,10 +1198,18 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           ? rows
               .map(
                 (p) =>
-                  `<article class="proposal"><div class="row between"><b>${esc(actionNames[p.action] || p.action)} · ${esc(p.record_id)}</b><span class="${esc(p.status)}">${esc(p.status.replaceAll("_", " "))}</span></div><pre>${esc(JSON.stringify(p.params, null, 2))}</pre>${p.evidence ? `<p><small>Assistant's reasoning: ${esc(p.evidence)}</small></p>` : ""}${p.reason ? `<p class="denied">${esc(p.reason)}</p>` : ""}${p.decided_by ? `<small>Decision: ${esc(p.decided_by)}${p.note ? " · " + esc(p.note) : ""}</small>` : ""}${p.status === "held" ? `<label class="field">Decision note (optional)<input data-note="${esc(p.id)}" maxlength="2000" placeholder="Why you approve or reject this change"></label><div class="row"><button class="primary" data-decide="${esc(p.id)}" data-approve="true">Approve these changes</button><button data-decide="${esc(p.id)}" data-approve="false">Reject</button></div>` : ""}</article>`,
+                  `<article class="proposal"><div class="row between"><b>${esc(actionNames[p.action] || p.action)} · ${esc(p.record_id)}</b><span class="${esc(p.status)}">${esc(p.status.replaceAll("_", " "))}</span></div><pre>${esc(JSON.stringify(p.params, null, 2))}</pre>${p.evidence ? `<p><small>Reason for this change: ${esc(p.evidence)}</small></p>` : ""}${p.reason ? `<p class="denied">${esc(p.reason)}</p>` : ""}${p.decided_by ? `<small>Decision: ${esc(p.decided_by)}${p.note ? " · " + esc(p.note) : ""}</small>` : ""}${p.status === "held" ? `<label class="field">Decision note (optional)<input data-note="${esc(p.id)}" maxlength="2000" placeholder="Why you approve or reject this change"></label><div class="row"><button class="primary" data-decide="${esc(p.id)}" data-approve="true">Approve these changes</button><button data-decide="${esc(p.id)}" data-approve="false">Reject</button>${p.action === "send_reminder" ? `<button data-amend="${esc(p.id)}">Edit reminder for approval</button>` : ""}</div>` : ""}</article>`,
               )
               .join("")
           : '<div class="empty"><b>No decisions waiting</b>Prepare a follow-up from the invoice list, or include completed proposals to review history.</div>';
+        document.querySelectorAll("[data-amend]").forEach(b => b.onclick = () => {
+          const p = QUEUE.find(p => p.id === b.dataset.amend);
+          const editor = document.createElement("form"); editor.className = "stack";
+          editor.innerHTML = `<label class="field">Exact revised reminder<textarea maxlength="8000" required></textarea></label><button type="submit">Replace with a new held proposal</button><small>The original remains in history as rejected. Review and approve the replacement separately.</small>`;
+          editor.querySelector("textarea").value = p.params.reminder_text;
+          b.after(editor); b.disabled = true; editor.querySelector("textarea").focus();
+          editor.onsubmit = e => { e.preventDefault(); run(async () => {await call(url("/proposals/" + p.id + "/amend"), {method:"POST", ...json({reminder_text:editor.querySelector("textarea").value})}); await refresh(); notice("Revised reminder is held for your approval.");}); };
+        });
         document.querySelectorAll("[data-decide]").forEach(
           (b) =>
             (b.onclick = () =>
@@ -1281,15 +1349,49 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
             "Export downloaded. Store its audit head somewhere independent of Atezain.",
           );
         });
+
+      async function refreshDailyWork() {
+        const data = await call(url("/worklist?view=" + $("#work-view").value));
+        $("#daily-work").innerHTML = data.rows.length ? `<table><thead><tr><th>Invoice</th><th>Remaining</th><th>Owner / next action</th><th>Follow-up</th></tr></thead><tbody>${data.rows.slice(0,50).map(r => `<tr><td><button data-case="${esc(r.invoice.id)}">${esc(r.invoice.source_number || r.invoice.id)}</button><br>${esc(r.invoice.customer)}</td><td>${esc(money(r.invoice.amount,r.invoice.currency))}</td><td>${esc(r.case.assignee || "Unassigned")}<br>${esc(r.case.next_action || r.invoice.due || "No date")}</td><td>${r.broken_promise ? "Promise overdue · " : ""}${esc(r.case.state)}${r.settled ? " · settled in accounting" : ""}</td></tr>`).join("")}</tbody></table><small>Showing ${Math.min(50,data.rows.length)} of ${data.rows.length} cases. All invoices remain searchable below.</small>` : '<p class="muted">No cases in this view.</p>';
+        document.querySelectorAll("[data-case]").forEach(b => b.onclick = () => run(() => showRecord(b.dataset.case)));
+      }
+      $("#work-view").onchange = () => run(refreshDailyWork);
+      $("#case-claim").onclick = () => { $("#case-assignee").value = ACCESS.subject || ACCESS.identity; };
+      $("#case-form").onsubmit = e => { e.preventDefault(); run(async () => {
+        CASE = await call(url("/cases/" + encodeURIComponent(SHOWN)), {method:"PUT", ...json({version:CASE.version,assignee:$("#case-assignee").value.trim(),next_action:$("#case-next").value,state:$("#case-state").value,promise_date:$("#case-promise-date").value,promise_amount:$("#case-promise-amount").value.trim(),note:$("#case-note").value})});
+        await refresh(); notice("Follow-up plan saved with your approval and audit identity.");
+      }); };
+      async function refreshAccounting() {
+        const data = await call(url("/accounting"));
+        $("#accounting-state").textContent = !data.configured ? "The operator has not configured a Xero application." : data.connection ? data.connection.state.replaceAll("_"," ") + (data.connection.error ? " · " + data.connection.error.replaceAll("_"," ") : "") + (data.sync ? " · latest complete sync " + new Date(data.sync.cursor*1000).toLocaleString() : " · sync required") : "Connect the organisation approved for this workspace.";
+        $("#accounting-connect").hidden = !data.configured || !ACCESS.verified;
+        ["#accounting-sync","#accounting-full","#accounting-disconnect"].forEach(id => $(id).hidden = !data.connection || data.connection.state === "disconnected");
+      }
+      $("#accounting-connect").onsubmit = e => {e.preventDefault();run(async () => {const r=await call(url("/accounting/connect"),{method:"POST",...json({tenant:$("#xero-tenant").value.trim()})});window.location.assign(r.authorize_url);});};
+      $("#accounting-sync").onclick = () => run(async () => {await call(url("/accounting/sync"),{method:"POST"});await refresh();notice("Accounting sync completed. Changed source evidence requires fresh approval.");});
+      $("#accounting-full").onclick = () => run(async () => {await call(url("/accounting/sync?full=true"),{method:"POST"});await refresh();notice("Full accounting reconciliation completed.");});
+      $("#accounting-disconnect").onclick = () => run(async () => {await call(url("/accounting"),{method:"DELETE"});await refresh();notice("Stored Xero tokens removed. Revoke the application grant in Xero as well.");});
+      async function refreshMembers() {
+        const members = await call(url("/members"));
+        $("#members").innerHTML = members.map(m => `<p>${esc(m.subject)} · ${esc(m.role)} · ${m.enabled ? "active" : "revoked"} ${m.enabled && m.subject !== ACCESS.subject ? `<button data-revoke-member="${esc(m.subject)}" data-role="${esc(m.role)}">Revoke access</button>` : ""}</p>`).join("");
+        document.querySelectorAll("[data-revoke-member]").forEach(b => b.onclick = () => run(async () => {await call(url("/members"),{method:"PUT",...json({subject:b.dataset.revokeMember,role:b.dataset.role,enabled:false})});await refreshMembers();}));
+      }
+      $("#member-form").onsubmit = e => {e.preventDefault();run(async () => {await call(url("/members"),{method:"PUT",...json({subject:$("#member-subject").value.trim(),role:$("#member-role").value,enabled:true})});await refreshMembers();notice("Verified-subject membership saved.");});};
+
       async function init() {
         try {
           CAPS = await call("/capabilities");
           $("#mode").textContent =
-            CAPS.mode === "pilot"
+            CAPS.mode === "enterprise"
+              ? "Enterprise · supervised collections"
+              : CAPS.mode === "pilot"
               ? "Controlled pilot"
               : "Demo · " +
                 (CAPS.model === "stub" ? "simulated assistant" : "live model");
           $("#new").hidden = !CAPS.self_service;
+          $("#workforce-login").hidden = !CAPS.oidc;
+          $("#resume-toggle").hidden = CAPS.identity_required;
+          if (CAPS.identity_required) $("#provision-note").textContent = "Your operator provisions a workspace and grants your verified work account access.";
           $("#provision-note").hidden = CAPS.self_service;
           $("#privacy").textContent =
             (CAPS.model === "stub"
@@ -1304,7 +1406,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           $("#rulesbody").innerHTML =
             `<p><small>Policy ${esc(rules.fingerprint)} · ${rules.daily_writes} live proposals per day. An assist may create several proposals. Rejected human decisions still count toward the limit.</small></p><div class="tablewrap"><table><thead><tr><th>Action</th><th>Fields</th><th>Decision</th><th>Restrictions</th></tr></thead><tbody>${rules.actions.map((a) => `<tr><td>${esc(actionNames[a.action] || a.action)}</td><td>${a.writes.map(esc).join(", ") || "—"}</td><td>${a.denied ? "Blocked" : a.approval === "required" ? "Human approval" : "Automatic, audited"}</td><td>${esc(JSON.stringify({ ...a.values, ...a.of_the_record }))}</td></tr>`).join("")}</tbody></table></div>` +
             (CAPS.all_writes_require_approval
-              ? "<p>Every permitted write, including assistant notes, requires a human decision in this pilot.</p>"
+              ? "<p>Every permitted write, including assistant notes, requires a human decision in this workspace.</p>"
               : `<p>The demo auto-approves assistant notes, and that is a decision,
       not an oversight: the note is the assistant's words, not proof of payment. Read it against the source evidence.</p>`);
           let saved;
@@ -1316,7 +1418,18 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
             );
             $("#remember").checked = !!localStorage.getItem(KEY);
           } catch (e) {}
-          if (saved?.sid && saved?.token) {
+          if (CAPS.oidc) {
+            try {
+              TOKEN = null;
+              const me = await call("/auth/me"); CSRF = me.csrf;
+              $("#workforce-workspaces").hidden = false;
+              $("#workforce-workspaces").innerHTML = me.workspaces.map(s => `<button data-workspace="${esc(s)}">Open workspace ${esc(s)}</button>`).join("") || "Your account has no active workspace membership. Contact your operator.";
+              document.querySelectorAll("[data-workspace]").forEach(b => b.onclick = () => run(async () => {SID=b.dataset.workspace; await openWorkspace();}));
+              if (me.workspaces.length === 1) {SID=me.workspaces[0]; await openWorkspace();}
+            } catch(e) { notice("Sign in with your work account to open an assigned workspace."); }
+            if (CAPS.identity_required) return;
+          }
+          if (saved?.sid && saved?.token && !ACCESS?.verified) {
             SID = saved.sid;
             TOKEN = saved.token;
             try {
