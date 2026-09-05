@@ -1,0 +1,85 @@
+{
+  "origin": "https://acceptance.example.test",
+  "workspace": "REPLACE_WITH_FICTIONAL_WORKSPACE_ID",
+  "candidate_commit": "REPLACE_WITH_DEPLOYED_COMMIT",
+  "image_digest": "REPLACE_WITH_DEPLOYED_IMAGE_DIGEST",
+  "fixture_prefix": "ATEZAIN-ACCEPTANCE-REPLACE_RUN_ID-",
+  "policy_fingerprint": "REPLACE_FROM_REVIEWED_EXPORT",
+  "reviewers": [
+    {
+      "key": "reviewer-1",
+      "invoices": [
+        "F-2026-000",
+        "F-2026-001",
+        "F-2026-002",
+        "F-2026-003",
+        "F-2026-004",
+        "F-2026-005",
+        "F-2026-006",
+        "F-2026-007",
+        "F-2026-008",
+        "F-2026-009"
+      ]
+    },
+    {
+      "key": "reviewer-2",
+      "invoices": [
+        "F-2026-010",
+        "F-2026-011",
+        "F-2026-012",
+        "F-2026-013",
+        "F-2026-014",
+        "F-2026-015",
+        "F-2026-016",
+        "F-2026-017",
+        "F-2026-018",
+        "F-2026-019"
+      ]
+    },
+    {
+      "key": "reviewer-3",
+      "invoices": [
+        "F-2026-020",
+        "F-2026-021",
+        "F-2026-022",
+        "F-2026-023",
+        "F-2026-024",
+        "F-2026-025",
+        "F-2026-026",
+        "F-2026-027",
+        "F-2026-028",
+        "F-2026-029"
+      ]
+    },
+    {
+      "key": "reviewer-4",
+      "invoices": [
+        "F-2026-030",
+        "F-2026-031",
+        "F-2026-032",
+        "F-2026-033",
+        "F-2026-034",
+        "F-2026-035",
+        "F-2026-036",
+        "F-2026-037",
+        "F-2026-038",
+        "F-2026-039"
+      ]
+    },
+    {
+      "key": "reviewer-5",
+      "invoices": [
+        "F-2026-040",
+        "F-2026-041",
+        "F-2026-042",
+        "F-2026-043",
+        "F-2026-044",
+        "F-2026-045",
+        "F-2026-046",
+        "F-2026-047",
+        "F-2026-048",
+        "F-2026-049"
+      ]
+    }
+  ]
+}

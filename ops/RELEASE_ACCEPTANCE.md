@@ -43,22 +43,23 @@ evidence retains its original environment and date. Each row remains OPEN for cu
 | Quality | Green recorded gauges; separately named current live-model boundary report | Run the engineering gates for the selected candidate. Review current cached adversarial prose with explicit human labels and quoted evidence; separately evaluate representative ordinary collections cases. Keep malformed outputs and provider errors in completion reporting. Obtain finance-user acceptance against an agreed rubric; preserve historical labels and results. | Engineer + independent reviewer + finance lead |
 | Procurement and security | Operating procedures and configuration requirements | Document and obtain customer approval of data locations, model/subprocessors, retention/deletion including backups, support, incident owner/escalation and service scope. Exercise monitoring and cleanup in the acceptance environment. An independent assessment must cover deployed identity, isolation, connector, secrets and ingress, with no unresolved release-blocking finding. | Owner + customer + operator + independent assessor |
 
-## Engineering work needed to run the remaining exercises
+## Tools prepared and remaining execution
 
-These are remaining tasks, not tools already delivered by this checklist.
+The hosted driver and model review generator are now implemented. Follow
+[ACCEPTANCE_EXECUTION.md](ACCEPTANCE_EXECUTION.md) for setup, commands and interpretation. Their
+external exercises and human acceptance remain open.
 
-- **Hosted workload driver:** `python -m ops.workload` explicitly clears provider/database settings,
-  starts local SQLite and uses in-process HTTP fixtures. Running that command on a hosting machine
-  does not turn it into a hosted-service test. Add a separate HTTPS driver for a designated disposable
-  workspace and verified test reviewers. Use the deployed enterprise policy and quotas; record
-  request categories, sample counts, timings, failures, retries and expected business effects. Do not
-  lower the requirement or bypass a production limit to obtain a pass. Keep the local report separate.
-- **Finance review pack:** the live boundary report and actual-input caches already exist. Assemble
-  the current outputs, relevant source facts, reviewer identity, rubric, labels, corrections and
-  supporting quotes. Include ordinary cases covering partial payments, changed recipients, disputes,
-  promises and mixed currencies. Agree sample coverage and acceptable usefulness/correction/time
-  thresholds before scoring. A boundary refusal is not a successful draft; model-written labels do
-  not replace the required human acceptance.
+- **Hosted workload driver:** `python -m ops.hosted_workload` performs HTTPS preflight and an explicitly
+  confirmed synthetic workload using verified reviewer sessions. It checks exact record/case effects,
+  anchored exported audit, source/policy stability and latency. Session expiry, provider failures and
+  incomplete cases fail the run. It still needs the designated enterprise host and fictional sandbox
+  workspace; its offline tests are not hosting evidence. The original `python -m ops.workload` remains
+  a separate local SQLite/stub exercise. Do not lower requirements or bypass limits to obtain a pass.
+- **Finance review pack:** `python -m ops.model_review` reconstructs and checks current input hashes,
+  loads cached outputs and prepares a readable pack with blank labels and quoted-evidence fields.
+  The ordinary-workflow worksheet remains NOT_RUN. Finance reviewers must agree sample coverage and
+  usefulness/correction/time thresholds, perform those exercises and score the current outputs.
+  Parser refusals remain unsuccessful answers. No human label or acceptance is supplied by the tool.
 - **Hosted verification evidence:** `.github/workflows/verify.yml` is prepared but its execution is
   recorded as SKIPPED. Once activation is authorized, run it on the candidate, fix failures and retain
   the run URL, commit, gate logs and image digest. Add artifact retention for gauges, workload and
@@ -77,7 +78,7 @@ rerun affected exercises after changes. Do not relabel a historical run as a fre
 ## Sequence and evidence record
 
 1. Confirm the accepting team, providers, environment, responsible people and acceptance thresholds.
-2. Prepare the workload driver and human review pack locally. Resolve engineering failures through
+2. Use the prepared workload driver and human review pack. Resolve engineering failures through
    the existing tests, mutation, hostile and sabotage gates.
 3. Configure the authorized acceptance deployment in `ATEZAIN_MODE=enterprise`, including OIDC,
    read-only Xero, PostgreSQL, ingress and operational jobs. Verify `/capabilities` reports required

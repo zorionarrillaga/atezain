@@ -47,7 +47,7 @@ and signing-key rollover. The repository's generated-key tests are protocol evid
 ### Xero source connection and reconciliation
 
 Set `ATEZAIN_XERO_CLIENT_ID`, `ATEZAIN_XERO_CLIENT_SECRET`, `ATEZAIN_XERO_REDIRECT_URI` (the exact HTTPS
-`/integrations/xero/callback` URL) and `ATEZAIN_CREDENTIAL_KEY` (a Fernet key generated and stored by the
+`/accounting/xero/callback` URL) and `ATEZAIN_CREDENTIAL_KEY` (a Fernet key generated and stored by the
 operator's secret manager). Preserve the encryption key separately from database backups. A missing
 key cannot be recovered from the database. Restrict secret reads to the application/operator identity.
 
