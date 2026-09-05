@@ -1,0 +1,4 @@
+id,customer,amount,currency,issued,due,status,contact,note
+F-2026-901,FICTICIO - Taller Norte,240.00,EUR,2026-07-01,2026-08-01,open,taller@example.test,"Caso ficticio. Saldo pendiente confirmado: 240,00 EUR. Sin disputa ni promesa de pago."
+F-2026-902,FICTICIO - Estudio Sur,75.25,EUR,2026-07-01,2026-08-01,open,estudio@example.test,"Caso ficticio. Importe original: 100,00 EUR. Pago recibido: 24,75 EUR. Saldo pendiente confirmado: 75,25 EUR. El campo amount ya contiene el saldo; no descontar el pago otra vez."
+F-2026-903,FICTICIO - Comercio Este,180.00,EUR,2026-07-01,2026-08-01,disputed,comercio@example.test,Caso ficticio. El cliente disputa la entrega. No preparar recordatorios mientras siga la disputa.

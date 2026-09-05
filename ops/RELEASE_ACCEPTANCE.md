@@ -1,5 +1,9 @@
 # Closing the supervised collections release
 
+This checklist applies to the **future enterprise release**. The immediate owner-authorized milestone
+is [solo evaluation](../SOLO_EVALUATION.md), which requires no external accepting team. These enterprise
+gates remain deferred and open while the assistant evaluates the fictional demo on the owner's behalf.
+
 This is the execution checklist for [PRODUCT_RELEASE.md](../PRODUCT_RELEASE.md), prepared on
 2026-09-05. It adds no customer approval or measurement. The recorded engineering results support
 a candidate; **customer release acceptance is OPEN**. The recorded deployment still uses demo mode.

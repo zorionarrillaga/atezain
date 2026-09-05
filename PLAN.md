@@ -1,8 +1,17 @@
 # atezain — the build plan, step by step, for whoever builds next
 
-## Active enterprise release (2026-09-05)
+## Immediate solo evaluation (2026-09-05)
 
-The owner's current instruction supersedes the historical single-step/demo scope below. Continue
+The owner selected the resource-limited milestone in SOLO_EVALUATION.md: prepare and exercise a
+fictional demo. The owner then delegated the walkthrough because they cannot perform it. Complete
+the assistant review, record its limits, and defer human judgments. Reuse existing engineering
+evidence where applicable. No external finance team, customer tenant, independent assessment or
+new paid service is a prerequisite for this milestone. Keep the enterprise criteria below as a
+future target and record external exercises as deferred, never as passed.
+
+## Future enterprise release (2026-09-05)
+
+The earlier enterprise instruction superseded the historical single-step/demo scope below. Continue
 from the completed review at `584668e`; preserve the historical experiment and the owner's existing
 STATUS edits. The active customer, workflow and acceptance targets are in `PRODUCT_RELEASE.md`.
 

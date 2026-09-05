@@ -1,0 +1,70 @@
+{
+  "format": "atezain-solo-evaluation-v1",
+  "at": "2026-09-05T12:51:26.292041+00:00",
+  "milestone_status": "OWNER_WALKTHROUGH_PENDING",
+  "application_commit": "4949a2078e1d6624b5b8072062d522b78a3c24d1",
+  "application_source_changed": false,
+  "environment": {
+    "origin": "http://127.0.0.1:8767",
+    "storage": "isolated local SQLite",
+    "mode": "demo",
+    "model": "openai/gpt-oss-120b",
+    "identity": "local workspace bearer; not workforce OIDC",
+    "accounting": "built-in fictional CSV sample; no Xero connection"
+  },
+  "automated_workflows": {
+    "command": "env -u ATEZAIN_TEST_DSN -u LANGFUSE_PUBLIC_KEY -u LANGFUSE_SECRET_KEY -u ATEZAIN_TRACE_SINK .venv/bin/python -m pytest -q tests/test_collections.py tests/test_accounting.py tests/test_recovery.py --tb=short --junitxml=var/solo-evaluation/workflows.xml",
+    "passed": 36,
+    "skipped": 4,
+    "failures": 0,
+    "errors": 0,
+    "skip_reason": "PostgreSQL parameterizations absent from this local run; previous dedicated PostgreSQL result remains separately dated in GAUGES.md",
+    "junit_sha256": "f03b3c25af8167e3738b8c5b4507065c91d8e291af76f0ea76f53ae03520f00d"
+  },
+  "browser_checks": {
+    "browser": "Chrome on macOS",
+    "workspace": "5c3d3cc28d13b19d",
+    "built_in_sample_loaded": true,
+    "overdue_invoice_opened": true,
+    "live_draft_displayed": true,
+    "export_downloaded": true,
+    "export_hash_chain_verified_against_displayed_head": true,
+    "displayed_audit_head": [
+      5,
+      "cbf860c7610407a597015e8ccd41737b15ecd931bad3a995451a9d49a2446e6f"
+    ],
+    "reminder_held_and_not_written": true,
+    "status_change_held": true,
+    "automatic_demo_note_observed": true,
+    "human_decisions_recorded": false
+  },
+  "private_evidence": {
+    "export": "var/solo-evaluation/initial-browser-export.json",
+    "export_sha256": "577e962893de8335d07c8661c220a8b797ae2980ec7d28c103eb0ac54c802087"
+  },
+  "additional_fixture": {
+    "path": "ops/solo-invoices.csv",
+    "sha256": "889eb637d57247577e5187f0ab7799dce5587ec0a9022a9a1c882b90cafdc133",
+    "csv_parse_checked": true,
+    "browser_import_status": "SKIPPED",
+    "reason": "Browser extension file chooser rejected local-file access. No browser security setting was changed; built-in samples were used.",
+    "original_bytes": "var/solo-evaluation/initial-solo-invoices.csv",
+    "subsequent_change": "Tracked CSV line endings normalized to LF before commit; parsed rows are identical."
+  },
+  "owner_review": {
+    "status": "PENDING",
+    "overdue_wording": null,
+    "partial_payment": null,
+    "dispute_and_changed_plan": null,
+    "return_to_work": null,
+    "signed_at": null
+  },
+  "limitations": [
+    "Preparation for owner review, not owner or customer acceptance.",
+    "Live prose is unscored; no quality or completion rate is estimated.",
+    "Local CSV data does not demonstrate live accounting reconciliation.",
+    "Demo mode permits automatic audited notes; this is not enterprise all-write approval evidence.",
+    "The additional partial-payment fixture has not been imported or reviewed in the browser.",
+    "This browser exercise did not repeat the earlier exact-amendment, assignment, responsive-layout or restart drills; existing tests and prior browser evidence remain separately dated."
+  ]
+}

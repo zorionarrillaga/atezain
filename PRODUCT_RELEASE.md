@@ -1,5 +1,15 @@
 # Supervised collections release
 
+## Immediate milestone: solo evaluation
+
+On 2026-09-05 the owner selected [SOLO_EVALUATION.md](SOLO_EVALUATION.md) as the immediate milestone:
+an assistant-evaluated demo with fictional invoices, existing tools and no required external team.
+The owner subsequently delegated the walkthrough because they cannot perform it. Human review is
+deferred; assistant actions are not recorded as owner acceptance. The enterprise requirements below
+are retained as the later customer-release target; their external gates are deferred, not passed.
+
+## Future enterprise release
+
 The owner’s instruction on 2026-09-05 replaces the old demo-only build scope. The starting evidence is the completed enterprise review at commit `584668e`. This release serves a B2B services finance team that reviews overdue invoices each working day. Xero is the provisional accounting source, and tenant-specific OpenID Connect is the workforce identity boundary, with Microsoft Entra ID as the intended external validation target. These choices were asked early; customer confirmation remains pending.
 
 The buyer is a finance lead accountable for receivables and the evidence behind follow-up decisions. The operator maintains identity, source synchronization, retention and recovery. Reviewers own a daily list, inspect the outstanding balance and customer correspondence, prepare or correct a reminder, record approval, and track disputes and promises. Sending remains a deliberate manual step outside Atezain. No automated delivery, payment collection or accounting writeback is included in this release.

@@ -8,6 +8,11 @@ The model proposes record changes; a separate policy checks them; a human decide
 the executor reports the observed effect. Execution claims prevent a proposal from being invoked again,
 while uncertain outcomes remain visible and require investigation.
 
+**Immediate milestone: [solo evaluation](SOLO_EVALUATION.md), completed with limitations.** The
+assistant exercised fictional workflows and reviewed observed drafts without an external team or an
+owner walkthrough. Local controls passed; model prose still needed corrections. Human acceptance
+and the enterprise customer release remain later milestones.
+
 **Current status: a supervised collections engineering candidate.** The target buyer, daily workflow
 and measurable release gates are in [PRODUCT_RELEASE.md](PRODUCT_RELEASE.md). Enterprise mode adds
 verified OIDC workforce subjects, workspace membership, read-only Xero synchronization, daily
@@ -183,7 +188,7 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 366 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **480 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 369 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **480 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 63/63 sabotages caught by at least one gauge |
