@@ -454,3 +454,17 @@ def test_when_no_row_loads_the_refusal_does_not_claim_the_rest_did(client):
     some = upload(client, sid, h, SAMPLE + "INV-9,X,1,EUR,2026-01-01,2026-02-01,open,\n").json()
     assert some["loaded"] == 1
     assert some["rejected"][0]["why"].endswith("the row was not loaded, the rest were")
+
+
+# ── the solo evaluation (2026-09-05): the draft panel after an amendment ─────────────────────
+def test_the_draft_panel_shows_the_text_a_decision_is_about(client):
+    """A reviewer amended a held reminder and the copyable draft panel kept the model's original
+    text, so what could be copied was not what was held (SOLO_EVALUATION.md). The page now re-reads
+    the queue after every refresh and puts the held or approved reminder text in the panel, saying
+    whose it is; the model's original stays in proposal history. The page's script is not run
+    here — this pins the wiring, and the browser exercise in `STATUS.md` is where it was seen."""
+    page = client.get("/demo").text
+    assert "function currentReminder(" in page and "function syncDraft(" in page
+    refresh = page.split("async function refresh() {")[1].split("\n      }")[0]
+    assert "syncDraft();" in refresh, "refresh() no longer re-syncs the draft panel with the queue"
+    assert "the model's original is in proposal history" in page

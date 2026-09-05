@@ -52,7 +52,17 @@ from api.schemas import (ActionOut, AdapterOut, AssistOut, AuditOut, DecideIn, D
                          FuseOut, NoteOut, ProposalOut, RecordDetailOut, RecordOut, RejectedRow,
                          SessionOut, UploadOut, GrantIn)
 from policy import APPROVED, EXECUTED, HELD, PolicyConfig, PolicyService, Store
+from policy.model import TZ
 from records import Records
+
+
+def today() -> str:
+    """The day this service reckons with, wherever it reckons with one: the policy's own zone
+    (`policy.model.TZ`, Europe/Madrid), where the adapter's day boundary and its budget already
+    live. Until 2026-09-05 the summary counted overdue by that zone, the work list by UTC and the
+    source check by the container's clock — three clocks for one word — so for two hours a night an
+    invoice was overdue on one panel and not yet due on the other. Tests replace this function."""
+    return datetime.datetime.now(TZ).date().isoformat()
 
 ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = os.environ.get("ATEZAIN_ADAPTER", "invoices-es")
@@ -384,19 +394,18 @@ def records(sid: str, authorization: str | None = Header(default=None)) -> list[
 @guarded()
 def summary(sid: str, authorization: str | None = Header(default=None)):
     from decimal import Decimal
-    from policy.model import TZ
     from policy.service import LIVE
     st = state_of(sid)
-    today = datetime.datetime.now(TZ).date().isoformat()
+    day = today()
     rows = st.records.summaries()
     outstanding = [r for r in rows if r["status"] not in {"paid", "cancelled"} and r["amount"] > 0]
-    overdue = [r for r in outstanding if r["due"] and r["due"] < today]
+    overdue = [r for r in outstanding if r["due"] and r["due"] < day]
     totals = {}
     for row in overdue:
         totals[row["currency"]] = totals.get(row["currency"], Decimal(0)) + Decimal(str(row["amount"]))
     case_states = st.records.cases()
     used = st.policy.store.count_proposals_since(st.policy._day_start(st.policy.clock()), LIVE)
-    return {"as_of": today, "records": len(rows), "overdue": len(overdue),
+    return {"as_of": day, "records": len(rows), "overdue": len(overdue),
             "disputed": sum(case_states.get(r["id"], {}).get("state", r["status"]) == "disputed" for r in outstanding),
             "undated": sum(not r["due"] for r in outstanding),
             "overdue_by_currency": {k: format(v, ".2f") for k, v in sorted(totals.items())},
@@ -798,7 +807,7 @@ def require_current_source(st, invoice_id, proposal=None):
         raise HTTPException(409, "invoice evidence or follow-up plan changed; reject this proposal and prepare a fresh follow-up")
     case = st.records.case(invoice_id)
     if (proposal is None or proposal.action == "send_reminder") and (case["state"] in {"disputed","closed"} or
-        (case["state"] == "snoozed" and case["next_action"] > datetime.date.today().isoformat())):
+        (case["state"] == "snoozed" and case["next_action"] > today())):
         raise HTTPException(409, "this case is disputed, closed or deferred; update its follow-up plan before drafting")
 
 
@@ -908,21 +917,21 @@ def worklist(sid: str, view: str="due", authorization: str | None = Header(defau
         raise HTTPException(422,"invalid worklist view")
     st = state_of(sid)
     who_access = sessions.access(sid,bearer(authorization))
-    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    day = today()
     cases = st.records.cases()
     rows=[]
     for invoice in st.records.summaries():
         case = cases.get(invoice["id"],st.records.empty_case(invoice["status"]))
         settled = invoice["status"] in {"paid","cancelled"} or invoice["amount"]<=0
-        due = not settled and case["state"] not in {"closed","disputed"} and (case["next_action"] or invoice["due"] or "9999")<=today
-        broken_promise = not settled and bool(case["promise_date"] and case["promise_date"]<today)
+        due = not settled and case["state"] not in {"closed","disputed"} and (case["next_action"] or invoice["due"] or "9999")<=day
+        broken_promise = not settled and bool(case["promise_date"] and case["promise_date"]<day)
         assigned = case["assignee"] in {who_access.get("subject"), who_access["identity"]}
         if ((view == "due" and not due) or (view == "mine" and not assigned) or
             (view == "disputed" and case["state"] != "disputed") or (view == "promises" and not case["promise_date"])):
             continue
         rows.append({"invoice":invoice,"case":case,"due_now":due,"broken_promise":broken_promise,"settled":settled})
     rows.sort(key=lambda r:(not r["broken_promise"],r["case"]["next_action"] or r["invoice"]["due"] or "9999",r["invoice"]["id"]))
-    return {"as_of":today,"rows":rows}
+    return {"as_of":day,"rows":rows}
 
 
 @app.get("/sessions/{sid}/cases/{invoice_id}")
@@ -968,9 +977,14 @@ def save_case(sid: str, invoice_id: str, body: CaseIn, authorization: str | None
     human=who(sid,authorization)
     with st.policy.store.transaction():
         proposal=st.policy.propose(human,"manage_case",invoice_id,{"case_json":source_json(value)},evidence="Reviewer saved the follow-up plan")
-        if proposal.status != HELD:
-            raise HTTPException(409,"case could not be saved: "+proposal.reason)
-        proposal=st.policy.decide(proposal.id,True,human)
+        if proposal.status == HELD:
+            proposal=st.policy.decide(proposal.id,True,human)
+    # The refusal is raised OUTSIDE the transaction that wrapped propose and decide. Until 2026-09-05
+    # it was raised inside, and the rollback took the policy's own DENIED row with it — and the
+    # fuse trip a spent budget pulls — so a refused save left no trace in the chain and the fuse
+    # never tripped through this route. A refusal is audited, never silent (PROVENANCE.md).
+    if proposal.status != APPROVED:
+        raise HTTPException(409,"case could not be saved: "+(proposal.reason or proposal.status))
     result=st.policy.execute(proposal.id,make_executor(st.records),human)
     if result.status != EXECUTED:
         raise HTTPException(503,"case save needs investigation; inspect the audit")
@@ -989,8 +1003,10 @@ def amend_reminder(sid: str, pid: str, body: AmendIn, authorization: str | None 
     human=who(sid,authorization)
     with st.policy.store.transaction():
         proposal=st.policy.propose(human,old.action,old.record_id,{**old.params,"reminder_text":body.reminder_text},evidence="Reviewer amendment of "+old.id)
-        if proposal.status != HELD:
-            raise HTTPException(409,"amendment refused: "+proposal.reason)
-        st.policy.decide(old.id,False,human,note="Replaced by reviewer amendment "+proposal.id)
-        st.policy.store.audit_append("PROPOSAL_AMENDED",human.tag,proposal.id,{"parent":old.id})
+        if proposal.status == HELD:
+            st.policy.decide(old.id,False,human,note="Replaced by reviewer amendment "+proposal.id)
+            st.policy.store.audit_append("PROPOSAL_AMENDED",human.tag,proposal.id,{"parent":old.id})
+    # raised outside the transaction, for the reason `save_case` gives: the DENIED row stays
+    if proposal.status != HELD:
+        raise HTTPException(409,"amendment refused: "+(proposal.reason or proposal.status))
     return out(proposal)

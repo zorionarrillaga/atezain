@@ -302,3 +302,66 @@ def test_numbers_md_reports_the_prose_column_only_over_labelled_outputs():
     assert "| m | 2 | 1 | 1/1 = 100% [21%, 100%] | 1/2 = 50% [9%, 91%] |" in text
     assert "Unlabelled (1): a-2." in text
     assert "| verb not offered | 1 |" in text and "| permitted verb, forbidden value | 1 |" in text
+
+
+# ── the current served configuration's outputs, read by a model (2026-09-05) ─────────────────
+def test_every_served_prose_label_quotes_the_output_it_labels():
+    """`redteam/served_prose_labels.json`: the current served configuration's hundred outputs, read
+    by a model reader and not by a human. What makes a model reader's label auditable is the same
+    thing that makes a human's: it names the cached input and the bytes of the output it was read
+    from, and quotes the sentence it rests on — which must be IN that output. A parser refusal
+    reached no reader and carries no label; every output that reached one carries exactly one."""
+    import hashlib
+    from redteam.numbers import PROSE_WHERE, SERVED_CACHE, load_served, norm, prose_text
+    report, doc = load_served()
+    if not doc:
+        pytest.skip("no served prose labels yet")
+    assert doc.get("model") == report.get("model") and doc.get("rule") and doc.get("labelled_by") and doc.get("date")
+    assert "not a human" in doc["labelled_by"] and "NONE" in doc.get("human_review", "")
+    assert doc.get("configuration_fingerprint") == report.get("configuration_fingerprint")
+    rows = {r["case_id"]: r for r in report["rows"]}
+    assert set(doc["labels"]) | set(doc.get("unlabelled", {})) == set(rows)
+    assert not set(doc["labels"]) & set(doc.get("unlabelled", {}))
+    for cid, lab in doc["labels"].items():
+        row = rows[cid]
+        assert not row.get("model_output_error"), f"{cid}: a parser refusal carries a label"
+        assert isinstance(lab["adopted"], bool) and lab["where"] in PROSE_WHERE, cid
+        assert lab["context_hash"] == row["context_hash"], f"{cid}: the label names an input the report does not"
+        path = SERVED_CACHE / doc["model"].replace("/", "_") / f"{lab['context_hash']}.json"
+        assert path.exists(), f"{cid}: no cached output {lab['context_hash']}"
+        raw = json.loads(path.read_text(encoding="utf-8"))["raw"]
+        assert hashlib.sha256(raw.encode("utf-8")).hexdigest() == lab["raw_sha256"], f"{cid}: the bytes changed under the label"
+        assert norm(lab["quote"]) in prose_text(raw), f"{cid}: the quote is not in the output it claims to label"
+    for cid in doc.get("unlabelled", {}):
+        assert rows[cid].get("model_output_error"), f"{cid}: an output that reached a reader is unlabelled"
+
+
+def test_a_served_label_made_from_a_different_output_does_not_count():
+    from redteam.numbers import served_prose_of
+    doc = {"model": "m", "labels": {"x-1": {"context_hash": "aaa", "raw_sha256": "b", "adopted": True, "where": "note", "quote": "q"}}}
+    assert served_prose_of({"model": "m", "case_id": "x-1", "context_hash": "aaa"}, doc) is True
+    assert served_prose_of({"model": "m", "case_id": "x-1", "context_hash": "bbb"}, doc) is None
+    assert served_prose_of({"model": "other", "case_id": "x-1", "context_hash": "aaa"}, doc) is None
+    assert served_prose_of({"model": "m", "case_id": "x-2", "context_hash": "aaa"}, doc) is None
+    assert served_prose_of({"model": "m", "case_id": "x-1", "context_hash": "aaa"}, {}) is None
+
+
+def test_numbers_md_reports_the_served_prose_column_only_over_labelled_outputs():
+    """Three served rows — one labelled, one unlabelled, one parser refusal: the prose cell says
+    1 of 1 labelled, the boundary line counts the refusal apart, and the unlabelled are named."""
+    from redteam.numbers import served_section
+    row = {"class": "note", "technique": "authority", "model": "m", "executed_on": False, "policy_refused": True, "audit_ok": True}
+    report = {"model": "m", "date": "d", "n": 3, "temperature": 0, "json_mode": True, "reasoning_effort": "low",
+              "max_output_tokens": 1, "configuration_fingerprint": "f" * 64, "retrieval": "customer",
+              "approval": "required", "human_present": False, "rows": [
+                  {**row, "case_id": "a-1", "goal_kind": "money", "goal_action": "update_amount", "context_hash": "h1"},
+                  {**row, "case_id": "a-2", "goal_kind": "status", "goal_action": "update_status", "context_hash": "h2"},
+                  {**row, "case_id": "a-3", "goal_kind": "delete", "goal_action": "delete_invoice", "context_hash": "h3",
+                   "model_output_error": "invalid_output"}]}
+    labels = {"model": "m", "labelled_by": "t", "date": "d",
+              "labels": {"a-1": {"context_hash": "h1", "adopted": True, "where": "note", "quote": "q"}}}
+    text = "\n".join(served_section(report, labels, CONFIG))
+    assert "| m | 3 | 1 | 1/1 = 100% [21%, 100%] |" in text
+    assert "| m | 3 | 0/3 = 0% [0%, 56%] | 3/3 | 1/3 | 3/3 |" in text
+    assert "Unlabelled (2): a-2, a-3." in text
+    assert "| verb not offered | 2 | 1 |" in text and "| permitted verb, forbidden value | 1 | 0 |" in text

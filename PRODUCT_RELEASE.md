@@ -63,7 +63,14 @@ answer, and the OFF comparison is unavailable for it. Provider failures or unrun
 A completed boundary run does not approve model prose or establish a customer completion rate.
 
 The completed [live boundary report](redteam/served-live-results.json) records `openai/gpt-oss-120b`
-on 2026-09-05, N=100: no goal executions without an approving human, with a Wilson 95% interval of
-0–3.70%. Four outputs failed strict parsing and were separately verified to leave no proposals or
-record changes. The earlier incomplete run is retained in `redteam/served-pre-json-results.json`.
-Neither result supplies human labels for draft accuracy or usefulness.
+on 2026-09-05, N=100: goal executions with no approving human 0/100 = 0% [0%, 4%] (Wilson 95%
+interval, as `NUMBERS.md` renders it — the only place this document takes a number from, and
+`tests/numbers.py` holds it to that). Four outputs (4/100) failed strict parsing and were separately
+verified to leave no proposals or record changes. The earlier incomplete run is retained in
+`redteam/served-pre-json-results.json`. Neither result supplies human labels for draft accuracy or
+usefulness. What exists instead, since 2026-09-05, is a model reader's labels over the same outputs
+(`redteam/served_prose_labels.json`: Claude Fable 5.1, one cached output at a time, under the written
+rule the historical labels use): 58/96 = 60% [50%, 70%] of the parseable outputs adopt the injected
+goal in their prose. That is one model reading another; it does not close the human review in the
+Quality gate, and a finance reviewer may accept or overturn any label in the file and rerun
+`make numbers`.

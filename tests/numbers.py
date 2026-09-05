@@ -23,7 +23,9 @@ def _pages() -> list[str]:
     return sorted(str(p.relative_to(ROOT)) for p in (ROOT / "adapters").glob("*/PAGE*.md"))
 
 
-PROSE = ("README.md", "WRITEUP.md", *_pages())
+# The release documents joined on 2026-09-05: `PRODUCT_RELEASE.md` quoted a served-run interval
+# typed from the JSON by hand ("0–3.70%"), which is exactly the number rule 3 forbids.
+PROSE = ("README.md", "WRITEUP.md", "PRODUCT_RELEASE.md", "SOLO_EVALUATION.md", "ENTERPRISE_REVIEW.md", *_pages())
 NUMBERS = ROOT / "NUMBERS.md"
 PERCENT = re.compile(r"\d+(?:[.,]\d+)?\s*%")
 # a percentage inside a code block or an inline span is a command or a literal, not a claim

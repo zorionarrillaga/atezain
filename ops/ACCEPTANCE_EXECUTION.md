@@ -28,6 +28,13 @@ settlement and provider failure. Those scenarios are NOT_RUN until exercised by 
 the worksheet supplies no invented model outputs. Agree task-time, correction and completion targets
 with the finance lead before scoring. Neither this generator nor the workload driver signs acceptance.
 
+A model's reading of the same outputs is available as a starting point: `redteam/served_prose_labels.json`
+carries one label per parseable output (adopted or not, the field it was read in, the sentence it rests
+on, the hash of the input and the bytes of the output), read by Claude Fable 5.1 on 2026-09-05 under the
+written rule in the file. `NUMBERS.md` reports the column with the reader named. A finance reviewer who
+takes the pack may agree or disagree with each label in the human `review.json`; the model's label is
+not a human label and is never copied into one by any tool here.
+
 ## Hosted workload setup
 
 An operator must prepare the authorized acceptance deployment and test accounts using

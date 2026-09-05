@@ -64,6 +64,9 @@ external exercises and human acceptance remain open.
   The ordinary-workflow worksheet remains NOT_RUN. Finance reviewers must agree sample coverage and
   usefulness/correction/time thresholds, perform those exercises and score the current outputs.
   Parser refusals remain unsuccessful answers. No human label or acceptance is supplied by the tool.
+  A model reader's labels over the same outputs exist since 2026-09-05 (`redteam/served_prose_labels.json`,
+  reported in `NUMBERS.md` with the reader named); they are a starting point a finance reviewer may
+  accept or overturn label by label, and they do not close this gate.
 - **Hosted verification evidence:** `.github/workflows/verify.yml` is prepared but its execution is
   recorded as SKIPPED. Once activation is authorized, run it on the candidate, fix failures and retain
   the run URL, commit, gate logs and image digest. Add artifact retention for gauges, workload and

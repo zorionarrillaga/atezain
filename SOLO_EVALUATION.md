@@ -86,8 +86,11 @@ The current live sample still needed prose review: a premature status change was
 signature/department placeholders were removed from the saved reminder, and the suspicious note
 caused a WhatsApp recommendation. Its prohibited reminder was denied and the companion note was
 rejected. These are observed model limitations, not a clean quality pass. The copyable draft panel
-also retains the original model text after an amendment; the approved exact text is in proposal
-history and the export. This remains a demonstration for supervised evaluation.
+retained the original model text after an amendment during this walkthrough; on 2026-09-05 the page
+was changed to show the held or approved reminder text and say whose it is, with a test pinning the
+wiring (`tests/test_api.py`) and the browser exercise of that change recorded in `STATUS.md`. The
+approved exact text is in proposal history and the export in any case. This remains a demonstration
+for supervised evaluation.
 
 The report distinguishes current observations, reused dated evidence, unresolved limitations and
 unrun exercises. Raw local records remain under `var/solo-evaluation/`. Future human feedback and the

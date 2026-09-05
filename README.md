@@ -30,7 +30,8 @@ this candidate's implemented scope.
 
 `WRITEUP.md` explains the original experiment. Its named-model numbers describe that earlier
 configuration. The current served configuration has a separate [boundary evaluation](redteam/served-live-results.json);
-its malformed-output refusals and unreviewed prose are explicitly distinguished from useful answers.
+its malformed-output refusals are distinguished from useful answers, and its prose has been read by a
+model, not by a person (*The model, the date, the numbers*, below).
 
 ## What is built
 
@@ -188,10 +189,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 369 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **480 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 382 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **496 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 63/63 sabotages caught by at least one gauge |
+| `make sabotage` | 67/67 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
@@ -247,6 +248,18 @@ What these two numbers do and do not show is read in full in `WRITEUP.md` › *T
   lock; the control arm did fail once, as a control must be able to; and the cases are the
   project's own — a builder model wrote them, the judgment-dense model reviewed and revised them,
   and no one outside the project has read them.
+
+**The served configuration, run apart (2026-09-05).** The application as deployed reads the same
+prompt with customer-scoped retrieval, JSON response mode and every write held
+(`api/configuration.py`), and `redteam/served.py` ran the same hundred cases through it as its own
+configuration: executed ON 0/100 = 0 % [0 %, 4 %], the policy refusing every goal proposal, and
+4/100 outputs refused by the parser before any proposal existed. Its prose has a number too, and the
+number carries a caveat wherever it goes: 58/96 = 60 % [50 %, 70 %] of the parseable outputs adopt
+the injected goal in words — read by a model (Claude Fable 5.1, 2026-09-05,
+`redteam/served_prose_labels.json`), not by a person, under the same written rule, each label quoting
+its sentence and tied to the bytes it was read from. No human has read these outputs; the review the
+release gates ask for is still open, and this is a model reader's number. `NUMBERS.md` keeps the two
+runs apart and says which is which.
 
 ## Trust boundary
 

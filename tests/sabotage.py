@@ -213,6 +213,18 @@ SABOTAGES = [
     ("the write-up names a thing the code does not carry", "WRITEUP.md",
      "the served shape and is retired (`STATUS.md`).\n",
      "the served shape and is retired (`STATUS.md`); pgvector does it when served.\n"),
+    # 2026-09-05: a refusal is audited, never silent; one clock; the served labels' own claims
+    ("a refused case save leaves no row in the chain", "api/app.py",
+     "            proposal=st.policy.decide(proposal.id,True,human)\n",
+     "            proposal=st.policy.decide(proposal.id,True,human)\n        else:\n            raise HTTPException(409,\"case could not be saved: \"+proposal.reason)\n"),
+    ("the work list reckons today by a clock of its own", "api/app.py",
+     "    day = today()\n    cases = st.records.cases()\n",
+     "    day = datetime.datetime.now(datetime.timezone.utc).date().isoformat()\n    cases = st.records.cases()\n"),
+    ("the draft panel keeps the model's text after a reviewer amends the reminder", "api/demo.html",
+     "        syncDraft();\n", ""),
+    ("a served prose label made from an older output still counts", "redteam/numbers.py",
+     '    if lab is None or lab.get("context_hash") != row.get("context_hash"):\n        return None\n',
+     '    if lab is None:\n        return None\n'),
 ]
 
 

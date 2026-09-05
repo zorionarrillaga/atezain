@@ -13,7 +13,8 @@
     "assign to me and saved next-action plan",
     "assigned work list",
     "audit verifies with no anomalies",
-    "downloaded export parsed from disk and verified against the displayed independent head"
+    "downloaded export parsed from disk and verified against the displayed independent head",
+    "draft panel follows the queue (gaps review, 2026-09-05): after an amendment it shows the reviewer's held text with a line saying whose it is, and after approval the executed text; the held reminder was placed in the store as the tests do, since the stub proposes none"
   ],
   "viewport": {
     "width": 390,

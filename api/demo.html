@@ -957,6 +957,7 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         await refreshAccounting();
         if (ACCESS.verified && ACCESS.role === "owner") await refreshMembers();
         renderPermissions();
+        syncDraft();
       }
       function selectTab(name) {
         document
@@ -1168,8 +1169,9 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           method: "POST",
         });
         $("#answers").innerHTML =
-          `<div class="sep"></div><small>${esc(a.model)}${a.cached ? " · saved answer" : ""}</small><h3>Summary</h3><p>${esc(a.summary)}</p><h3>Suggested next step</h3><p>${esc(a.recommendation)}</p><label class="field">Draft for your review<textarea id="draft-editor"></textarea></label><button id="copy-draft">Copy draft</button><p><small>Edits here affect only the text you copy. Approval applies to the exact fields shown in the queue. Nothing has been emailed.</small></p><button id="go-queue">Review proposals</button>`;
+          `<div class="sep"></div><small>${esc(a.model)}${a.cached ? " · saved answer" : ""}</small><h3>Summary</h3><p>${esc(a.summary)}</p><h3>Suggested next step</h3><p>${esc(a.recommendation)}</p><label class="field">Draft for your review<textarea id="draft-editor"></textarea></label><p><small id="draft-source" class="muted"></small></p><button id="copy-draft">Copy draft</button><p><small>Edits here affect only the text you copy. Approval applies to the exact fields shown in the queue. Nothing has been emailed.</small></p><button id="go-queue">Review proposals</button>`;
         $("#draft-editor").value = a.draft;
+        $("#draft-editor").dataset.model = a.draft;
         $("#copy-draft").onclick = () =>
           run(async () => {
             await navigator.clipboard.writeText($("#draft-editor").value);
@@ -1180,6 +1182,24 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         notice(
           "Follow-up ready. Check the source evidence and review its proposals.",
         );
+      }
+      function currentReminder(id) {
+        // The reminder text a decision is actually about. A reviewer's amendment replaces the
+        // model's draft with an exact new held proposal and rejects the original, so the newest
+        // live `send_reminder` for this record is the text that will be recorded — not the one
+        // the model first wrote. The solo evaluation (2026-09-05) found the copyable panel still
+        // showing the model's text after an amendment; the queue is in audit order, newest last.
+        const live = QUEUE.filter((p) => p.record_id === id && p.action === "send_reminder" && ["held", "approved", "executed"].includes(p.status));
+        return live.length ? live[live.length - 1] : null;
+      }
+      function syncDraft() {
+        const editor = $("#draft-editor"), source = $("#draft-source");
+        if (!editor || !source || !SHOWN) return;
+        const p = currentReminder(SHOWN);
+        const text = p ? p.params.reminder_text : null;
+        if (text === null || text === editor.dataset.model) { source.textContent = ""; return; }
+        if (editor.dataset.synced !== text) { editor.value = text; editor.dataset.synced = text; }
+        source.textContent = (p.status === "held" ? "Shown here: the exact reminder text held for approval, as amended by a reviewer; " : "Shown here: the exact reminder text " + p.status + "; ") + "the model's original is in proposal history.";
       }
       const actionNames = {
         manage_case: "Save follow-up plan",
