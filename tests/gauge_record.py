@@ -3,9 +3,9 @@
 
 Every target of `make all` runs through `run`: the gauge's output streams through unchanged, its
 exit code is the target's exit code, and its one summary line is kept under `var/gauges/`.
-`make all` ends with `write`, which assembles `GAUGES.md` from those lines and then holds
-`README.md`, `WRITEUP.md` and `STATUS.md` to it — so a count typed by hand, or left behind by a
-run that moved it, makes `make all` red with the line that disagrees (CLAUDE.md rules 3 and 4).
+`make all` ends with `write --sync`, which assembles `GAUGES.md` from those lines, refreshes the
+measured gauge values in `README.md`, `WRITEUP.md` and `STATUS.md`, and checks their agreement.
+Unsupported hand edits still fail the pre-run document tests (CLAUDE.md rules 3 and 4).
 `tests/gauges.py` runs the same comparison inside `make test`.
 
     tests/gauge_record.py run <gauge> -- <command…>     stream, keep the summary line, exit as the command did
@@ -118,8 +118,33 @@ def render() -> str:
     )
 
 
-def write() -> int:
-    OUT.write_text(render(), encoding="utf-8")
+def sync_counts(document: str, previous: str, current: str) -> str:
+    """Refresh only gauge values, from successful recorded output, without hand-copied totals."""
+    for label in LABEL.values():
+        def cell(source):
+            return next((line.split("|")[2].strip() for line in source.splitlines()
+                         if line.startswith(f"| {label} |")), None)
+        old, new = cell(previous), cell(current)
+        if old is None or new is None:
+            continue
+        if label.startswith("`make test`"):
+            old_match = re.search(r"\d+ passed, \d+ skipped", old)
+            new_match = re.search(r"\d+ passed, \d+ skipped", new)
+            if old_match and new_match:
+                document = document.replace(old_match.group(), new_match.group())
+        else:
+            document = document.replace(old, new)
+    return document
+
+
+def write(sync=False) -> int:
+    previous = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+    current = render()
+    OUT.write_text(current, encoding="utf-8")
+    if sync:
+        for rel in ("README.md", "WRITEUP.md", "STATUS.md"):
+            path = ROOT / rel
+            path.write_text(sync_counts(path.read_text(encoding="utf-8"), previous, current), encoding="utf-8")
     print(f"GAUGES.md written:\n" + "\n".join(l for l in OUT.read_text(encoding="utf-8").splitlines() if l.startswith("| `")))
     # this script lives in tests/, so Python put tests/ first on sys.path and tests/numbers.py would
     # shadow the standard library's `numbers` the moment pytest imports; import through the package instead
@@ -141,8 +166,8 @@ def main(argv: list[str]) -> int:
     if len(argv) >= 3 and argv[0] == "run" and "--" in argv:
         i = argv.index("--")
         return run(argv[1], argv[i + 1:])
-    if argv == ["write"]:
-        return write()
+    if argv in (["write"], ["write", "--sync"]):
+        return write(sync="--sync" in argv)
     print(__doc__)
     return 2
 

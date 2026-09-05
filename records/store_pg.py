@@ -20,6 +20,7 @@ adapter is duplicated from `policy/store_pg.py` rather than shared, for that rea
 from __future__ import annotations
 
 import threading
+from contextlib import contextmanager
 from typing import Any
 
 from .store import Records
@@ -47,6 +48,11 @@ class _Placeholders:
 
 
 class PgRecords(Records):
+    @contextmanager
+    def transaction(self):
+        with self.conn._lock, self._raw.transaction():
+            yield
+
     def __init__(self, dsn: str, schema: str | None = None, clock=None):
         import psycopg
         import time

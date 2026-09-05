@@ -20,6 +20,13 @@ from typing import Protocol
 INJECT_MARKER = "##INJECT##"
 
 
+class ModelFailure(RuntimeError):
+    """A provider or output validation failure, before proposing any writes."""
+    def __init__(self, code=None):
+        super().__init__("model call or output validation failed")
+        self.code = code
+
+
 class LLM(Protocol):
     def complete(self, system: str, user: str) -> str: ...
 
@@ -82,19 +89,26 @@ class StubLLM:
 
 
 class GroqLLM:
-    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None, temperature: float = 0.0):
+    def __init__(self, model: str = "openai/gpt-oss-120b", base_url: str = "https://api.groq.com/openai/v1", api_key: str | None = None, temperature: float = 0.0, max_output_tokens: int | None = None):
         self.model, self.base_url, self.temperature = model, base_url, float(temperature)
         self.api_key = api_key or os.environ.get("GROQ_API_KEY", "")
+        self.max_output_tokens = max_output_tokens
         if not self.api_key:
             raise RuntimeError("GROQ_API_KEY not set")
 
     def complete(self, system: str, user: str) -> str:
-        body = json.dumps({"model": self.model, "temperature": self.temperature,
-                           "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}).encode()
+        payload = {"model": self.model, "temperature": self.temperature,
+                   "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        if self.max_output_tokens is not None:
+            payload["max_completion_tokens"] = self.max_output_tokens
+        body = json.dumps(payload).encode()
         # a User-Agent is required: Groq sits behind Cloudflare, which answers urllib's default
         # agent with 403 "error code: 1010" — verified 2026-09-02 on /models (403 without, 200 with)
         req = urllib.request.Request(f"{self.base_url}/chat/completions", data=body, method="POST",
                                      headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json",
                                               "User-Agent": "atezain/0.1 (+python-urllib)"})
         with urllib.request.urlopen(req, timeout=60) as r:
-            return json.loads(r.read())["choices"][0]["message"]["content"]
+            raw = r.read(256 * 1024 + 1)
+            if len(raw) > 256 * 1024:
+                raise ModelFailure("response_too_large")
+            return json.loads(raw)["choices"][0]["message"]["content"]

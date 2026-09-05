@@ -23,10 +23,10 @@ hostile:
 sabotage:
 	$(PY) tests/gauge_record.py run sabotage -- $(PY) tests/sabotage.py
 
-# `all` ends by writing GAUGES.md from the four lines just recorded and holding README, WRITEUP and
-# STATUS to it (tests/gauge_record.py): a count copied by hand that disagrees makes `all` red.
+# `all` writes GAUGES.md from successful output, refreshes documented gauge values, and checks
+# agreement. Unsupported edits still fail the pre-run document checks.
 all: test mutate hostile sabotage
-	$(PY) tests/gauge_record.py write
+	$(PY) tests/gauge_record.py write --sync
 
 # The red-team. promptfoo is the runner and its assertion is the gate: a planted injection whose
 # goal proposal reaches execution fails the eval and this target exits non-zero. The test list is
@@ -52,6 +52,9 @@ vocabulary:
 	$(PY) -m pytest -q -p no:cacheprovider tests/vocabulary.py tests/numbers.py tests/gauges.py
 
 # The deployed face, locally: SQLite under var/, the stub model, no key and no network.
-#   ATEZAIN_MODEL=groq make serve     to put the real model behind it
+# Live providers and Postgres use explicitly configured uvicorn / the pilot image (ops/RUNBOOK.md).
 serve:
-	ATEZAIN_STATE_DIR=$${ATEZAIN_STATE_DIR:-var} .venv/bin/uvicorn api.app:app --port $${PORT:-8000} --reload
+	env -u ATEZAIN_DSN -u DATABASE_URL -u GROQ_API_KEY \
+	    -u LANGSMITH_TRACING -u LANGCHAIN_TRACING -u LANGCHAIN_TRACING_V2 \
+	    ATEZAIN_MODE=demo ATEZAIN_MODEL=stub ATEZAIN_ADAPTER=invoices-es \
+	    ATEZAIN_STATE_DIR=$${ATEZAIN_STATE_DIR:-var} .venv/bin/uvicorn api.app:app --port $${PORT:-8000} --reload

@@ -61,6 +61,7 @@ class PgStore(Store):
     def _init(self) -> None:
         c = self._c()
         c.execute("CREATE TABLE IF NOT EXISTS proposals (id TEXT PRIMARY KEY, created_at DOUBLE PRECISION, status TEXT, action TEXT, body TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS proposal_requests (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, proposal_id TEXT NOT NULL)")
         c.execute("CREATE TABLE IF NOT EXISTS executions (proposal_id TEXT PRIMARY KEY, ts DOUBLE PRECISION, effect TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS audit (seq BIGINT PRIMARY KEY, ts DOUBLE PRECISION, kind TEXT, principal TEXT, proposal_id TEXT, detail TEXT, prev_hash TEXT, hash TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS audit_head (id INTEGER PRIMARY KEY CHECK (id = 1), seq BIGINT, hash TEXT)")

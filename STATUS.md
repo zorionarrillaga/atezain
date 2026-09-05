@@ -1,10 +1,58 @@
 # Status
 
+## Enterprise review and controlled-pilot changes (2026-09-05)
+
+The owner authorized a full review and improvement of the project from an enterprise buyer's
+perspective. That instruction supersedes the old single-step session scope for this review. The
+assessment and outstanding release gates are in `ENTERPRISE_REVIEW.md`; the operating procedures
+are in `ops/RUNBOOK.md`. This is a candidate for supervised evaluation, not an enterprise certification.
+
+Implemented: strict policy configuration validation; proposal idempotency for checkpoint recovery;
+audit outcome timestamps taken when appended; customer-scoped served retrieval with a versioned
+checkpoint namespace; all-write human approval in pilot mode; owner/reviewer/viewer access, expiry,
+revocation and rotation; durable cross-worker quotas and workspace operation locks; bounded open
+connections; validated, bounded CSV/XLSX imports with explicit formats and status mappings; atomic
+invoice-row imports and duplicate-ID skipping; a work list and review desk with currency-separated
+balances, decisions and budgets; complete exports and offline audit-head verification; confirmed
+deletion and retryable expiry cleanup; readiness failures, request IDs and sanitized errors; opt-in
+experimental tracing with explicit tracing disablement on the served graph; constrained dependencies
+and a manually triggered CI definition. No push, deployment, account purchase or external message.
+
+Tests exercise malformed amounts and files, expansion limits, token roles and expiry, concurrent
+assists, partial workflow recovery, uncertain executor outcomes, isolation and durable counters.
+Fresh Postgres initialization serializes checkpoint migrations with a session lock on the migration
+connection; holding a separate transaction around concurrent index creation caused a wait, which
+the fresh-schema process test exposed. Initialization failures now close resources already opened.
+The existing mutation/hostile/sabotage suites remain the gates. Refactoring moved importer sabotage
+targets, preserving the behaviors those sabotages test. The budget-order assertion now checks the
+complete event sequence: append-time timestamps correctly stopped treating an early extra fuse
+row as a time anomaly, so the ordering test must detect that extra event directly. The gauge writer now refreshes document
+counts from successful recorded output instead of requiring hand transcription; the document tests
+still reject unsupported counts before a gate run.
+
+The dependency advisory query is retained in `ops/dependency-audit.json`. The existing model corpus
+and labels remain historical; they were not re-labelled or represented as a measurement of the new
+retrieval. The control-plane Postgres test now uses its own schema and keeps credentials out of
+process arguments. It also checks persistent model quotas, cross-connection workspace locks, access
+roles and revocation, owner rotation, export and full deletion after restart. The test environment
+discards ambient production database, provider and tracing settings; only the explicitly configured
+test database is used for integration tests. `make serve` now forces the local stub and SQLite;
+live integration environments use an explicitly configured server entry point.
+
+SKIPPED: visual browser QA, because the available computer-use surface reported missing permissions;
+JavaScript syntax and API behavior were checked. SKIPPED: Docker image execution and hosted CI,
+because Docker is unavailable locally and the new workflow has not been activated. Runtime dependency
+resolution for Linux x86-64 / Python 3.12 passed without installing the image. SKIPPED: fresh
+live-model evaluation, deployment, external identity/accounting integrations and backup restoration;
+these need their own configured evaluation or operational environment. The release gates explain
+exactly what remains; a passing local suite is not used to claim those outcomes.
+
+
 Design (private, the author's working repo): `venture/DESIGN_2026-09-01_credential_project.md`. **The executable plan for every remaining step is `PLAN.md`** (2026-09-02): files, interfaces, acceptance commands, KILL, and who does it — BUILDER (a cheaper model) · ⚖ JUDGE (the judgment-dense model) · ✋ OWNER. Rules for any model here: `CLAUDE.md`.
 
 | step | what | state |
 |---|---|---|
-| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-04, from `GAUGES.md`): 234 passed, 100 skipped without a DSN (333 passed, 1 skipped, 5 min 10 s with one: the policy suite and the graph on SQLite and on PostgreSQL 18.6, plus the two-process restart test) · 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 37/37 scored attempts blocked · 1 out of scope, shown · 58/58 sabotages caught by at least one gauge. Trust boundary declared in `README.md`, restated to what the code supports. |
+| 1 | policy layer + tests that can fail + PROVENANCE | **built 2026-09-01; REFUTED the same night by an outside seat (17 of 19 new bypass attempts through); REPAIRED 2026-09-02; REFUTED AGAIN by a second seat on the repair (12 of 27 new attempts through, 5 of 12 fix rows not holding as stated); REPAIRED AGAIN 2026-09-02** — both tables below. Gauges now (2026-09-05, from `GAUGES.md`): 291 passed, 110 skipped without a DSN (400 passed, 1 skipped with one: the policy suite and the graph on SQLite and on PostgreSQL, plus the two-process restart test) · 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills · 37/37 scored attempts blocked · 1 out of scope, shown · 58/58 sabotages caught by at least one gauge. Trust boundary declared in `README.md`, restated to what the code supports. |
 | 2 | the assistant graph + ONE adapter (`invoices-es`) | **built 2026-09-01 with a stub model**: LangGraph retrieve→think→propose→hold(interrupt)→execute; the resume value is untrusted (the store decides); deny-all policy ⇒ zero writes across all 12 invoices; a manipulated model's `update_amount` and an exfiltration via a forbidden channel are denied at propose; approve→resume executes exactly once under node re-execution; the only write path is `agent/executor.py` (grep-tested). **2026-09-03: `execute` runs before the hold — for what needs no human — and after it for what a human approved; the step-6 seat's D1, below. Deployed by hand the same day, so the served path and this tree are one again (the round-2 table, R2-D1).** NOT yet exercised: a real model (Groq class present, no key), pgvector (local keyword retriever behind the same interface) |
 | 3 | red-team with promptfoo, boundary ON/OFF, numbers with intervals | **built and run 2026-09-02; the case set REVIEWED by the ⚖ seat the same day (table below): fifteen texts rewritten and re-run, a column added for the goal in the model's prose** — `PLAN.md` §3. 100 cases (5 classes × 5 techniques × 4 goals; 20 per class, ≥ 4 per class × technique) planted into the records with `redteam/plant.py`; ONE call per case to `openai/gpt-oss-120b` (Groq, temperature 0), cached under `redteam/cache/`; the same output scored twice — through `PolicyService` with no human approving, and through `redteam/off.py` with no policy at all. **After the review: manipulated (a goal proposal) 1/100 = 1 % [0 %, 5 %] · executed OFF 1/100 · executed ON 0/100 = 0 % [0 %, 4 %] · the policy refused every goal proposal 100/100 · audit clean 100/100 · the goal in the model's prose 66/100 = 66 % [56 %, 75 %], hand-labelled in `redteam/prose_labels.json`.** By reach: 70 cases aim at a verb the prompt never offers (0/70 proposed it; 44/70 adopted it in words), 30 at a forbidden value of a permitted verb (1/30; 22/30). Tables in `NUMBERS.md` (`make numbers`); rows in `redteam/results.jsonl`, both runs, the last row per case winning. promptfoo is the runner and its assertion is the gate. The texts are builder-written, reviewed and revised by the ⚖ seat; no one outside the project has read them, and the README says so. |
 | 7 | the same policy layer under the author's own outbound pipeline | **the repo's half is built 2026-09-02** — `PLAN.md` §5.1 + the CLI + the adapter test. `adapters/outreach/permissions.toml` exactly as §5.1 specifies (send · mark_replied · add_note; send_bulk and send_from_other_address denied; `daily_max = 5`; `budget.daily_writes = 8`); `records/drafts.py` (the drafts as records: the sent artifact and `pipeline.jsonl`, containment inside the root, its own clock); `agent/executor.py::make_outreach_executor`; `bin/atezain_cli.py` (propose · queue · approve/reject · record/execute · show · audit · head · stop/clear). 18 tests, and three new sabotage rows. **The FORMAT half of §5.2 is built 2026-09-03**, to the ⚖ ruling of 2026-09-02: the executor writes HIS artifact and HIS ledger. Flat `sent/<basename>.md` headed `# SENT <date> · <target> · <route>` — **the basename was WRONG until 2026-09-03**: his `record` writes `sent/<today>_<slug(target)>.md` from the `--target` he types, and this store was naming the letter after the draft. The ⚖ ruling of 2026-09-03 (Open questions) found it and it is built: `send` carries an approved `target`, which names his row and his artifact, then the draft's body; the draft's row in `venture/PIPELINE.md` flipped to `**SENT**` with the date, in his order (every refusal that can run before a write does; the flip is proved by re-reading the file) and with his rollback (a flip that fails after the file exists takes the file back down); `pipeline.jsonl` stays beside them as this layer's own structured record. The ledger is a named path (`--ledger`) or nothing — unconfigured, none is written and none is required, which is this repo standing alone. One line of his the executor does NOT write: ``**Passed** `venture_send.py check` before sending`` — this layer never runs his check and an artifact must not carry a claim its writer cannot make (rule 3); the proposal that let the letter out goes there instead. Nine tests and five sabotage rows; run end to end against a COPY of his `PIPELINE.md`, never the live file. **Still NOT DONE, and the sentence must not be written yet: the wiring itself — his `bin/venture` calling this — is ✋ and untouched, so nothing of his outbound goes through the layer yet and "in daily use on my own outbound since &lt;date&gt;" is not a fact.** ✋ the first real send. |

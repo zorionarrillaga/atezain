@@ -14,6 +14,7 @@ import re
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
 
@@ -76,6 +77,20 @@ class Records:
         for col in ("contact", "reminder_to"):
             if col not in have:
                 self.conn.execute(f"ALTER TABLE invoices ADD COLUMN {col} TEXT")
+
+    def close(self):
+        self.conn.close()
+
+    @contextmanager
+    def transaction(self):
+        with self.conn._lock:
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                yield
+                self.conn.execute("COMMIT")
+            except BaseException:
+                self.conn.execute("ROLLBACK")
+                raise
 
     # ── loading ──────────────────────────────────────────────────────────────────────────────
     def load_seed(self, path: str | Path) -> int:
@@ -140,6 +155,30 @@ class Records:
 
     def ids(self) -> list[str]:
         return [r[0] for r in self.conn.execute("SELECT id FROM invoices ORDER BY id")]
+
+    def summaries(self) -> list[dict]:
+        """One query for the work list, without loading every email and note body."""
+        rows = self.conn.execute("SELECT i.id, i.customer, i.amount, i.currency, i.issued, i.due, i.status, "
+            "i.contact, i.reminder_to, i.reminder_channel, "
+            "COALESCE(n.total,0), COALESCE(e.total,0), COALESCE(n.assistant,0) FROM invoices i "
+            "LEFT JOIN (SELECT invoice_id, COUNT(*) AS total, "
+            "SUM(CASE WHEN author = 'assistant' THEN 1 ELSE 0 END) AS assistant FROM notes GROUP BY invoice_id) n "
+            "ON i.id = n.invoice_id LEFT JOIN (SELECT invoice_id, COUNT(*) AS total FROM emails GROUP BY invoice_id) e "
+            "ON i.id = e.invoice_id ORDER BY i.due, i.id")
+        keys = ("id", "customer", "amount", "currency", "issued", "due", "status", "contact", "reminder_to",
+                "reminder_channel", "notes", "emails", "assistant_notes")
+        return [dict(zip(keys, r)) for r in rows]
+
+    def customer_context(self, invoice_id: str, k: int = 5) -> list[dict]:
+        """Related source material is scoped by the uploaded customer identifier, never keywords."""
+        snippets = []
+        for table, column in (("notes", "text"), ("emails", "body")):
+            rows = self.conn.execute(f"SELECT r.invoice_id, r.{column} FROM {table} r "
+                "JOIN invoices i ON i.id = r.invoice_id WHERE i.customer = "
+                "(SELECT customer FROM invoices WHERE id = ?) AND i.id <> ? ORDER BY r.seq DESC LIMIT ?",
+                (invoice_id, invoice_id, k))
+            snippets.extend({"invoice_id": rid, "source": table, "text": text} for rid, text in rows)
+        return snippets[:k]
 
     def search(self, query: str, k: int = 5) -> list[dict[str, Any]]:
         """Keyword overlap over notes and emails, on both stores (the Postgres records store inherits

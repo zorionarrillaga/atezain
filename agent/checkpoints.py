@@ -12,6 +12,7 @@ policy store); locally it is a SQLite file; in tests it is memory.
 from __future__ import annotations
 
 import sqlite3
+import hashlib
 from pathlib import Path
 
 from langgraph.checkpoint.memory import InMemorySaver
@@ -33,11 +34,29 @@ def make_checkpointer(dsn: str | None = None, path: str | Path | None = None):
         # showed up as "the connection is closed" inside setup(). Own the connection instead.
         conn = psycopg.connect(dsn, autocommit=True, connect_timeout=20)
         saver = PostgresSaver(conn)
-        saver.setup()
+        # Concurrent index migrations wait for older transaction snapshots. A transaction on
+        # another connection held around setup would deadlock. Lock this autocommit session.
+        key = int.from_bytes(hashlib.sha256(b"atezain:checkpoint_schema").digest()[:8], "big", signed=True)
+        try:
+            conn.execute("SET lock_timeout = '5s'")
+            conn.execute("SET statement_timeout = '30s'")
+            conn.execute("SELECT pg_advisory_lock(%s)", (key,))
+            try:
+                saver.setup()
+            finally:
+                conn.execute("SELECT pg_advisory_unlock(%s)", (key,))
+        except BaseException:
+            conn.close()
+            raise
         return saver
     if path:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        saver = SqliteSaver(sqlite3.connect(str(path), check_same_thread=False))
-        saver.setup()
+        conn = sqlite3.connect(str(path), check_same_thread=False)
+        saver = SqliteSaver(conn)
+        try:
+            saver.setup()
+        except BaseException:
+            conn.close()
+            raise
         return saver
     return InMemorySaver()

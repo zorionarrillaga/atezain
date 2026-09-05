@@ -17,6 +17,7 @@ through that gap on 2026-09-01.
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import time
 from collections.abc import Mapping
@@ -85,10 +86,10 @@ class PolicyService:
         return (d - timedelta(hours=d.hour, minutes=d.minute, seconds=d.second, microseconds=d.microsecond)).timestamp()
 
     def _audit(self, kind: str, by: Principal, p: Proposal | None, detail: dict, now: float) -> None:
-        self.store.audit_append(kind, by.tag, p.id if p else None, detail, ts=now)
+        self.store.audit_append(kind, by.tag, p.id if p else None, detail, ts=self.clock())
 
     # ── the agent's only verb ────────────────────────────────────────────────────────────────
-    def propose(self, by: Principal, action: str, record_id: str, params: Any, evidence: str = "") -> Proposal:
+    def propose(self, by: Principal, action: str, record_id: str, params: Any, evidence: str = "", *, idempotency_key: str | None = None) -> Proposal:
         now = self.clock()
         p = Proposal(id=Proposal.new_id(), principal_id=by.tag, action=action, record_id=record_id,
                      params={}, evidence=str(evidence), status=APPROVED, reason="", created_at=now)
@@ -97,11 +98,28 @@ class PolicyService:
             # the checks, the budget count and the insert are ONE transaction: N concurrent
             # proposals against a budget of K yield at most K that are not denied
             with self.store.transaction():
+                fingerprint = None
+                if idempotency_key is not None:
+                    if not isinstance(idempotency_key, str) or not 1 <= len(idempotency_key) <= 200:
+                        raise ValueError("invalid idempotency key")
+                    fingerprint = hashlib.sha256(canonical([by.tag, action, record_id, params, evidence]).encode()).hexdigest()
+                    prior = self.store.request_get(idempotency_key)
+                    if prior:
+                        # CHECK: idempotency_payload_matches
+                        if prior[0] != fingerprint:
+                            raise ValueError("idempotency key reused with different input")
+                        # ENDCHECK
+                        existing = self.store.get_proposal(prior[1])
+                        if existing is None:
+                            raise ValueError("idempotency record has no proposal")
+                        return existing
                 try:
                     self._check(p, action, record_id, params, now)
                 except Denied as e:
                     p.status, p.reason = DENIED, str(e)
                 self._persist_proposal(p, by, now)
+                if idempotency_key is not None and self.store.get_proposal(p.id) is not None:
+                    self.store.request_put(idempotency_key, fingerprint, p.id)
                 if p.reason == "budget_exhausted":
                     # The fuse trips AFTER the row that spent the last of the budget is written, and
                     # stamps itself when it is written. It used to trip from inside the check, which
@@ -202,6 +220,10 @@ class PolicyService:
         # CHECK: approval_required
         if spec.approval == "required":
             p.status = HELD
+        # ENDCHECK
+        # CHECK: approval_mode_valid
+        if spec.approval not in {"required", "none"}:
+            raise Denied("invalid_approval_mode")
         # ENDCHECK
 
     def _persist_proposal(self, p: Proposal, by: Principal, now: float) -> None:

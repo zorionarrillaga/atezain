@@ -17,21 +17,37 @@ import io
 import os
 import re
 import time
+import json
+import secrets
+import hashlib
+import base64
+import inspect
+import logging
+import shutil
+import threading
+from collections import OrderedDict
+from contextlib import ExitStack
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
-from fastapi import Body, FastAPI, Header, HTTPException, Request, UploadFile
+from fastapi import Body, FastAPI, Header, HTTPException, Request, UploadFile, Form
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from agent import build_graph
 from agent.checkpoints import make_checkpointer
 from agent.executor import make_executor
-from agent.llm import GroqLLM, StubLLM
+from agent.llm import GroqLLM, StubLLM, ModelFailure
 from api.auth import AGENT_PRINCIPAL, Sessions
-from api.limits import Limits
+from api.limits import PersistentLimits
+from api.settings import Settings
+from api.imports import (parse_rows, load_rows as import_rows, MAX_UPLOAD_BYTES, MAX_ROWS, COLUMNS, EXTRAS)
+from agent.tracing import Tracer
+from api.http import BodyLimit
 from api.schemas import (ActionOut, AdapterOut, AssistOut, AuditOut, DecideIn, DecideOut, EmailOut,
                          FuseOut, NoteOut, ProposalOut, RecordDetailOut, RecordOut, RejectedRow,
-                         SessionOut, UploadOut)
+                         SessionOut, UploadOut, GrantIn)
 from policy import APPROVED, EXECUTED, HELD, PolicyConfig, PolicyService, Store
 from records import Records
 
@@ -43,26 +59,69 @@ DSN = os.environ.get("ATEZAIN_DSN") or os.environ.get("DATABASE_URL", "")
 MODEL = os.environ.get("ATEZAIN_MODEL", "stub")
 MODEL_ID = os.environ.get("ATEZAIN_MODEL_ID", "openai/gpt-oss-120b")
 OWNER_TOKEN = os.environ.get("ATEZAIN_OWNER_TOKEN", "")
+settings = Settings.from_env()
 
 MAX_UPLOAD_BYTES = 1024 * 1024
 MAX_ROWS = 500
 COLUMNS = ("id", "customer", "amount", "currency", "issued", "due", "status")
 EXTRAS = ("contact", "note", "email_subject", "email_body")
 
-app = FastAPI(title="atezain", description=__doc__.split("\n\n")[0])
+app = FastAPI(title="Atezain", version="0.2.0", description=__doc__.split("\n\n")[0],
+              docs_url="/docs" if settings.mode == "demo" else None,
+              redoc_url=None, openapi_url="/openapi.json" if settings.mode == "demo" else None)
 STATE.mkdir(parents=True, exist_ok=True)
 sessions = Sessions(STATE / "sessions.db", dsn=DSN or None)   # the token table outlives a spin-down too
-limits = Limits(state=STATE / "limits.json")
+sessions.ttl = settings.session_days * 86400
+limits = PersistentLimits(STATE / "limits.db", dsn=DSN or None)
 config = PolicyConfig.load(ROOT / "adapters" / ADAPTER / "permissions.toml")
-_live: dict[str, "SessionState"] = {}
+if settings.mode == "pilot":
+    from dataclasses import replace
+    config = config.replace(actions={name: replace(spec, approval="required") for name, spec in config.actions.items()})
+_live: dict[str, "SessionState"] = OrderedDict()
+_pool_lock = threading.Lock()
+_busy: set[str] = set()
 _health: dict[str, Any] = {"at": 0.0, "body": None}
+app.add_middleware(BodyLimit)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exc):
+    # Pydantic's default response includes the rejected input, which may contain secrets.
+    return JSONResponse({"detail": "invalid request", "errors": [
+        {"field": list(e["loc"]), "type": e["type"]} for e in exc.errors()]}, status_code=422)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    request_id, start = secrets.token_hex(16), time.monotonic()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logging.getLogger("atezain.http").error(json.dumps({"request_id": request_id, "error": type(exc).__name__}))
+        response = JSONResponse({"detail": "service unavailable; contact the operator with the request ID"}, 503)
+    response.headers.update({"X-Request-ID": request_id, "Cache-Control": "no-store",
+                             "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
+                             "X-Frame-Options": "DENY", "Permissions-Policy": "camera=(), microphone=(), geolocation=()"})
+    if request.url.path == "/demo":
+        source = (Path(__file__).parent / "demo.html").read_text()
+        script = re.search(r"<script>(.*?)</script>", source, re.S).group(1)
+        digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
+        response.headers["Content-Security-Policy"] = (f"default-src 'none'; script-src 'sha256-{digest}'; "
+            "style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+    if settings.mode == "pilot":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000"
+    logging.getLogger("atezain.http").info(json.dumps({"request_id": request_id, "method": request.method,
+        "route": getattr(request.scope.get("route"), "path", "unmatched"), "status": response.status_code,
+        "duration_ms": round((time.monotonic() - start) * 1000)}))
+    return response
 
 
 def schema_of(sid: str) -> str:
     """One session, one Postgres schema. The id is hex from `secrets.token_hex`, but this does not
-    take that on trust: anything that is not a lowercase word character is dropped before the name
-    reaches a `CREATE SCHEMA` that cannot be parameterised."""
-    return "s_" + "".join(ch for ch in sid.lower() if ch.isalnum() or ch == "_")[:48]
+    take that on trust: malformed identifiers are rejected before a schema name reaches SQL."""
+    if re.fullmatch(r"[a-f0-9]{16}", sid) is None:
+        raise ValueError("invalid session id")
+    return "s_" + sid
 
 
 class SessionState:
@@ -77,53 +136,118 @@ class SessionState:
 
     def __init__(self, sid: str):
         self.sid = sid
-        if DSN:
-            from policy.store_pg import PgStore
-            from records.store_pg import PgRecords
-            schema = schema_of(sid)
-            self.records = PgRecords(DSN, schema=schema)
-            self.policy = PolicyService(config, PgStore(DSN, schema=schema),
-                                        record_reader=self.records.invoice)
-            self.checkpointer = make_checkpointer(DSN, None)
-        else:
-            d = STATE / sid
-            d.mkdir(parents=True, exist_ok=True)
-            self.records = Records(str(d / "records.db"))
-            self.policy = PolicyService(config, Store(str(d / "policy.db")),
-                                        record_reader=self.records.invoice)
-            self.checkpointer = make_checkpointer(None, d / "checkpoints.db")
+        with ExitStack() as resources:
+            if DSN:
+                from policy.store_pg import PgStore
+                from records.store_pg import PgRecords
+                schema = schema_of(sid)
+                self.records = PgRecords(DSN, schema=schema)
+                resources.callback(self.records.close)
+                store = PgStore(DSN, schema=schema)
+                resources.callback(store.close)
+                self.policy = PolicyService(config, store, record_reader=self.records.invoice)
+                self.checkpointer = make_checkpointer(DSN, None)
+            else:
+                d = STATE / sid
+                d.mkdir(parents=True, exist_ok=True)
+                self.records = Records(str(d / "records.db"))
+                resources.callback(self.records.close)
+                store = Store(str(d / "policy.db"))
+                resources.callback(store.close)
+                self.policy = PolicyService(config, store, record_reader=self.records.invoice)
+                self.checkpointer = make_checkpointer(None, d / "checkpoints.db")
+            resources.callback(self.checkpointer.conn.close)
+            self._resources = resources.pop_all()
 
     def graph(self, llm):
-        return build_graph(self.records, self.policy, llm, AGENT_PRINCIPAL, ADAPTER, self.checkpointer)
+        return build_graph(self.records, self.policy, llm, AGENT_PRINCIPAL, ADAPTER, self.checkpointer,
+                           tracer=Tracer(), retrieval="customer")
+
+    def close(self):
+        self._resources.close()
 
 
 def state_of(sid: str) -> SessionState:
-    if sid not in _live:
-        _live[sid] = SessionState(sid)
-    return _live[sid]
+    with _pool_lock:
+        if sid not in _live:
+            while len(_live) >= settings.max_live_sessions:
+                victim = next((key for key in _live if key not in _busy), None)
+                if victim is None:
+                    raise HTTPException(503, "service busy; retry shortly", headers={"Retry-After": "2"})
+                _live.pop(victim).close()
+            _live[sid] = SessionState(sid)
+        value = _live.pop(sid)
+        _live[sid] = value
+        return value
+
+
+def bearer(authorization):
+    if not authorization:
+        return None
+    parts = authorization.split()
+    return parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else None
+
+
+def guarded(permission="read"):
+    """Authenticate before opening a namespace; serialise the complete operation across workers."""
+    def decorate(fn):
+        signature = inspect.signature(fn)
+        @wraps(fn)
+        def call(*args, **kwargs):
+            values = signature.bind(*args, **kwargs).arguments
+            sid, authorization = values["sid"], values.get("authorization")
+            who(sid, authorization)
+            try:
+                with sessions.lock(sid):
+                    access = sessions.access(sid, bearer(authorization))
+                    if access is None:
+                        raise HTTPException(401, "session expired or access revoked")
+                    permitted = {"owner": {"read", "review", "admin"}, "reviewer": {"read", "review"}, "viewer": {"read"}}
+                    if permission not in permitted.get(access["role"], set()):
+                        raise HTTPException(403, "this access token does not permit that action")
+                    with _pool_lock:
+                        _busy.add(sid)
+                    try:
+                        return fn(*args, **kwargs)
+                    except Exception as exc:
+                        if not isinstance(exc, HTTPException) or exc.status_code == 503:
+                            with _pool_lock:
+                                stale = _live.pop(sid, None)
+                            if stale is not None:
+                                stale.close()
+                        raise
+                    finally:
+                        with _pool_lock:
+                            _busy.discard(sid)
+            except BlockingIOError as e:
+                raise HTTPException(409, "workspace busy; retry shortly", headers={"Retry-After": "1"}) from e
+        return call
+    return decorate
 
 
 def who(sid: str, authorization: str | None):
     """The session's human, or 401. The ONE mint lives in api/auth.py."""
-    token = authorization.split(" ", 1)[1].strip() if authorization and " " in authorization else authorization
+    token = bearer(authorization)
     p = sessions.principal(sid, token)
     if p is None:
-        raise HTTPException(status_code=401, detail="no such session, or the token does not open it")
+        raise HTTPException(status_code=401, detail="no such session, or the token does not open it",
+                            headers={"WWW-Authenticate": "Bearer"})
     return p
 
 
 def model_for(byok: str | None):
     """The visitor's own key if they brought one, else the server's, else the stub."""
     if byok:
-        return GroqLLM(model=MODEL_ID, api_key=byok), f"{MODEL_ID} (your key)", True
+        return GroqLLM(model=MODEL_ID, api_key=byok, max_output_tokens=2048), f"{MODEL_ID} (your key)", True
     if MODEL == "groq":
-        return GroqLLM(model=MODEL_ID), MODEL_ID, False
+        return GroqLLM(model=MODEL_ID, max_output_tokens=2048), MODEL_ID, False
     return StubLLM(), "stub", False
 
 
 def out(p) -> ProposalOut:
     return ProposalOut(id=p.id, action=p.action, record_id=p.record_id, params=p.params,
-                       status=p.status, reason=p.reason, decided_by=p.decided_by, note=p.note)
+                       status=p.status, reason=p.reason, decided_by=p.decided_by, note=p.note,
+                       evidence=p.evidence, created_at=p.created_at)
 
 
 def proposals_of(st: SessionState) -> list:
@@ -137,6 +261,12 @@ def proposals_of(st: SessionState) -> list:
         if p is not None:
             rows.append(p)
     return rows
+
+
+def require_healthy_audit(st):
+    if (not st.policy.store.audit_verify() or st.policy.store.audit_anomalies()
+            or any(p.status in {"executed_unknown", "executed_mismatch"} for p in proposals_of(st))):
+        raise HTTPException(409, "audit requires investigation; new work is paused. Export the audit for the operator")
 
 
 def answered(snap) -> bool:
@@ -164,212 +294,48 @@ def model_refused(e: Exception, byok: bool) -> HTTPException:
 
 # ── sessions ─────────────────────────────────────────────────────────────────────────────────
 @app.post("/sessions", response_model=SessionOut)
-def create_session() -> SessionOut:
-    sid, token = sessions.create()
-    state_of(sid)
+def create_session(request: Request, x_owner_token: str | None = Header(default=None)) -> SessionOut:
+    if settings.mode == "pilot" and (not x_owner_token or not secrets.compare_digest(x_owner_token, OWNER_TOKEN)):
+        raise HTTPException(403, "workspace provisioning requires the operator's token")
+    peer = request.client.host if request.client else "?"
+    for key, windows in (("new:" + peer, ((60, 10), (86400, 60))), ("new:global", ((60, 30), (86400, 300)))):
+        ok, why = limits.consume(key, windows)
+        if not ok:
+            raise HTTPException(429, why, headers={"Retry-After": "60"})
+    try:
+        sid, token = sessions.create(max_sessions=settings.max_sessions)
+    except OverflowError as e:
+        raise HTTPException(503, str(e)) from e
     return SessionOut(session=sid, token=token, adapter=ADAPTER,
                       note="the token is shown once; the server keeps only its sha256. "
                            "Send it as `Authorization: Bearer <token>`.")
 
 
 @app.post("/sessions/{sid}/upload", response_model=UploadOut)
-async def upload(sid: str, file: UploadFile, authorization: str | None = Header(default=None)) -> UploadOut:
+@guarded("admin")
+def upload(sid: str, file: UploadFile, authorization: str | None = Header(default=None),
+           amount_format: str = Form(default="auto"), date_format: str = Form(default="auto"),
+           status_map: str = Form(default="{}")) -> UploadOut:
     who(sid, authorization)
-    raw = await file.read(MAX_UPLOAD_BYTES + 1)
+    raw = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(raw) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail=f"more than {MAX_UPLOAD_BYTES} bytes")
     rows = parse_rows(raw, file.filename or "")
     if len(rows) > MAX_ROWS:
         raise HTTPException(status_code=413, detail=f"more than {MAX_ROWS} rows")
-    return load_rows(state_of(sid), rows)
-
-
-def parse_rows(raw: bytes, filename: str) -> list[dict]:
-    if filename.lower().endswith(".xlsx"):
-        try:
-            from openpyxl import load_workbook
-        except ImportError:                                    # pragma: no cover - openpyxl is installed
-            raise HTTPException(status_code=415, detail="this deployment cannot read .xlsx; send CSV")
-        ws = load_workbook(io.BytesIO(raw), read_only=True, data_only=True).active
-        it = ws.iter_rows(values_only=True)
-        header = [str(c).strip().lower() if c is not None else "" for c in next(it, [])]
-        return [{k: ("" if v is None else str(v)) for k, v in zip(header, r)} for r in it]
+    if amount_format not in {"auto", "point", "comma"} or date_format not in {"auto", "dmy", "mdy", "iso"}:
+        raise HTTPException(422, "invalid amount or date format")
     try:
-        text = raw.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=415, detail="the file is not UTF-8 text or .xlsx")
-    reader = csv.DictReader(io.StringIO(text))
-    return [{(k or "").strip().lower(): (v or "") for k, v in row.items()} for row in reader]
+        mapping = json.loads(status_map)
+    except ValueError as e:
+        raise HTTPException(422, "status_map must be a JSON object") from e
+    if not isinstance(mapping, dict) or len(mapping) > 30 or any(not isinstance(k, str) or not isinstance(v, str) or v not in {"open", "paid", "reminded", "promised", "disputed", "cancelled"} for k, v in mapping.items()):
+        raise HTTPException(422, "status_map must map source status words to supported statuses")
+    return load_rows(state_of(sid), rows, amount_format=amount_format, date_format=date_format, status_map=mapping)
 
 
-# ── how a file writes its numbers and dates, PROVED by the file and never guessed ────────────
-# Client simulation 3 (STATUS.md S3-2, S3-3) refused a Spanish accounting export whole: `1.234,56`
-# was "not a number" and `31/07/2026` was refused as a date. The open question was whether to READ
-# them, and the reason it was open is that guessing is not allowed here — `1.234` is one thousand
-# two hundred and thirty-four in one country and one point two three four in another, and
-# `03/04/2026` is April in Bilbao and March in Boston. A wrong guess writes a number nobody typed
-# into a record the assistant then reasons about.
-#
-# The way out is that a file usually settles its own convention, and where it does, nothing is
-# being guessed: `1.234,56` carries both marks and the rightmost is the decimal one, and a `31` in
-# the first position can only be a day. So the rule is: use a convention only where some row of
-# THIS file proves it, apply it to the whole file, tell the visitor which convention was read and
-# what proved it — and where the file proves nothing, refuse the row exactly as before and say
-# that is why. Ruled 2026-09-04 (the judgment-dense model, on the owner's *do what you think is
-# best*); the reasoning and the routes not taken are under STATUS.md Open questions.
-
-ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
-SLASHED_DATE = re.compile(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})")
-
-
-def amount_convention(values) -> str:
-    """`point` if this file writes 1.234,56 — the point groups and the comma decides — `comma` if
-    it writes 1,234.56, and `""` if no row settles it. The proof is a value carrying BOTH marks:
-    the rightmost of the two is the decimal mark, in every convention there is."""
-    for v in values:
-        i, j = v.rfind("."), v.rfind(",")
-        if i >= 0 and j >= 0:
-            return "point" if j > i else "comma"
-    return ""
-
-
-def read_amount(raw: str, convention: str) -> float:
-    """The number, or ValueError('ambiguous') when this file has not settled which mark is which.
-    Never a guess: `1.234` is refused unless some other row of the same file says what a point is."""
-    v = raw.strip().replace(" ", "").replace("\u00a0", "")
-    i, j = v.rfind("."), v.rfind(",")
-    if i >= 0 and j >= 0:                                   # both marks: the rightmost decides
-        dec, grp = (",", ".") if j > i else (".", ",")
-        return float(v.replace(grp, "").replace(dec, "."))
-    mark = "." if i >= 0 else ("," if j >= 0 else "")
-    if not mark:
-        return float(v)
-    groups = {"point": ".", "comma": ","}.get(convention, "")
-    if v.count(mark) > 1 or len(v.rsplit(mark, 1)[1]) == 3:  # 1.234.567, or 1.234 — group or decimal?
-        if groups == mark:
-            return float(v.replace(mark, ""))
-        if groups:
-            return float(v.replace(mark, "."))
-        raise ValueError("ambiguous")
-    return float(v.replace(mark, "."))                       # one mark, one or two figures after it
-
-
-def date_order(values) -> str:
-    """`dmy`, `mdy`, `mixed` when the file contradicts itself, or `""` when nothing settles it.
-    The proof is a component over twelve: 31/07 can only be a day, 07/31 can only be a month."""
-    day = month = False
-    for v in values:
-        g = SLASHED_DATE.fullmatch(v.strip())
-        if g:
-            day = day or int(g.group(1)) > 12
-            month = month or int(g.group(2)) > 12
-    if day and month:
-        return "mixed"
-    return "dmy" if day else ("mdy" if month else "")
-
-
-def read_date(raw: str, order: str) -> str:
-    """The date as YYYY-MM-DD, which is what the page compares and sorts. ValueError otherwise:
-    `shape` for something that is not a date at all, `ambiguous` when the file has not settled the
-    order, and whatever `datetime.date` says about 31/02."""
-    v = raw.strip()
-    if ISO_DATE.fullmatch(v):
-        datetime.date.fromisoformat(v)
-        return v
-    g = SLASHED_DATE.fullmatch(v)
-    if not g:
-        raise ValueError("shape")
-    if order not in ("dmy", "mdy"):
-        raise ValueError("ambiguous" if order != "mixed" else "mixed")
-    a, b, y = int(g.group(1)), int(g.group(2)), int(g.group(3))
-    d, m = (a, b) if order == "dmy" else (b, a)
-    return datetime.date(y, m, d).isoformat()
-
-
-WHY_DATE_SHAPE = "{f} is not a date: write it YYYY-MM-DD, or the d/m/yyyy your own system exports"
-WHY_DATE_AMBIGUOUS = ("{f} could be read day/month or month/day and nothing in this file settles which — one "
-                      "date in it with a day past the twelfth would, and so would writing them YYYY-MM-DD")
-WHY_DATE_MIXED = ("this file's dates contradict each other — some can only be day/month and others can only be "
-                  "month/day — so no reading of the column is a safe one")
-WHY_DATE_IMPOSSIBLE = "{f} is not a date that exists"
-WHY_AMOUNT_AMBIGUOUS = ("amount could be a thousands separator or a decimal mark and nothing in this file settles "
-                        "which — one row written 1.234,56 or 1,234.56 would settle it for the whole file")
-WHY_AMOUNT_SHAPE = "amount is not a number"
-
-
-def load_rows(st: SessionState, rows: list[dict]) -> UploadOut:
-    """Every row is checked against the adapter before it becomes a record: an id the policy could
-    never act on, or a date or an amount this file has not settled, is refused at the door with the
-    reason instead of silently becoming a record whose every proposal is denied later — or worse,
-    one the page then miscounts. Client simulation 3 (STATUS.md S3-2, S3-3) is why: `due` used to be
-    stored as whatever string arrived, and the page answers *which of these do I chase* by comparing
-    it to `YYYY-MM-DD`, so a `dd/mm/aaaa` export was sorted by the day of the month and its past-due
-    count was wrong in both directions without a word."""
-    pattern = config.records.get(config.actions["update_status"].record, "")
-    convention = amount_convention([str(r.get("amount", "")) for r in rows])
-    order = date_order([str(r.get(f, "")) for r in rows for f in ("issued", "due")])
-    rejected, loaded, ids = [], 0, []
-    for n, row in enumerate(rows, start=2):                     # row 1 is the header
-        rid = (row.get("id") or "").strip()
-        if not rid:
-            rejected.append(RejectedRow(row=n, id="", why="no id"))
-            continue
-        if re.fullmatch(pattern, rid, re.ASCII) is None:
-            rejected.append(RejectedRow(row=n, id=rid, why=f"an id here must match the shape this adapter declares, {pattern}"))
-            continue
-        dates, bad = {}, None
-        for f in ("issued", "due"):
-            v = (row.get(f) or "").strip()
-            if not v:
-                dates[f] = ""
-                continue
-            try:
-                dates[f] = read_date(v, order)
-            except ValueError as e:
-                why = {"shape": WHY_DATE_SHAPE, "ambiguous": WHY_DATE_AMBIGUOUS,
-                       "mixed": WHY_DATE_MIXED}.get(str(e), WHY_DATE_IMPOSSIBLE)
-                bad = RejectedRow(row=n, id=rid, saw=v, why=why.format(f=f))
-                break
-        if bad is not None:
-            rejected.append(bad)
-            continue
-        existing = st.records.invoice(rid)
-        if existing is None:
-            raw = str(row.get("amount", "0")).strip()
-            try:
-                amount = read_amount(raw, convention)
-            except ValueError as e:
-                rejected.append(RejectedRow(row=n, id=rid, saw=raw,
-                                            why=WHY_AMOUNT_AMBIGUOUS if str(e) == "ambiguous" else WHY_AMOUNT_SHAPE))
-                continue
-            st.records.load_seed_row({
-                "id": rid, "customer": (row.get("customer") or "").strip(), "amount": amount,
-                "currency": (row.get("currency") or "EUR").strip(),
-                "issued": dates["issued"], "due": dates["due"],
-                "status": (row.get("status") or "open").strip(),
-                "contact": (row.get("contact") or "").strip()})
-            loaded += 1
-            ids.append(rid)
-        if row.get("note"):
-            st.records.add_note_raw(rid, dates.get("issued") or "uploaded", "uploaded", row["note"])
-        if row.get("email_body"):
-            st.records.plant_email(rid, "uploaded", row.get("email_subject", ""), row["email_body"])
-    # What happened to the OTHER rows is not something a per-row reason can know, and saying it
-    # anyway made a file where every single row was refused report, five hundred times over, that
-    # the rest had loaded (client simulation 3, STATUS.md S3-1).
-    tail = (" — the row was not loaded, the rest were" if loaded
-            else " — the row was not loaded, and no row in this file was")
-    rejected = [RejectedRow(row=r.row, id=r.id, saw=r.saw, why=r.why + tail) for r in rejected]
-    # What was read, and what proved it. A layer that reinterprets somebody's money owes them the
-    # sentence saying how (client simulation 3, STATUS.md S3-2).
-    read = []
-    if order in ("dmy", "mdy"):
-        read.append(f"dates read as {'day/month/year' if order == 'dmy' else 'month/day/year'}, "
-                    f"which this file's own dates settle")
-    if convention:
-        read.append(f"amounts read with {'a point grouping and a comma deciding' if convention == 'point' else 'a comma grouping and a point deciding'}, "
-                    f"which a row of this file carrying both marks settles")
-    return UploadOut(loaded=loaded, rejected=rejected, ids=ids, read_as="; ".join(read))
+def load_rows(st, rows, **formats):
+    return import_rows(st, rows, config, settings.max_session_records, **formats)
 
 
 @app.get("/adapter", response_model=AdapterOut)
@@ -397,6 +363,7 @@ def record_out(inv: dict) -> RecordOut:
 
 
 @app.get("/sessions/{sid}/records", response_model=list[RecordOut])
+@guarded()
 def records(sid: str, authorization: str | None = Header(default=None)) -> list[RecordOut]:
     """The visitor's own records back, which until 2026-09-03 no route returned: an `add_note` is
     auto-approved by this adapter and executes without anyone deciding, so the one write that needs
@@ -404,10 +371,36 @@ def records(sid: str, authorization: str | None = Header(default=None)) -> list[
     there is no route here that writes."""
     who(sid, authorization)
     st = state_of(sid)
-    return [record_out(inv) for inv in (st.records.invoice(i) for i in st.records.ids()) if inv]
+    return [RecordOut(**row) for row in st.records.summaries()]
+
+
+@app.get("/sessions/{sid}/summary")
+@guarded()
+def summary(sid: str, authorization: str | None = Header(default=None)):
+    from decimal import Decimal
+    from policy.model import TZ
+    from policy.service import LIVE
+    st = state_of(sid)
+    today = datetime.datetime.now(TZ).date().isoformat()
+    rows = st.records.summaries()
+    outstanding = [r for r in rows if r["status"] not in {"paid", "cancelled"} and r["amount"] > 0]
+    overdue = [r for r in outstanding if r["due"] and r["due"] < today]
+    totals = {}
+    for row in overdue:
+        totals[row["currency"]] = totals.get(row["currency"], Decimal(0)) + Decimal(str(row["amount"]))
+    used = st.policy.store.count_proposals_since(st.policy._day_start(st.policy.clock()), LIVE)
+    return {"as_of": today, "records": len(rows), "overdue": len(overdue),
+            "disputed": sum(r["status"] == "disputed" for r in outstanding),
+            "undated": sum(not r["due"] for r in outstanding),
+            "overdue_by_currency": {k: format(v, ".2f") for k, v in sorted(totals.items())},
+            "pending": sum(p.status == HELD for p in proposals_of(st)),
+            "budget_used": used, "budget_limit": config.daily_writes,
+            "budget_remaining": max(config.daily_writes - used, 0) if config.daily_writes else None,
+            "fuse": st.policy.store.fuse_get()}
 
 
 @app.get("/sessions/{sid}/records/{invoice_id}", response_model=RecordDetailOut)
+@guarded()
 def record(sid: str, invoice_id: str, authorization: str | None = Header(default=None)) -> RecordDetailOut:
     """One record with its notes and emails. Every note carries WHO wrote it: `assistant` is this
     system's own voice, and a claim in one is the assistant's, not the customer's."""
@@ -422,6 +415,7 @@ def record(sid: str, invoice_id: str, authorization: str | None = Header(default
 
 # ── assist ───────────────────────────────────────────────────────────────────────────────────
 @app.post("/sessions/{sid}/assist/{invoice_id}", response_model=AssistOut)
+@guarded("review")
 def assist(sid: str, invoice_id: str, request: Request, authorization: str | None = Header(default=None),
            x_groq_key: str | None = Header(default=None)) -> AssistOut:
     who(sid, authorization)
@@ -434,32 +428,45 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
         raise HTTPException(status_code=429, detail=(
             f"{why}: one address gets {limits.per_minute} assists a minute and {limits.per_day} a day "
             f"on this instance. That limit is this instance's, not the model's — your own "
-            f"`X-Groq-Key` is neither counted against the server's model budget nor able to lift it."))
+            f"`X-Groq-Key` is neither counted against the server's model budget nor able to lift it."),
+            headers={"Retry-After": "60"})
     st = state_of(sid)
     if st.records.invoice(invoice_id) is None:
         raise HTTPException(status_code=404, detail=f"no record {invoice_id} in this session")
+    require_healthy_audit(st)
 
-    llm, model_name, byok = model_for(x_groq_key)
-    conf = {"configurable": {"thread_id": f"{sid}:{invoice_id}"}}
+    try:
+        llm, model_name, byok = model_for(x_groq_key)
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(503, "the model is not configured; contact the operator") from e
+    conf = {"configurable": {"thread_id": f"{sid}:customer-v1:{invoice_id}"}}
     graph = st.graph(llm)
     snap = graph.get_state(conf)
     if answered(snap):
-        # the model already answered for this record: give back what it said, ask nobody again
         s = snap.values
+        if snap.next and snap.next != ("hold",):
+            # Resume durable work after think. Stable proposal keys prevent node replay from
+            # duplicating proposals if a worker died before saving its checkpoint.
+            try:
+                s = graph.invoke(None, config=conf)
+            except Exception as e:
+                raise HTTPException(503, "workflow recovery paused; inspect the queue and audit before retrying") from e
         return AssistOut(invoice_id=invoice_id, summary=s.get("summary", ""),
                          recommendation=s.get("recommendation", ""), draft=s.get("draft", ""),
                          proposals=[out(p) for p in proposals_of(st) if p.record_id == invoice_id],
-                         cached=True, model=model_name)
+                         cached=True, model=s.get("model_name", model_name))
 
     allowed, why = limits.allow_model_call(byok)
     if not allowed:
         raise HTTPException(status_code=503, detail=why)
     try:
-        s = graph.invoke({"invoice_id": invoice_id, "task": "draft"}, config=conf)
+        s = graph.invoke({"invoice_id": invoice_id, "task": "draft", "model_name": model_name}, config=conf)
     except HTTPException:
         raise
-    except Exception as e:                                      # noqa: BLE001 — see model_refused
+    except ModelFailure as e:
         raise model_refused(e, byok) from e
+    except Exception as e:
+        raise HTTPException(503, "workflow paused; some work may have been recorded. Inspect the queue and audit, then retry this record") from e
     return AssistOut(invoice_id=invoice_id, summary=s.get("summary", ""),
                      recommendation=s.get("recommendation", ""), draft=s.get("draft", ""),
                      proposals=[out(p) for p in proposals_of(st) if p.record_id == invoice_id],
@@ -468,18 +475,28 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
 
 # ── the queue, the decision, the chain ───────────────────────────────────────────────────────
 @app.get("/sessions/{sid}/proposals", response_model=list[ProposalOut])
+@guarded()
 def queue(sid: str, authorization: str | None = Header(default=None)) -> list[ProposalOut]:
     who(sid, authorization)
     return [out(p) for p in proposals_of(state_of(sid))]
 
 
 @app.post("/sessions/{sid}/proposals/{pid}/decide", response_model=DecideOut)
+@guarded("review")
 def decide(sid: str, pid: str, body: DecideIn = Body(...), authorization: str | None = Header(default=None)) -> DecideOut:
     human = who(sid, authorization)
     st = state_of(sid)
+    require_healthy_audit(st)
     if st.policy.store.get_proposal(pid) is None:
         raise HTTPException(status_code=404, detail="no such proposal in this session")
-    p = st.policy.decide(pid, body.approve, human, note=body.note)
+    existing = st.policy.store.get_proposal(pid)
+    if existing.status == EXECUTED and body.approve:
+        return DecideOut(proposal=out(existing), executed=True, applied=existing.params)
+    if existing.status not in {HELD, APPROVED}:
+        return DecideOut(proposal=out(existing), executed=False)
+    p = st.policy.decide(pid, body.approve, human, note=body.note) if existing.status == HELD else existing
+    if not body.approve and p.status == APPROVED:
+        raise HTTPException(409, "this proposal has already been approved; stop the workspace to prevent execution")
     if p.status != APPROVED:
         return DecideOut(proposal=out(p), executed=False)
     q = st.policy.execute(p.id, make_executor(st.records), human)
@@ -489,6 +506,7 @@ def decide(sid: str, pid: str, body: DecideIn = Body(...), authorization: str | 
 
 
 @app.get("/sessions/{sid}/audit", response_model=AuditOut)
+@guarded()
 def audit(sid: str, authorization: str | None = Header(default=None)) -> AuditOut:
     who(sid, authorization)
     st = state_of(sid)
@@ -500,12 +518,108 @@ def audit(sid: str, authorization: str | None = Header(default=None)) -> AuditOu
 
 
 @app.post("/sessions/{sid}/fuse/clear", response_model=FuseOut)
+@guarded("admin")
 def clear_fuse(sid: str, authorization: str | None = Header(default=None)) -> FuseOut:
     human = who(sid, authorization)
     st = state_of(sid)
     cleared = st.policy.fuse.clear(human)
     return FuseOut(cleared=cleared, fuse=st.policy.store.fuse_get(),
                    why="" if cleared else "a tripped fuse clears no earlier than the day after it tripped")
+
+
+@app.post("/sessions/{sid}/fuse/stop")
+@guarded("admin")
+def stop_session(sid: str, authorization: str | None = Header(default=None)):
+    st = state_of(sid)
+    st.policy.fuse.trip("stopped_by_owner", who(sid, authorization))
+    return {"fuse": st.policy.store.fuse_get()}
+
+
+@app.get("/sessions/{sid}/access")
+@guarded()
+def access_info(sid: str, authorization: str | None = Header(default=None)):
+    access = sessions.access(sid, bearer(authorization))
+    return {**access, "session": sid, "adapter": ADAPTER,
+            "tokens": sessions.grants(sid) if access["role"] == "owner" else []}
+
+
+@app.post("/sessions/{sid}/access")
+@guarded("admin")
+def grant_access(sid: str, body: GrantIn, authorization: str | None = Header(default=None)):
+    try:
+        return sessions.grant(sid, body.role, body.label, body.days)
+    except OverflowError as e:
+        raise HTTPException(409, str(e)) from e
+
+
+@app.delete("/sessions/{sid}/access/{key}")
+@guarded("admin")
+def revoke_access(sid: str, key: str, authorization: str | None = Header(default=None)):
+    if not sessions.revoke(sid, key):
+        raise HTTPException(404, "no such access token")
+    return {"revoked": True}
+
+
+@app.post("/sessions/{sid}/token/rotate")
+@guarded("admin")
+def rotate_token(sid: str, authorization: str | None = Header(default=None)):
+    return {"token": sessions.rotate(sid)}
+
+
+@app.get("/sessions/{sid}/export")
+@guarded()
+def export_session(sid: str, authorization: str | None = Header(default=None)):
+    st = state_of(sid)
+    seq, head = st.policy.store.audit_head()
+    return JSONResponse({"format": "atezain-export-v1", "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "session": sid, "policy_fingerprint": config.fingerprint(),
+        "records": [st.records.invoice(i) for i in st.records.ids()],
+        "proposals": [out(p).model_dump() for p in proposals_of(st)],
+        "audit": {"rows": st.policy.store.audit_rows(), "head_seq": seq, "head_hash": head,
+                  "verifies": st.policy.store.audit_verify(), "anomalies": st.policy.store.audit_anomalies()},
+        "fuse": st.policy.store.fuse_get()},
+        headers={"Content-Disposition": f'attachment; filename="atezain-{sid}.json"'})
+
+
+def purge_session(sid):
+    """Revoke before physical deletion. A failed purge remains revoked and is retryable by GC."""
+    schema_of(sid)
+    sessions.mark_deleted(sid)
+    st = state_of(sid)
+    conn = st.checkpointer.conn
+    query = "SELECT DISTINCT thread_id FROM checkpoints WHERE thread_id LIKE " + ("%s" if DSN else "?")
+    for (thread,) in conn.execute(query, (sid + ":%",)).fetchall():
+        st.checkpointer.delete_thread(thread)
+    if DSN:
+        st.policy.store.drop_schema()
+    with _pool_lock:
+        _live.pop(sid, None)
+    st.close()
+    if not DSN:
+        directory = STATE / sid
+        if directory.resolve().parent != STATE.resolve():
+            raise ValueError("session directory escaped state root")
+        shutil.rmtree(directory)
+    sessions.forget(sid)
+
+
+@app.delete("/sessions/{sid}")
+@guarded("admin")
+def delete_session(sid: str, authorization: str | None = Header(default=None),
+                   x_confirm_delete: str | None = Header(default=None)):
+    if x_confirm_delete != sid:
+        raise HTTPException(400, "confirm deletion with X-Confirm-Delete equal to the workspace ID")
+    purge_session(sid)
+    return {"deleted": True, "note": "active records, access and checkpoints removed; backup retention is controlled by the operator"}
+
+
+@app.get("/capabilities")
+def capabilities():
+    return {"mode": settings.mode, "self_service": settings.mode == "demo", "model": MODEL_ID if MODEL == "groq" else "stub",
+            "session_days": settings.session_days, "max_records": settings.max_session_records,
+            "max_upload_bytes": MAX_UPLOAD_BYTES, "daily_proposals": config.daily_writes,
+            "all_writes_require_approval": all(s.approval == "required" for s in config.actions.values() if not s.deny),
+            "sends_email": False, "hosted_tracing": False, "retrieval": "customer"}
 
 
 @app.post("/server/fuse/clear")
@@ -530,18 +644,19 @@ def demo() -> str:
 
 
 @app.get("/healthz")
-def healthz() -> dict:
-    now = time.time()
-    if _health["body"] is not None and now - _health["at"] < 60:
-        return _health["body"]
+def healthz():
     try:
         sessions.exists("healthz")
+        limits.model_calls
         store_ok = True
     except Exception:                                          # noqa: BLE001
         store_ok = False
     body = {"store": store_ok, "backing": "postgres" if DSN else "sqlite",
             "model": MODEL if MODEL != "groq" else MODEL_ID,
-            "model_calls_today": limits.model_calls, "server_fuse": limits.fuse,
-            "adapter": ADAPTER, "sessions": len(sessions.ids())}
-    _health.update({"at": now, "body": body})
-    return body
+            "adapter": ADAPTER, "mode": settings.mode}
+    return JSONResponse(body, status_code=200 if store_ok else 503)
+
+
+@app.get("/livez")
+def livez():
+    return {"alive": True}

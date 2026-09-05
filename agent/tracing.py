@@ -19,9 +19,9 @@ Three rules this module keeps, in the order they matter:
 3. **Only the named keys are recorded.** The caller says which parts of the graph's state a span may
    carry, so a record is a decision made at the call site and not whatever happened to be in scope.
 
-Local by decision (✋ 2026-09-03): no `LANGFUSE_*` is set on the deployed service, so a visitor's
-uploaded rows never leave the machine they were uploaded to. The trust boundary says nothing about
-tracing because there is nothing to say — nothing is traced there.
+The served graph explicitly disables hosted tracing and file sinks, independent of environment
+credentials. Assist requests still send relevant records to the configured model provider; tracing
+controls do not change that data path.
 """
 from __future__ import annotations
 
@@ -61,15 +61,17 @@ class Tracer:
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Tracer":
-        """Keys in the environment and the SDK installed mean a hosted trace as well as a local one.
-        Neither is required: this is the constructor `make serve`, the tests and a clone all use."""
+        """Experiments can opt into hosting with ATEZAIN_HOSTED_TRACING=1 and configured keys.
+        The served graph uses an explicit Tracer() instead of inheriting these settings."""
         env = os.environ if env is None else env
-        return cls(hosted=all(env.get(k) for k in KEYS), sink=env.get(SINK) or None)
+        return cls(hosted=env.get("ATEZAIN_HOSTED_TRACING") == "1" and all(env.get(k) for k in KEYS),
+                   sink=env.get(SINK) or None)
 
     def node(self, name: str, fn: Callable[[dict], dict],
              keys_in: Iterable[str] = (), keys_out: Iterable[str] = ()) -> Callable[[dict], dict]:
         """`fn`, with a span around it. The node's return value is returned whatever the tracer does."""
-        inner = observe(name=name)(fn) if self.hosted else fn
+        # The SDK decorator otherwise captures the entire state, bypassing keys_in/keys_out.
+        inner = observe(name=name, capture_input=False, capture_output=False)(fn) if self.hosted else fn
         keys_in, keys_out = tuple(keys_in), tuple(keys_out)
 
         def traced(state: dict) -> dict:

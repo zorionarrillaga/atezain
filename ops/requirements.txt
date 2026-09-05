@@ -1,9 +1,11 @@
 # What the deployed web service needs. The policy layer itself needs none of this: `policy/` is
-# standard library only, and `make test` runs with pytest + langgraph alone.
+# standard library only. The complete test environment is in requirements-dev.txt.
+-c constraints.txt
 fastapi==0.141.1
 uvicorn==0.52.4
-python-multipart==0.0.20
+python-multipart==0.0.32
 openpyxl==3.1.5
+defusedxml==0.7.1
 langgraph==1.2.11
 langgraph-checkpoint-sqlite==3.1.1
 psycopg[binary]==3.3.5                 # the policy store and the records store on Postgres

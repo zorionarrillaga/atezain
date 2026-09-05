@@ -23,7 +23,8 @@ SAMPLE = ("id,customer,amount,currency,issued,due,status,note\n"
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(apimod, "limits", apimod.PersistentLimits(tmp_path / "limits.db"))
     return TestClient(app)
 
 
@@ -184,7 +185,6 @@ def test_the_server_fuse_is_the_owners_and_the_visitor_rate_limit_is_per_ip(clie
     upload(client, sid, h)
     before = apimod.limits.per_minute
     apimod.limits.per_minute = 1
-    apimod.limits.hits.clear()
     try:
         assert assist(client, sid, h).status_code in (200, 429)
         r = assist(client, sid, h)
@@ -195,7 +195,6 @@ def test_the_server_fuse_is_the_owners_and_the_visitor_rate_limit_is_per_ip(clie
         assert "a minute" in detail and "a day" in detail and "X-Groq-Key" in detail
     finally:
         apimod.limits.per_minute = before
-        apimod.limits.hits.clear()
 
 
 # ── the page and the probe ───────────────────────────────────────────────────────────────────

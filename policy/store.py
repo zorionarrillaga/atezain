@@ -54,6 +54,7 @@ class Store:
     def _init(self) -> None:
         c = self._c()
         c.execute("CREATE TABLE IF NOT EXISTS proposals (id TEXT PRIMARY KEY, created_at REAL, status TEXT, action TEXT, body TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS proposal_requests (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, proposal_id TEXT NOT NULL)")
         c.execute("CREATE TABLE IF NOT EXISTS executions (proposal_id TEXT PRIMARY KEY, ts REAL, effect TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY, ts REAL, kind TEXT, principal TEXT, proposal_id TEXT, detail TEXT, prev_hash TEXT, hash TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS audit_head (id INTEGER PRIMARY KEY CHECK (id = 1), seq INTEGER, hash TEXT)")
@@ -122,6 +123,12 @@ class Store:
             q += " AND action = ?"
             args.append(action)
         return int(self._c().execute(q, args).fetchone()[0])
+
+    def request_get(self, key):
+        return self._c().execute("SELECT fingerprint, proposal_id FROM proposal_requests WHERE key = ?", (key,)).fetchone()
+
+    def request_put(self, key, fingerprint, pid):
+        self._c().execute("INSERT INTO proposal_requests VALUES (?,?,?)", (key, fingerprint, pid))
 
     # ── executions: exactly-once by construction (PRIMARY KEY) ───────────────────────────────
     def claim_execution(self, pid: str, ts: float) -> bool:

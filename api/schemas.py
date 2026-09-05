@@ -2,7 +2,8 @@
 because someone wrote it here, not because an internal object happened to carry it."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, StrictBool
+from typing import Literal
 
 
 class SessionOut(BaseModel):
@@ -27,6 +28,7 @@ class UploadOut(BaseModel):
     loaded: int
     rejected: list[RejectedRow]
     ids: list[str]
+    skipped: list[str] = Field(default_factory=list, description="existing IDs left unchanged, including notes and emails")
     read_as: str = ""      # which conventions this file settled, and what settled them; "" if none needed
 
 
@@ -102,6 +104,8 @@ class ProposalOut(BaseModel):
     reason: str
     decided_by: str | None = None
     note: str = ""
+    evidence: str = ""
+    created_at: float = 0
 
 
 class AssistOut(BaseModel):
@@ -115,8 +119,16 @@ class AssistOut(BaseModel):
 
 
 class DecideIn(BaseModel):
-    approve: bool
-    note: str = ""
+    model_config = ConfigDict(extra="forbid")
+    approve: StrictBool
+    note: str = Field(default="", max_length=2000)
+
+
+class GrantIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: Literal["reviewer", "viewer"]
+    label: str = Field(min_length=1, max_length=80)
+    days: int = Field(default=7, ge=1, le=30, strict=True)
 
 
 class DecideOut(BaseModel):

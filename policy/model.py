@@ -14,6 +14,7 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import json
+import re
 import tomllib
 import uuid
 from dataclasses import dataclass, asdict
@@ -90,6 +91,9 @@ class PolicyConfig:
 
     @classmethod
     def from_dict(cls, raw: dict) -> "PolicyConfig":
+        # CHECK: policy_configuration_valid
+        _validate_config(raw)
+        # ENDCHECK
         meta = raw.get("meta", {})
         budget = raw.get("budget", {})
         actions: dict[str, ActionSpec] = {}
@@ -172,3 +176,49 @@ def canonical(value: Any) -> str:
     """One string per value: sorted keys, no NaN, unknown objects rendered by repr so that an
     object with a lying `__eq__` cannot pass for the dict it claims to equal."""
     return json.dumps(value, sort_keys=True, allow_nan=False, ensure_ascii=False, default=repr)
+
+
+def _validate_config(raw):
+    """Configuration mistakes must stop startup instead of accidentally auto-approving writes."""
+    if not isinstance(raw, dict):
+        raise ValueError("policy must be an object")
+    records, actions = raw.get("records", {}), raw.get("actions", {})
+    if not isinstance(records, dict) or not records or not isinstance(actions, dict) or not actions:
+        raise ValueError("policy requires record types and actions")
+    limit = raw.get("budget", {}).get("daily_writes", 0)
+    if type(limit) is not int or limit < 0:
+        raise ValueError("daily_writes must be a nonnegative integer")
+    for pattern in records.values():
+        if not isinstance(pattern, str):
+            raise ValueError("record patterns must be strings")
+        try:
+            re.compile(pattern, re.ASCII)
+        except re.error as e:
+            raise ValueError("invalid record pattern") from e
+    writable, bound_sources = set(), set()
+    for name, spec in actions.items():
+        if not isinstance(name, str) or not name or not isinstance(spec, dict):
+            raise ValueError("invalid action")
+        if spec.get("approval", "required") not in {"none", "required"}:
+            raise ValueError("approval must be required or none")
+        if type(spec.get("deny", False)) is not bool or spec.get("record") not in records:
+            raise ValueError("action requires a boolean deny flag and a declared record type")
+        writes = spec.get("writes", [])
+        if not isinstance(writes, list) or any(not isinstance(w, str) or not w for w in writes) or len(set(writes)) != len(writes):
+            raise ValueError("writes must be distinct field names")
+        maximum = spec.get("daily_max")
+        if maximum is not None and (type(maximum) is not int or maximum < 0):
+            raise ValueError("daily_max must be a nonnegative integer")
+        constraints, bounds = spec.get("constraints", {}), spec.get("record_constraints", {})
+        if not isinstance(constraints, dict) or not isinstance(bounds, dict) or (set(constraints) | set(bounds)) - set(writes):
+            raise ValueError("constraints must name writable fields")
+        for allowed in constraints.values():
+            if not isinstance(allowed, list) or not allowed or any(isinstance(v, (list, dict)) for v in allowed):
+                raise ValueError("constraints must contain scalar allowed values")
+            canonical(allowed)
+        if any(not isinstance(v, str) or not v for v in bounds.values()):
+            raise ValueError("record constraints must name source fields")
+        writable.update(writes)
+        bound_sources.update(bounds.values())
+    if writable & bound_sources:
+        raise ValueError("an action cannot write a field used as a source of authority")

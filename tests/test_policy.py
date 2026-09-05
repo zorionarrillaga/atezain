@@ -79,10 +79,60 @@ def kinds(store):
 
 
 # ── propose ──────────────────────────────────────────────────────────────────────────────────
+def test_replayed_proposal_is_the_same_operation_and_different_input_is_refused():
+    svc, store, _ = make()
+    args = (AGENT_P, "update_status", inv(), {"status": "reminded"})
+    p = svc.propose(*args, idempotency_key="run:0")
+    again = svc.propose(*args, idempotency_key="run:0")
+    assert again.id == p.id and len(store.audit_rows()) == 1
+    conflict = svc.propose(AGENT_P, "update_status", inv(), {"status": "disputed"}, idempotency_key="run:0")
+    assert conflict.status == DENIED and conflict.id != p.id
+    assert store.get_proposal(p.id).params == {"status": "reminded"}
+
+
+def test_outcome_timestamp_is_when_execution_finishes():
+    svc, store, clock = make()
+    p = held_and_approved(svc)
+    def executor(action, record_id, params):
+        clock.advance(1)
+        svc.propose(AGENT_P, "add_note", inv(2), {"note": "concurrent"})
+        clock.advance(1)
+        return {"applied": params}
+    assert svc.execute(p.id, executor, HUMAN_P).status == EXECUTED
+    assert store.audit_anomalies() == []
+
+
 def test_unknown_action_is_denied():
     svc, store, _ = make()
     p = svc.propose(AGENT_P, "transfer_funds", inv(), {})
     assert p.status == DENIED and p.reason == "unknown_action"
+
+
+def test_unknown_approval_mode_never_auto_approves():
+    from dataclasses import replace
+    svc0, store, clock = make()
+    spec = replace(svc0.config.actions["add_note"], approval="requried")
+    svc = PolicyService(svc0.config.replace(actions={**svc0.config.actions, "add_note": spec}), store, clock)
+    assert svc.propose(AGENT_P, "add_note", inv(), {"note": "text"}).status == DENIED
+
+
+@pytest.mark.parametrize("change", ["approval", "budget", "deny", "writes", "record", "regex", "source"])
+def test_invalid_policy_configuration_fails_startup(change):
+    import tomllib
+    raw = tomllib.loads((ROOT / "adapters/invoices-es/permissions.toml").read_text())
+    if change == "approval": raw["actions"]["add_note"]["approval"] = "requried"
+    if change == "budget": raw["budget"]["daily_writes"] = -1
+    if change == "deny": raw["actions"]["add_note"]["deny"] = "false"
+    if change == "writes": raw["actions"]["add_note"]["writes"] = "note"
+    if change == "record": raw["actions"]["add_note"]["record"] = "missing"
+    if change == "regex": raw["records"]["invoice"] = "["
+    if change == "source": raw["actions"]["add_note"]["writes"] = ["note", "contact"]
+    rejected = False
+    try:
+        PolicyConfig.from_dict(raw)
+    except ValueError:
+        rejected = True
+    assert rejected, f"unsafe {change} configuration reached startup"
 
 
 def test_case_variant_of_a_denied_action_is_still_unknown_not_allowed():
@@ -939,6 +989,6 @@ def test_spending_the_daily_budget_leaves_the_chain_without_an_anomaly():
 
     assert over.status == DENIED and over.reason == "budget_exhausted"
     assert svc.fuse.is_tripped()
-    assert kinds(store)[-2:] == ["PROPOSAL", "FUSE_TRIPPED"]   # the row that spent it, then the trip
+    assert kinds(store) == ["PROPOSAL", "PROPOSAL", "PROPOSAL", "FUSE_TRIPPED"]  # no early or duplicate trip
     assert store.audit_anomalies() == []
     assert store.audit_verify() is True

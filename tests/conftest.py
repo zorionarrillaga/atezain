@@ -16,6 +16,14 @@ from pathlib import Path
 
 import pytest
 
+# Tests may use only their explicit test DSN. Shell credentials must not select a live model,
+# production database or tracing sink merely because a developer ran the suite from that shell.
+for key in ("ATEZAIN_DSN", "DATABASE_URL", "ATEZAIN_MODEL", "ATEZAIN_MODE", "ATEZAIN_ADAPTER",
+            "GROQ_API_KEY", "ATEZAIN_HOSTED_TRACING", "ATEZAIN_TRACE_SINK",
+            "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGSMITH_TRACING",
+            "LANGCHAIN_TRACING", "LANGCHAIN_TRACING_V2"):
+    os.environ.pop(key, None)
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -24,7 +32,7 @@ from policy import Store                       # noqa: E402
 from records import Records                    # noqa: E402
 from policy.store import GENESIS               # noqa: E402
 
-TABLES = "audit, proposals, executions, audit_head, fuse"
+TABLES = "audit, proposals, executions, audit_head, fuse, proposal_requests"
 RECORD_TABLES = "invoices, notes, emails"
 
 

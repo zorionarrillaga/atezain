@@ -5,6 +5,12 @@
      each one is printed above it with the reason. Every other rule still judges this file. -->
 # atezain — the write-up
 
+**Historical experiment, updated application.** The model results and attack walkthrough here refer
+to the original evaluation configuration. The current HTTP workflow selects related records by
+customer and offers a pilot mode that holds assistant notes as well as other writes. Its new code has
+separate regression coverage; it has no fresh live-model result. Consult `ENTERPRISE_REVIEW.md` for
+the buyer assessment and `ops/RUNBOOK.md` for the current operating contract.
+
 *Atezain* is Basque for goalkeeper. This is the one document to read if you read one: what the
 thing is and what it measured, how it is built, one attack through it end to end with its audit
 rows, the policy it enforces as data, the numbers with their intervals, what those numbers do not
@@ -25,7 +31,7 @@ message, and cannot change a record on its own. Every write the model wants is a
 policy layer outside the model reads a permission table and decides whether that proposal may
 exist at all: which verbs, which fields, which values, which record shape, how many per day.
 Proposals that survive are held for a human, except the ones the table marks as needing none.
-An approved proposal is executed exactly once, through one file's function, which reports the
+An approved proposal can claim one executor invocation, through one file's function, which reports the
 before/after difference of the record so the layer can compare what happened with what was
 approved. Every step is a row in a hash-chained audit log with a head to publish out of band. Then the
 assistant is attacked with injections planted in the very records it reads, and what comes out is
@@ -438,7 +444,7 @@ including zero; susceptible in words two times in three. If a later seat wants t
 moved, the honest route is a prompt whose schema admits more values, run as a second named
 configuration with its own hash — not harder texts.
 
-**Retrieval.** `retrieve` is keyword overlap over notes and emails, on both stores: the five texts
+**Retrieval.** In the historical evaluation, `retrieve` is keyword overlap over notes and emails, on both stores: the five texts
 that share the most words with the customer's name and the words *factura* and *pago*. The prompt
 tells the model those fragments come from other invoices of the same customer. The retriever does
 not select by customer, and on the seed most of the five belong to another customer;
@@ -511,8 +517,8 @@ What `make all` printed on 2026-09-02, after this step and after that seat, copi
 
 | gauge | result |
 |---|---|
-| `make test` | 234 passed, 100 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 333 passed, 1 skipped, 5 min 10 s |
-| `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
+| `make test` | 291 passed, 110 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: 400 passed, 1 skipped, timing recorded in the test run |
+| `make mutate` | 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 58/58 sabotages caught by at least one gauge |
 

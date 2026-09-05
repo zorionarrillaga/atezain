@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -29,7 +30,7 @@ from langgraph.types import interrupt
 
 from agent.executor import make_executor
 from agent.tracing import Tracer
-from agent.llm import LLM
+from agent.llm import LLM, ModelFailure
 from policy import APPROVED, EXECUTED, HELD, Principal, PolicyService
 from records import Records
 
@@ -37,6 +38,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class State(TypedDict, total=False):
+    run_id: str
+    model_name: str
     invoice_id: str
     task: str                   # "summarise" | "recommend" | "draft" — all three are produced; task steers the prompt
     context: dict[str, Any]     # the invoice with notes/emails + retrieved snippets
@@ -55,23 +58,28 @@ def load_prompt(adapter: str) -> str:
 
 
 def parse_model_output(text: str) -> dict:
-    """The model must answer with one JSON object. Anything else is treated as no proposals."""
+    """Require a bounded JSON proposal object; malformed output is a retryable model failure."""
+    if not isinstance(text, str) or len(text.encode("utf-8")) > 65536:
+        raise ModelFailure("invalid_output")
     m = re.search(r"\{.*\}", text, re.S)
     if not m:
-        return {"summary": "", "recommendation": "", "draft": "", "proposals": []}
+        raise ModelFailure("invalid_output")
     try:
-        out = json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return {"summary": "", "recommendation": "", "draft": "", "proposals": []}
+        out = json.loads(m.group(0), parse_constant=lambda _: (_ for _ in ()).throw(ValueError("non-finite number")))
+    except (ValueError, RecursionError) as e:
+        raise ModelFailure("invalid_output") from e
+    if not isinstance(out, dict) or any(not isinstance(out.get(k, ""), str) for k in ("summary", "recommendation", "draft")):
+        raise ModelFailure("invalid_output")
     props = out.get("proposals")
-    out["proposals"] = [p for p in props if isinstance(p, dict)] if isinstance(props, list) else []
+    if not isinstance(props, list) or len(props) > 12 or any(not isinstance(p, dict) for p in props):
+        raise ModelFailure("invalid_proposals")
     return out
 
 
-def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Principal, adapter: str = "invoices-es", checkpointer=None, tracer=None):
+def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Principal, adapter: str = "invoices-es", checkpointer=None, tracer=None, retrieval="legacy"):
     system_prompt = load_prompt(adapter)
     executor = make_executor(records)
-    # Off unless the environment holds Langfuse keys, and a no-op is a working state (PLAN.md §4.5).
+    # Hosted tracing requires explicit opt-in; served callers provide an unhosted tracer.
     # Spans are collected in-process either way; `traces/export.py` writes them beside the chain.
     tracer = tracer if tracer is not None else Tracer.from_env()
 
@@ -79,19 +87,27 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
         inv = records.invoice(state["invoice_id"])
         if inv is None:
             raise KeyError(state["invoice_id"])
-        snippets = records.search(f"{inv['customer']} factura pago", k=5)
-        return {"context": {"invoice": inv, "snippets": snippets}}
+        snippets = (records.customer_context(state["invoice_id"], k=5) if retrieval == "customer"
+                    else records.search(f"{inv['customer']} factura pago", k=5))
+        return {"context": {"invoice": inv, "snippets": snippets}, "run_id": uuid.uuid4().hex}
 
     def think(state: State) -> State:
         user = json.dumps({"task": state.get("task", "summarise"), "context": state["context"]}, ensure_ascii=False, indent=1)
-        out = parse_model_output(llm.complete(system_prompt, user))
+        if len(user.encode("utf-8")) > 64000:
+            raise ModelFailure("context_too_large")
+        try:
+            out = parse_model_output(llm.complete(system_prompt, user))
+        except ModelFailure:
+            raise
+        except Exception as e:
+            raise ModelFailure(getattr(e, "code", type(e).__name__)) from e
         return {"summary": str(out.get("summary", "")), "recommendation": str(out.get("recommendation", "")),
                 "draft": str(out.get("draft", "")), "raw_proposals": out["proposals"]}
 
     def propose(state: State) -> State:
         results, held = [], []
         record = records.invoice(state["invoice_id"]) or {}
-        for rp in state.get("raw_proposals", []):
+        for index, rp in enumerate(state.get("raw_proposals", [])):
             action = rp.get("action") if isinstance(rp.get("action"), str) else ""
             params = dict(rp.get("params")) if isinstance(rp.get("params"), dict) else {}
             # A field the adapter binds to a value of the record (`record_constraints`: the
@@ -104,7 +120,8 @@ def build_graph(records: Records, policy: PolicyService, llm: LLM, agent: Princi
             for f, source in (spec.record_constraints.items() if spec is not None else ()):
                 if f not in params and record.get(source) not in (None, ""):
                     params[f] = record[source]
-            p = policy.propose(agent, action, state["invoice_id"], params, evidence=str(rp.get("why", ""))[:500])
+            p = policy.propose(agent, action, state["invoice_id"], params, evidence=str(rp.get("why", ""))[:500],
+                               idempotency_key=f"{state['run_id']}:{index}" if state.get("run_id") else None)
             results.append({"id": p.id, "action": action, "status": p.status, "reason": p.reason})
             if p.status == HELD:
                 held.append(p.id)

@@ -3,29 +3,24 @@
 *Atezain* is Basque for goalkeeper. Built in September 2026 by Zorion Arrillaga, mostly by
 directing coding models, on rules paid for by an earlier system of his own (`PROVENANCE.md`).
 
-An assistant over your records (invoices, orders, customers) that summarises, recommends the next
-action and drafts the message — and **cannot change anything on its own**. Every write it wants
-to make is a proposal; a policy layer outside the model decides whether the proposal is even
-allowed to exist; a human approves the ones that matter; the layer executes exactly once and
-compares what the executor observed in the record afterwards with what was approved. Then it is
-attacked, in public, with injections planted in the very records it reads, and the result is a number.
+An assistant over invoices that prepares summaries, follow-up recommendations and draft messages.
+The model proposes record changes; a separate policy checks them; a human decides the held proposals;
+the executor reports the observed effect. Execution claims prevent a proposal from being invoked again,
+while uncertain outcomes remain visible and require investigation.
 
-**Status: steps 1 to 5 are built — the policy layer, the assistant graph over it, the red-team that
-measures it against a named model, the deploy, and the write-up; step 7's adapter and CLI are
-built, its wiring is not. Live since 2026-09-02 at <https://atezain.onrender.com> (*Try it*,
-below); the outside seat on the built thing, step 6, sat on 2026-09-03 — nothing forbidden through
-it, one defect in the served execute path, folded the same day. Then the client simulations
-began: two on 2026-09-03, a bookkeeper's workload and an evaluator's probe set, and what they
-changed — where a reminder is allowed to go, the records a visitor can read back, the rules readable
-before you upload — went out the same day on the owner's word (`01ffa38`). A third on 2026-09-04 put
-five hundred rows and a visitor's own key through it and found the door, the triage and the failure
-path rather than the boundary; that fold went out the same day (`0852e07`), though only after a build
-that reported success and shipped nothing — `STATUS.md` has that story. `autoDeploy` stays off,
-so a push is still not a deploy.**
+**Current status: a controlled-pilot candidate, with the readiness gaps documented in
+[ENTERPRISE_REVIEW.md](ENTERPRISE_REVIEW.md).** The working tree adds scoped and expiring access,
+revocation, bounded imports, durable budgets, workflow recovery, customer-scoped retrieval, a review
+workspace, exports and deletion. Pilot mode requires approval for every permitted write. The demo
+adapter still auto-approves notes and discloses that choice.
 
-See `STATUS.md` for
-what each of those means and for what step 4 retired. `WRITEUP.md` is the one read: the
-result up front, the architecture, one attack end to end with its audit rows, the policy as data.
+These changes have not been deployed. The historical public demo is at
+<https://atezain.onrender.com/demo>; `STATUS.md` records its deployment history. The operational
+instructions for the revised application are in [ops/RUNBOOK.md](ops/RUNBOOK.md). There is no claim of
+SSO, real email delivery, an enterprise SLA, compliance certification, or measured competitive superiority.
+
+`WRITEUP.md` explains the original experiment. Its named-model numbers describe that earlier
+configuration, not the revised served retrieval or all-approval pilot policy.
 
 ## What is built
 
@@ -84,13 +79,16 @@ result up front, the architecture, one attack end to end with its audit rows, th
 - `agent/tracing.py` + `traces/export.py` — the model call, which the chain does not carry and is
   not meant to: what the model was shown, what it answered, how long it took. Spans are collected in
   the process whatever is configured, and the export writes one JSON per proposal beside that
-  proposal's audit rows, so a run is readable a year later with no key and no account. Langfuse is a
-  view of that record when its keys are in the environment. They are not in the deployed service's,
-  and `ops/render.yaml` asks Render for none: what a stranger uploads to the demo is traced nowhere,
-  and a test keeps the blueprint that way.
+  proposal's audit rows, so a run is readable a year later with no key and no account. Langfuse is an
+  optional view for explicitly opted-in non-served experiments. The served graph disables hosted
+  tracing explicitly; `ops/render.yaml` also requests no tracing credentials. Model-provider
+  requests still carry the relevant records.
 - `PROVENANCE.md` — where each rule comes from: the incident, the date, the price.
 
 ## Try it
+
+The following describes the previously deployed demo. For the revised local workspace, use `make serve`.
+
 
 <https://atezain.onrender.com/demo> — a free Render instance that sleeps when idle, so a
 request after a quiet spell wakes it and takes a while. The page has four parts: your records, what the
@@ -110,7 +108,8 @@ queue, its chain, its fuse — and outlives the instance's sleep. `/healthz` say
 ## Run it
 
 ```
-python3 -m venv .venv && .venv/bin/pip install -q pytest langgraph langgraph-checkpoint-sqlite langfuse
+python3 -m venv .venv
+.venv/bin/pip install -r ops/requirements-dev.txt
 make test       # the suite
 make mutate     # every check deleted in turn; all must be KILLED by an assertion
 make hostile    # the attacker with the application's objects
@@ -131,7 +130,7 @@ make numbers                       # rewrites NUMBERS.md from redteam/results.js
 The web face, locally — SQLite under `var/`, the stub model, no key and no network:
 
 ```
-.venv/bin/pip install -q fastapi uvicorn python-multipart openpyxl
+.venv/bin/pip install -r ops/requirements.txt
 make serve                         # then open http://127.0.0.1:8000/demo
 ```
 
@@ -167,8 +166,8 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 234 passed, 100 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **333 passed, 1 skipped, 5 min 10 s** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
-| `make mutate` | 44 checks · 44 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
+| `make test` | 291 passed, 110 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **400 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make mutate` | 47 checks · 47 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
 | `make sabotage` | 58/58 sabotages caught by at least one gauge |
 
@@ -228,6 +227,12 @@ What these two numbers do and do not show is read in full in `WRITEUP.md` › *T
   and no one outside the project has read them.
 
 ## Trust boundary
+
+The HTTP application now adds workspace roles and expiry around this boundary. A viewer cannot
+propose or decide; reviewers can prepare and approve changes; owners manage imports, access and
+lifecycle. Each reviewer token has its own audit identity. This is credential attribution, not verified
+workforce identity. The safety layer's original host assumptions below still apply.
+
 
 Three things this layer trusts and cannot check. They are the host's job, and the numbers above
 do not cover them.

@@ -370,7 +370,8 @@ def test_tracing_off_is_a_working_state_not_a_degraded_one():
     assert [p["action"] for p in out["proposals"]] == [p["action"] for p in plain["proposals"]]
     assert out["summary"] == plain["summary"] and out["draft"] == plain["draft"]
     assert Tracer.from_env({}).hosted is False
-    assert Tracer.from_env({"LANGFUSE_PUBLIC_KEY": "pk", "LANGFUSE_SECRET_KEY": "sk"}).hosted is True
+    assert Tracer.from_env({"LANGFUSE_PUBLIC_KEY": "pk", "LANGFUSE_SECRET_KEY": "sk"}).hosted is False
+    assert Tracer.from_env({"ATEZAIN_HOSTED_TRACING": "1", "LANGFUSE_PUBLIC_KEY": "pk", "LANGFUSE_SECRET_KEY": "sk"}).hosted is True
 
 
 def test_a_tracer_that_raises_does_not_fail_a_write():

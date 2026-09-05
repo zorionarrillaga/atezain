@@ -18,6 +18,7 @@ import json
 import time
 from collections import deque
 from pathlib import Path
+from api.storage import Database
 
 
 class Limits:
@@ -86,4 +87,79 @@ class Limits:
             return False
         self.fuse, self.model_calls = False, 0
         self._save()
+        return True
+
+
+class PersistentLimits:
+    """Atomic fixed windows and a durable model fuse, shared by application workers.
+
+    Rate keys are hashes of transport peer addresses, never untrusted forwarding headers.
+    No customer content or provider credentials are stored here.
+    """
+    def __init__(self, path, dsn=None, per_minute=10, per_day=60, model_day=800, clock=time.time):
+        self.db, self.clock = Database(path, dsn), clock
+        self.per_minute, self.per_day, self.model_day = per_minute, per_day, model_day
+        with self.db.transaction("limits") as execute:
+            execute("CREATE TABLE IF NOT EXISTS request_windows (key TEXT, period_seconds INTEGER, hits INTEGER, "
+                    "expires DOUBLE PRECISION, PRIMARY KEY (key, period_seconds))")
+            execute("CREATE TABLE IF NOT EXISTS model_budget (id INTEGER PRIMARY KEY, day TEXT, calls INTEGER, fuse INTEGER)")
+            execute("INSERT INTO model_budget VALUES (1, '', 0, 0) ON CONFLICT (id) DO NOTHING")
+
+    def allow(self, peer):
+        return self.consume("assist:" + peer, ((60, self.per_minute), (86400, self.per_day)))
+
+    def consume(self, key, windows):
+        import hashlib
+        now = self.clock()
+        key = hashlib.sha256(key.encode()).hexdigest()
+        with self.db.transaction("limits") as execute:
+            execute("DELETE FROM request_windows WHERE expires <= ?", (now,))
+            for seconds, maximum in windows:
+                start = int(now // seconds) * seconds
+                row = execute("SELECT hits FROM request_windows WHERE key = ? AND period_seconds = ?", (key, seconds)).fetchone()
+                if row and row[0] >= maximum:
+                    return False, "rate_limited_minute" if seconds == 60 else "rate_limited_day"
+            for seconds, maximum in windows:
+                expires = (int(now // seconds) + 1) * seconds
+                execute("INSERT INTO request_windows VALUES (?,?,1,?) ON CONFLICT (key, period_seconds) "
+                        "DO UPDATE SET hits = request_windows.hits + 1", (key, seconds, expires))
+        return True, ""
+
+    def _budget(self, execute):
+        day = time.strftime("%Y-%m-%d", time.gmtime(self.clock()))
+        old_day, calls, fuse = execute("SELECT day, calls, fuse FROM model_budget WHERE id = 1").fetchone()
+        if old_day != day:
+            calls = 0
+            execute("UPDATE model_budget SET day = ?, calls = 0 WHERE id = 1", (day,))
+        return calls, bool(fuse)
+
+    def allow_model_call(self, byok):
+        if byok:
+            return True, ""
+        with self.db.transaction("limits") as execute:
+            calls, fuse = self._budget(execute)
+            if fuse:
+                return False, "server_fuse_tripped"
+            if calls >= self.model_day:
+                execute("UPDATE model_budget SET fuse = 1 WHERE id = 1")
+                return False, "model_budget_exhausted"
+            execute("UPDATE model_budget SET calls = calls + 1 WHERE id = 1")
+        return True, ""
+
+    @property
+    def model_calls(self):
+        with self.db.transaction("limits") as execute:
+            return self._budget(execute)[0]
+
+    @property
+    def fuse(self):
+        with self.db.transaction("limits") as execute:
+            return self._budget(execute)[1]
+
+    def clear_fuse(self, owner_token, expected):
+        import secrets
+        if not expected or not owner_token or not secrets.compare_digest(owner_token, expected):
+            return False
+        with self.db.transaction("limits") as execute:
+            execute("UPDATE model_budget SET fuse = 0, calls = 0 WHERE id = 1")
         return True
