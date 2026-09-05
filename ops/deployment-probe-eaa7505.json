@@ -1,0 +1,82 @@
+{
+ "base": "https://atezain.onrender.com",
+ "at": "2026-09-05T18:01:47Z",
+ "checks": [
+  {
+   "check": "healthz over HTTPS on postgres",
+   "ok": true,
+   "detail": "{\"store\": true, \"backing\": \"postgres\", \"model\": \"openai/gpt-oss-120b\", \"adapter\": \"invoices-es\", \"mode\": \"demo\"}"
+  },
+  {
+   "check": "one fictional row imported",
+   "ok": true,
+   "detail": "{\"loaded\": 1, \"rejected\": [], \"ids\": [\"F-2026-901\"], \"skipped\": [], \"read_as\": \"\"}"
+  },
+  {
+   "check": "overview returns the seven parts",
+   "ok": true,
+   "detail": "access, accounting, audit, proposals, records, summary, worklist"
+  },
+  {
+   "check": "every half equals the route it stands for",
+   "ok": true,
+   "detail": "all seven identical"
+  },
+  {
+   "check": "the view parameter reaches the work list",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "an invalid view is refused",
+   "ok": true,
+   "detail": "422"
+  },
+  {
+   "check": "no token, no overview",
+   "ok": true,
+   "detail": "401"
+  },
+  {
+   "check": "the record is the probe's own and reads back",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "the same as_of on the summary and the work list",
+   "ok": true,
+   "detail": "2026-09-05"
+  },
+  {
+   "check": "nothing was written by reading",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "the served page is this tree's, byte for byte",
+   "ok": true,
+   "detail": "a09eb2fc4d9962bc == a09eb2fc4d9962bc"
+  },
+  {
+   "check": "the served page carries the signature and the one read",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "refresh() reads the workspace once and not seven times",
+   "ok": true,
+   "detail": "one /overview call, none of the seven"
+  },
+  {
+   "check": "the probe workspace is deleted",
+   "ok": true,
+   "detail": "{\"deleted\": true, \"note\": \"active records, access and checkpoints removed; backup retention is controlled by the operator\"}"
+  },
+  {
+   "check": "it no longer opens",
+   "ok": true,
+   "detail": "401"
+  }
+ ],
+ "passed": true
+}

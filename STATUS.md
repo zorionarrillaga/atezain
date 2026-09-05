@@ -1,5 +1,38 @@
 # Status
 
+## Authorized deployment of eaa7505 (2026-09-05, night)
+
+On the owner's *push* and then *deploy*, both given in the session after the commit, `eaa7505` was
+pushed to the private origin and deployed to the existing Render free service with the build cache
+cleared: `dep-dae5gve7bikc7385opgg`, source `eaa7505`, clicked in the dashboard from the owner's
+browser. Read at the source and not from the dashboard: before the click the served page carried
+neither the signature nor the one-read refresh; 51 s after it carried both, and it is byte-identical
+to this tree's `api/demo.html` (0 diff lines, equal size — the first hash comparison disagreed and
+was the probe's own trailing newline, checked rather than believed).
+
+A probe workspace over HTTPS then imported one fictional row and made all fifteen checks pass: the
+new `GET /overview` returns the seven parts and **each half is identical to the route it stands
+for**, its `view` parameter reaches the work list, an invalid view is refused 422 and no token 401;
+the summary and the work list read the same `as_of`; reading wrote nothing (`head_seq 0`, chain
+verifies, no proposals); the served page carries the signature setting, the sentence that it is
+never sent to the server, and a `refresh()` that reads `/overview` once and none of the seven
+routes. The workspace was deleted with the confirmation header and no longer opens.
+`ops/deployment-result.json` is the machine-readable record, with `ops/deployment-probe-eaa7505.json`
+inside it. No model call was made and nothing of anyone else's was touched. The service stays in
+demo mode; IdP and Xero remain unconfigured there.
+
+Two things the probe found, both its own and neither the deployment's: a record id of
+`F-2026-PROBE` was refused by the adapter's declared record shape (`^F-\d{4}-\d{3}$`) — the check
+doing its job — and the first check of the page asserted that no `/access` read remained anywhere,
+where `openWorkspace()` legitimately reads it once when the workspace opens; the assertion now
+scopes to `refresh()`, as the repo's own test does.
+
+SKIPPED: the pre-deploy encrypted database snapshot, for the reason the morning's deployment gave —
+no production DSN or backup key exists on this machine outside the Render dashboard, and the change
+carries no migration and no schema change. NOT DELETED: `d926e985e2d0b392`, an EMPTY workspace left
+by the first probe attempt, whose only import was refused, so it holds no records, no proposals and
+an empty chain; its token was never persisted and it expires with the service's session lifetime.
+
 ## Second reader · the tree a gauge measured · the wrapper's number · the signature · one read (2026-09-05, night, Claude Fable 5.1)
 
 The owner listed the four things the gaps review left and said do all of them. Each is built with a

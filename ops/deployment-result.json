@@ -1,71 +1,104 @@
 {
-  "format": "atezain-deployment-v1",
-  "date": "2026-09-05",
-  "authorized_by": "owner request in the session: push, then deploy",
-  "service": "srv-dac734mk1f9s738nk0o0",
-  "url": "https://atezain.onrender.com",
-  "commit": "a0cf52168bee11c08df431ee20e84b86d34cbd67",
-  "previous_commit": "795e4b1e47b6ff306fa8ee73156b06db21c419ed",
-  "previous_deploy": "dep-dadu7e0n74is73bk7ro0",
-  "deploy": "dep-dae3fdpt0dsc738mq6d0",
-  "method": "manual clean build cache and deploy, clicked in the dashboard from the owner's browser",
-  "render_status": "Deploy succeeded",
-  "render_duration_seconds": 56.0,
-  "plan": "free",
-  "configuration": "existing demo mode retained; no IdP or Xero application configured",
-  "backup": "SKIPPED: no production DSN or backup key exists on this machine outside the Render dashboard; the change carries no migration and no schema change",
-  "served_change_seen_after_seconds": 61,
-  "read_at_the_source": "the served page lacked the draft-panel sync before the click and carried it 61 s after; every check below is an HTTPS read of the service, none is the dashboard's status",
-  "smoke": {
-    "candidate": "a0cf521",
-    "at": "2026-09-05T15:41:26.163253+00:00",
-    "checks": {
-      "served page byte-identical to candidate api/demo.html": true,
-      "served page carries the draft-panel sync": true,
-      "synthetic import": true,
-      "summary and work list reckon the same today": true,
-      "overdue probe counted and listed": true,
-      "a case deferred to today is due today (audited case save)": true,
-      "audit verifies without anomalies": true,
-      "synthetic workspace removed": true,
-      "removed workspace no longer opens": true
-    },
-    "health": {
-      "store": true,
-      "backing": "postgres",
-      "model": "openai/gpt-oss-120b",
-      "adapter": "invoices-es",
-      "mode": "demo"
-    },
-    "capabilities": {
-      "mode": "demo",
-      "self_service": true,
-      "model": "openai/gpt-oss-120b",
-      "session_days": 30,
-      "max_records": 500,
-      "max_upload_bytes": 1048576,
-      "daily_proposals": 20,
-      "all_writes_require_approval": false,
-      "sends_email": false,
-      "hosted_tracing": false,
-      "retrieval": "customer",
-      "oidc": false,
-      "identity_required": false
-    },
-    "html_sha256": "4c179ceb40617b49e683112169a785b45a2a3fd0af60a3393d814c6d45414f90",
-    "as_of": {
-      "summary": "2026-09-05",
-      "worklist": "2026-09-05"
-    },
-    "audit": {
-      "verifies": true,
-      "head_seq": 4,
-      "head_hash": "39c5407dfc9025b47648e245cce0d1456e038df1f09a57ac70a4f08ac4518430",
-      "anomalies": []
-    },
-    "passed": true,
-    "model_calls": 0
-  },
-  "passed": true,
-  "browser": "Chrome, for the dashboard click only; the service was verified over HTTPS from this machine"
+ "format": "atezain-deployment-v1",
+ "date": "2026-09-05",
+ "authorized_by": "owner request in the session, after the commit: push, then deploy",
+ "service": "srv-dac734mk1f9s738nk0o0",
+ "url": "https://atezain.onrender.com",
+ "commit": "eaa7505b8ab5095a1058d358f8651816578263ce",
+ "commit_short": "eaa7505",
+ "previous_commit": "a0cf52168bee11c08df431ee20e84b86d34cbd67",
+ "previous_deploy": "dep-dae3fdpt0dsc738mq6d0",
+ "deploy": "dep-dae5gve7bikc7385opgg",
+ "method": "manual clear build cache and deploy, clicked in the dashboard from the owner's browser",
+ "notice": "Build cache cleared",
+ "plan": "free",
+ "configuration": "existing demo mode retained; no IdP or Xero application configured; no environment variable added or changed",
+ "backup": "SKIPPED: no production DSN or backup key exists on this machine outside the Render dashboard; the change carries no migration and no schema change, so starting it rewrote nothing that existed",
+ "served_change_seen_after_seconds": 51,
+ "read_at_the_source": "before the click the served page carried neither the signature nor the one-read refresh; 51 s after it carried both and is byte-identical to this tree's api/demo.html (0 diff lines, equal size). Every check below is an HTTPS read of the service; the dashboard's status is not evidence here.",
+ "probe": {
+  "base": "https://atezain.onrender.com",
+  "at": "2026-09-05T18:01:47Z",
+  "checks": [
+   {
+    "check": "healthz over HTTPS on postgres",
+    "ok": true,
+    "detail": "{\"store\": true, \"backing\": \"postgres\", \"model\": \"openai/gpt-oss-120b\", \"adapter\": \"invoices-es\", \"mode\": \"demo\"}"
+   },
+   {
+    "check": "one fictional row imported",
+    "ok": true,
+    "detail": "{\"loaded\": 1, \"rejected\": [], \"ids\": [\"F-2026-901\"], \"skipped\": [], \"read_as\": \"\"}"
+   },
+   {
+    "check": "overview returns the seven parts",
+    "ok": true,
+    "detail": "access, accounting, audit, proposals, records, summary, worklist"
+   },
+   {
+    "check": "every half equals the route it stands for",
+    "ok": true,
+    "detail": "all seven identical"
+   },
+   {
+    "check": "the view parameter reaches the work list",
+    "ok": true,
+    "detail": ""
+   },
+   {
+    "check": "an invalid view is refused",
+    "ok": true,
+    "detail": "422"
+   },
+   {
+    "check": "no token, no overview",
+    "ok": true,
+    "detail": "401"
+   },
+   {
+    "check": "the record is the probe's own and reads back",
+    "ok": true,
+    "detail": ""
+   },
+   {
+    "check": "the same as_of on the summary and the work list",
+    "ok": true,
+    "detail": "2026-09-05"
+   },
+   {
+    "check": "nothing was written by reading",
+    "ok": true,
+    "detail": ""
+   },
+   {
+    "check": "the served page is this tree's, byte for byte",
+    "ok": true,
+    "detail": "a09eb2fc4d9962bc == a09eb2fc4d9962bc"
+   },
+   {
+    "check": "the served page carries the signature and the one read",
+    "ok": true,
+    "detail": ""
+   },
+   {
+    "check": "refresh() reads the workspace once and not seven times",
+    "ok": true,
+    "detail": "one /overview call, none of the seven"
+   },
+   {
+    "check": "the probe workspace is deleted",
+    "ok": true,
+    "detail": "{\"deleted\": true, \"note\": \"active records, access and checkpoints removed; backup retention is controlled by the operator\"}"
+   },
+   {
+    "check": "it no longer opens",
+    "ok": true,
+    "detail": "401"
+   }
+  ],
+  "passed": true
+ },
+ "probe_workspace": "34f1f18c6eb7cb5c, one fictional row, deleted with the confirmation header; it no longer opens (401)",
+ "orphaned_probe_workspace": "d926e985e2d0b392 \u2014 an EMPTY workspace left by the first probe attempt, whose only import the adapter's record-shape rule refused (0 rows loaded). Its token was never persisted, so it cannot be deleted from here; it holds no records, no proposals and an empty chain, and expires with the service's session lifetime.",
+ "passed": true
 }
