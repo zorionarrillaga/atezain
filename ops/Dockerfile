@@ -1,5 +1,5 @@
-# The deployed image (PLAN.md §4.5). Built and run nowhere yet: there is no Docker on the author's
-# machine, so this file has never been executed and STATUS.md says so.
+# Runtime image. Render build/execution is recorded in ops/deployment-result.json;
+# local Docker remains unavailable on the author's machine.
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1

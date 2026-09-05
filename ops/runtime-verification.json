@@ -13,6 +13,7 @@
     "passed": true
   },
   "advisory_report": "ops/dependency-audit.json",
-  "docker": "SKIPPED: Docker is not installed",
-  "hosted_ci": "SKIPPED: manual workflow not activated"
+  "docker": "Built and executed successfully on Render for commit 795e4b1; local Docker remains unavailable",
+  "hosted_ci": "SKIPPED: manual workflow not activated",
+  "deployment_report": "ops/deployment-result.json"
 }

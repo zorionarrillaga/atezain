@@ -1,0 +1,84 @@
+{
+  "format": "atezain-deployment-v1",
+  "date": "2026-09-05",
+  "authorized_by": "owner request: push, deploy",
+  "service": "srv-dac734mk1f9s738nk0o0",
+  "url": "https://atezain.onrender.com",
+  "commit": "795e4b1e47b6ff306fa8ee73156b06db21c419ed",
+  "previous_commit": "7887500e4ff6e2ad4f7340926779e7f0b1ad1caa",
+  "deploy": "dep-dadu7e0n74is73bk7ro0",
+  "method": "manual clean build cache and deploy",
+  "render_status": "Live",
+  "render_duration_seconds": 55.4,
+  "plan": "free",
+  "configuration": "existing demo mode retained; no IdP or Xero application configured",
+  "backup": {
+    "backup_sha256": "6e2cb233c26d39739d2edcd5ef457860cf9c574714b12b5e9f1d1ca6422aa2d9",
+    "bytes": 624996
+  },
+  "backup_storage": "Local encrypted recovery snapshot; key kept separately outside Git. This is a deployment recovery point, not independent backup retention.",
+  "isolated_migration": {
+    "workspaces": 19,
+    "existing_tables": 212,
+    "all_existing_rows_preserved": true,
+    "model": "stub; no model calls"
+  },
+  "smoke": {
+    "candidate": "795e4b1",
+    "at": "2026-09-05T09:42:26.480642+00:00",
+    "checks": [
+      "PostgreSQL readiness and liveness",
+      "served page exactly matches candidate HTML",
+      "current capability disclosure",
+      "synthetic import",
+      "audited case save",
+      "due/disputed lists",
+      "stale case refusal",
+      "viewer write refusal and revocation",
+      "live model assist with fictional records",
+      "exported audit verifies without anomalies",
+      "unconfigured Xero disclosed accurately"
+    ],
+    "health": {
+      "store": true,
+      "backing": "postgres",
+      "model": "openai/gpt-oss-120b",
+      "adapter": "invoices-es",
+      "mode": "demo"
+    },
+    "capabilities": {
+      "mode": "demo",
+      "self_service": true,
+      "model": "openai/gpt-oss-120b",
+      "session_days": 30,
+      "max_records": 500,
+      "max_upload_bytes": 1048576,
+      "daily_proposals": 20,
+      "all_writes_require_approval": false,
+      "sends_email": false,
+      "hosted_tracing": false,
+      "retrieval": "customer",
+      "oidc": false,
+      "identity_required": false
+    },
+    "html_sha256": "4d47fd1e87521fd6e777567676074834fc68c593e8504dc9e559283ceb7c4b21",
+    "assist": {
+      "completed": true,
+      "cached": false
+    },
+    "audit": {
+      "verifies": true,
+      "head_seq": 9,
+      "head_hash": "bd86f9e843fd6c350e11dc80506a273bbfc45859f56de10aedcb17c5143dcf50",
+      "anomalies": []
+    },
+    "synthetic_workspace_removed": true,
+    "passed": true,
+    "limits": [
+      "Existing demo mode retained; IdP and Xero applications are not configured",
+      "Synthetic smoke test is not a customer acceptance or model-quality evaluation"
+    ]
+  },
+  "passed": true,
+  "browser": "Chrome rendered the deployed daily-work interface and reopened an existing saved workspace; no existing records were edited"
+}

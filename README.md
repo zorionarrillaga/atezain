@@ -12,10 +12,12 @@ while uncertain outcomes remain visible and require investigation.
 and measurable release gates are in [PRODUCT_RELEASE.md](PRODUCT_RELEASE.md). Enterprise mode adds
 verified OIDC workforce subjects, workspace membership, read-only Xero synchronization, daily
 ownership/dispute/promise tracking and exact reminder amendments. Every permitted write needs human
-approval. A changed accounting snapshot or follow-up plan invalidates an older proposal.
+approval in enterprise mode. A changed accounting snapshot or follow-up plan invalidates an older proposal.
 
-These changes have not been deployed. The historical public demo is at
-<https://atezain.onrender.com/demo>; `STATUS.md` records its deployment history. Configuration and
+The candidate is deployed at <https://atezain.onrender.com/demo> in its existing demo mode, where
+automatic notes remain possible. Customer OIDC and Xero applications are not configured on that service.
+[Deployment evidence](ops/deployment-result.json) records the image, migration and live checks;
+`STATUS.md` preserves deployment history. Configuration and
 recovery procedures are in [ops/RUNBOOK.md](ops/RUNBOOK.md). Customer IdP/Xero sandbox acceptance,
 hosted operation, independent security review and commercial commitments remain external release
 gates. Email delivery, payment processing, an enterprise SLA and compliance certification are outside
@@ -102,7 +104,7 @@ its malformed-output refusals and unreviewed prose are explicitly distinguished 
 
 ## Try it
 
-The following describes the previously deployed demo. For the revised local workspace, use `make serve`.
+The following describes the hosted demo. Use `make serve` for the local workspace.
 
 
 <https://atezain.onrender.com/demo> — a free Render instance that sleeps when idle, so a

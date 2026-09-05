@@ -1,5 +1,25 @@
 # Status
 
+## Authorized deployment (2026-09-05)
+
+On the owner's explicit "push, deploy", `795e4b1` was pushed to the existing private origin and
+deployed to the existing Render free service with a cleared build cache. Render reports it Live as
+`dep-dadu7e0n74is73bk7ro0`. Before deployment an encrypted database snapshot was restored into an
+isolated copy; initializing the candidate preserved every existing row in all prior tables. The
+temporary copy was removed. The encrypted recovery snapshot and its separately stored key remain
+local, outside Git; they do not establish independent backup retention.
+
+Verified over the public HTTPS API: PostgreSQL readiness and liveness, byte-identical candidate
+HTML, fictional import, audited case save, due/disputed worklists, stale-save refusal, viewer write
+refusal and revocation, a live model assist, and a clean exported audit. The synthetic workspace was
+removed after verification. Machine-readable evidence is `ops/deployment-result.json`.
+
+The service remains in its existing **demo mode**: automatic notes remain possible, and verified
+workforce identity and Xero are not enabled without provider configuration. Their external acceptance
+gates remain open. Docker build/execution on Render is now verified; hosted GitHub CI remains
+SKIPPED because it was not activated. No paid plan or new service was created. The original
+uncommitted proxy/rate-limit review edits remain preserved and uncommitted.
+
 ## Supervised collections enterprise candidate (2026-09-05)
 
 Continued from `584668e` under the owner's instruction to complete the engineering follow-through.
@@ -29,8 +49,8 @@ Verification is recorded in `GAUGES.md` and the machine-readable operational/eva
 `make all` completed green, including the expanded identity/accounting sabotage cases, and its final
 writer synchronized the gauge values in README, WRITEUP and this document. The complete PostgreSQL
 suite also passed after the populated recovery fixture was added. The only skip in that run is the
-PostgreSQL-specific locking test's SQLite arm. This is a locally committed engineering candidate;
-nothing was pushed or deployed.
+PostgreSQL-specific locking test's SQLite arm. This candidate was committed locally before the
+owner authorized the separate deployment recorded above.
 The isolated PostgreSQL restore drill passed with populated accounting snapshots, encrypted connector
 credentials, workforce access and administration events, independently compared audit heads,
 revoked access, approvals, case state and checkpoint reuse. Its expanded remote fixture needed a longer
@@ -52,8 +72,8 @@ Dependencies include pinned JWT signature
 verification and authenticated credential/backup encryption; provider secrets are never model input.
 
 SKIPPED: live customer IdP and Xero sandbox acceptance, because no provider applications/test tenant
-access or customer confirmation was supplied. SKIPPED: deployment, hosted CI activation, Docker
-execution, production recovery/alert drills, external security assessment and procurement approval;
+access or customer confirmation was supplied. SKIPPED: hosted CI activation, independent production
+recovery/alert drills, external security assessment and procurement approval;
 these require their corresponding environment, owner authorization or independent party. Current
 model prose needs a separate human review; historical labels remain unchanged. No production-readiness,
 email-delivery, certification or service-level claim follows from the local engineering results.
