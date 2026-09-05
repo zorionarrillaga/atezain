@@ -1,44 +1,35 @@
 {
   "format": "atezain-deployment-v1",
   "date": "2026-09-05",
-  "authorized_by": "owner request: push, deploy",
+  "authorized_by": "owner request in the session: push, then deploy",
   "service": "srv-dac734mk1f9s738nk0o0",
   "url": "https://atezain.onrender.com",
-  "commit": "795e4b1e47b6ff306fa8ee73156b06db21c419ed",
-  "previous_commit": "7887500e4ff6e2ad4f7340926779e7f0b1ad1caa",
-  "deploy": "dep-dadu7e0n74is73bk7ro0",
-  "method": "manual clean build cache and deploy",
-  "render_status": "Live",
-  "render_duration_seconds": 55.4,
+  "commit": "a0cf52168bee11c08df431ee20e84b86d34cbd67",
+  "previous_commit": "795e4b1e47b6ff306fa8ee73156b06db21c419ed",
+  "previous_deploy": "dep-dadu7e0n74is73bk7ro0",
+  "deploy": "dep-dae3fdpt0dsc738mq6d0",
+  "method": "manual clean build cache and deploy, clicked in the dashboard from the owner's browser",
+  "render_status": "Deploy succeeded",
+  "render_duration_seconds": 56.0,
   "plan": "free",
   "configuration": "existing demo mode retained; no IdP or Xero application configured",
-  "backup": {
-    "backup_sha256": "6e2cb233c26d39739d2edcd5ef457860cf9c574714b12b5e9f1d1ca6422aa2d9",
-    "bytes": 624996
-  },
-  "backup_storage": "Local encrypted recovery snapshot; key kept separately outside Git. This is a deployment recovery point, not independent backup retention.",
-  "isolated_migration": {
-    "workspaces": 19,
-    "existing_tables": 212,
-    "all_existing_rows_preserved": true,
-    "model": "stub; no model calls"
-  },
+  "backup": "SKIPPED: no production DSN or backup key exists on this machine outside the Render dashboard; the change carries no migration and no schema change",
+  "served_change_seen_after_seconds": 61,
+  "read_at_the_source": "the served page lacked the draft-panel sync before the click and carried it 61 s after; every check below is an HTTPS read of the service, none is the dashboard's status",
   "smoke": {
-    "candidate": "795e4b1",
-    "at": "2026-09-05T09:42:26.480642+00:00",
-    "checks": [
-      "PostgreSQL readiness and liveness",
-      "served page exactly matches candidate HTML",
-      "current capability disclosure",
-      "synthetic import",
-      "audited case save",
-      "due/disputed lists",
-      "stale case refusal",
-      "viewer write refusal and revocation",
-      "live model assist with fictional records",
-      "exported audit verifies without anomalies",
-      "unconfigured Xero disclosed accurately"
-    ],
+    "candidate": "a0cf521",
+    "at": "2026-09-05T15:41:26.163253+00:00",
+    "checks": {
+      "served page byte-identical to candidate api/demo.html": true,
+      "served page carries the draft-panel sync": true,
+      "synthetic import": true,
+      "summary and work list reckon the same today": true,
+      "overdue probe counted and listed": true,
+      "a case deferred to today is due today (audited case save)": true,
+      "audit verifies without anomalies": true,
+      "synthetic workspace removed": true,
+      "removed workspace no longer opens": true
+    },
     "health": {
       "store": true,
       "backing": "postgres",
@@ -61,24 +52,20 @@
       "oidc": false,
       "identity_required": false
     },
-    "html_sha256": "4d47fd1e87521fd6e777567676074834fc68c593e8504dc9e559283ceb7c4b21",
-    "assist": {
-      "completed": true,
-      "cached": false
+    "html_sha256": "4c179ceb40617b49e683112169a785b45a2a3fd0af60a3393d814c6d45414f90",
+    "as_of": {
+      "summary": "2026-09-05",
+      "worklist": "2026-09-05"
     },
     "audit": {
       "verifies": true,
-      "head_seq": 9,
-      "head_hash": "bd86f9e843fd6c350e11dc80506a273bbfc45859f56de10aedcb17c5143dcf50",
+      "head_seq": 4,
+      "head_hash": "39c5407dfc9025b47648e245cce0d1456e038df1f09a57ac70a4f08ac4518430",
       "anomalies": []
     },
-    "synthetic_workspace_removed": true,
     "passed": true,
-    "limits": [
-      "Existing demo mode retained; IdP and Xero applications are not configured",
-      "Synthetic smoke test is not a customer acceptance or model-quality evaluation"
-    ]
+    "model_calls": 0
   },
   "passed": true,
-  "browser": "Chrome rendered the deployed daily-work interface and reopened an existing saved workspace; no existing records were edited"
+  "browser": "Chrome, for the dashboard click only; the service was verified over HTTPS from this machine"
 }

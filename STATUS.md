@@ -1,5 +1,25 @@
 # Status
 
+## Authorized deployment of the gaps review (2026-09-05, evening)
+
+On the owner's *push* and then *deploy*, both given in the session, `a0cf521` was pushed to the
+private origin (`main` had been four commits ahead since the morning's sessions; it now matches) and
+deployed to the existing Render free service with the build cache cleared: `dep-dae3fdpt0dsc738mq6d0`,
+56.0 s, source `a0cf521`, clicked in the dashboard from the owner's browser. Read at the source and
+not from the dashboard: before the click the served page carried no draft-panel sync; 61 s after it,
+it did, and the page is byte-identical to this tree's `api/demo.html`. A probe workspace over HTTPS
+then imported one fictional row, read the same `as_of` from the summary and the work list, saw the
+probe overdue on both, saved a plan deferring it to that day and found it still due, verified its
+chain at `head_seq 4` with no anomalies, and was deleted with the confirmation header; it no longer
+opens. No model call was made and nothing of anyone else's was touched. `ops/deployment-result.json`
+is the machine-readable record; the morning's deployment keeps its section below and its record in
+git history.
+
+SKIPPED: the pre-deploy encrypted database snapshot the morning's deployment took, because no
+production DSN or backup key exists on this machine outside the Render dashboard; the change carries
+no migration and no schema change, so starting it rewrote nothing that existed. The service stays in
+demo mode, as before; IdP and Xero remain unconfigured there.
+
 ## Gaps review after the solo evaluation (2026-09-05, Claude Fable 5.1)
 
 The owner asked for a review of what the completed solo evaluation left open, with the gaps fixed.
