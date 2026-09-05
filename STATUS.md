@@ -1,5 +1,21 @@
 # Status
 
+## Release acceptance closure plan (2026-09-05)
+
+Reviewed `PRODUCT_RELEASE.md` against the saved engineering, workload, recovery, browser and deployment
+evidence. `ops/RELEASE_ACCEPTANCE.md` now names responsible roles, external exercises, pass conditions,
+dependencies and evidence fields for closing each gate. `PRODUCT_RELEASE.md` links that checklist.
+The checklist distinguishes the existing local workload runner from a needed hosted HTTPS driver,
+and the current model boundary evaluation from the outstanding human prose/usefulness review.
+No customer acceptance is inferred from the recorded demo deployment or local fixtures.
+Verification: `make all` passed, including the dedicated PostgreSQL test arm, with unchanged gauge
+totals. The checklist's local links resolve and the documentation diff has no whitespace errors.
+
+SKIPPED: customer/provider acceptance, hosted workload, independent backup/operational drills, hosted
+CI activation, finance-user sign-off and independent security/procurement acceptance. Their required
+customer, environment, authorized service activation or independent reviewer has not been supplied
+for this exercise. The checklist is a plan; it does not claim those tasks or a hosted driver are built.
+
 ## Authorized deployment (2026-09-05)
 
 On the owner's explicit "push, deploy", `795e4b1` was pushed to the existing private origin and

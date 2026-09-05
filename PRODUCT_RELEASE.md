@@ -26,6 +26,11 @@ The connector uses Xero’s [invoice API](https://developer.xero.com/documentati
 
 ## Evidence index and customer acceptance
 
+The executable closure checklist is [ops/RELEASE_ACCEPTANCE.md](ops/RELEASE_ACCEPTANCE.md).
+It assigns responsible roles, defines the remaining exercises and evidence, and records the release
+decision separately from local engineering results. Customer acceptance remains OPEN until the
+applicable exercises and named sign-offs are complete; a SKIPPED exercise does not pass a gate.
+
 | Area | Reproducible engineering evidence | Still required externally |
 |---|---|---|
 | Identity | `tests/test_identity.py`; workforce membership/session/revocation across processes in `tests/test_api_pg.py` | Actual tenant claim mapping, MFA enforcement, disabled-user behavior and provider key rollover |
