@@ -468,3 +468,75 @@ def test_the_draft_panel_shows_the_text_a_decision_is_about(client):
     refresh = page.split("async function refresh() {")[1].split("\n      }")[0]
     assert "syncDraft();" in refresh, "refresh() no longer re-syncs the draft panel with the queue"
     assert "the model's original is in proposal history" in page
+
+
+def test_the_page_reads_the_workspace_in_one_round_trip(client):
+    """The page refreshed seven routes in sequence after every assist and decision — in sequence
+    because two requests on one workspace at once are refused with 409 by the workspace lock
+    (STATUS.md, the 500-row question). `GET /overview` is the same seven reads under one lock, built
+    from the same functions the routes use, so each half of it equals the route it stands for; and
+    the page's `refresh()` makes that one call and none of the seven."""
+    sid, h = session(client)
+    upload(client, sid, h)
+    assist(client, sid, h)
+    ov = client.get(f"/sessions/{sid}/overview", headers=h)
+    assert ov.status_code == 200, ov.text
+    ov = ov.json()
+    assert set(ov) == {"access", "records", "proposals", "summary", "audit", "worklist", "accounting"}
+    for part, route in (("access", "/access"), ("records", "/records"), ("proposals", "/proposals"), ("summary", "/summary"),
+                        ("audit", "/audit"), ("worklist", "/worklist?view=due"), ("accounting", "/accounting")):
+        assert ov[part] == client.get(f"/sessions/{sid}{route}", headers=h).json(), part
+    assert ov["records"] and ov["proposals"] and ov["audit"]["rows"], "the overview is read on a workspace with work in it"
+    assert client.get(f"/sessions/{sid}/overview?view=mine", headers=h).json()["worklist"] == \
+        client.get(f"/sessions/{sid}/worklist?view=mine", headers=h).json()
+    assert client.get(f"/sessions/{sid}/overview?view=nope", headers=h).status_code == 422
+    assert client.get(f"/sessions/{sid}/overview").status_code == 401
+    page = client.get("/demo").text
+    refresh = page.split("async function refresh() {")[1].split("\n      }")[0]
+    assert 'url("/overview?view=' in refresh
+    for old in ('url("/access")', 'url("/records")', 'url("/proposals")', 'url("/summary")', 'url("/audit")', 'url("/worklist', 'url("/accounting")'):
+        assert old not in refresh, f"refresh() still reads {old} on its own"
+
+
+def test_the_record_list_is_read_in_a_bounded_number_of_statements():
+    """`Records.summaries()` is one query for the list and one for the source snapshots, whatever
+    the size of the workspace — never a read per record (2.7 s for 280 of them against Neon was
+    the number that raised the 500-row question). The statement count at 300 records is the
+    statement count at 3."""
+    from records import Records
+    ROOT_ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    def count(n):
+        r = Records(":memory:")
+        r.load_seed(os.path.join(ROOT_, "adapters", "invoices-es", "seed.json"))
+        for i in range(n):
+            r.load_seed_row({"id": f"F-2026-{900 + i:03d}", "customer": f"Cliente {i}", "amount": 10.0 + i, "issued": "2026-08-01",
+                             "due": "2026-08-31", "contact": f"c{i}@example.test"})
+        statements = []
+        r.conn._conn.set_trace_callback(statements.append)
+        rows = r.summaries()
+        r.conn._conn.set_trace_callback(None)
+        r.close()
+        assert len(rows) >= n
+        return len(statements)
+    assert count(300) == count(3) <= 3
+
+
+def test_the_copied_draft_carries_the_visitors_signature_and_the_held_text_does_not(client):
+    """⚖ 2026-09-05 (STATUS.md, Open questions — the signature): every draft ends `[Su nombre]` /
+    `[Empresa]` because nothing tells the model who is writing. The ruling is to substitute OUTSIDE
+    the model, on the page, from a signature kept on the visitor's device: the prompt the hundred
+    were measured with is untouched, the held proposal keeps the model's exact text, and the record
+    gains a name only through a reviewer's own amendment (pre-filled, for review). The page's script
+    is not run here — this pins the wiring."""
+    page = client.get("/demo").text
+    assert 'const SIGNATURE_KEY = "atezain.signature";' in page and "function sign(" in page and "function unsigned(" in page
+    assert 'id="signature-form"' in page and "Kept on this device only" in page and "never sent to the server" in page
+    assert '$("#draft-editor").value = sign(a.draft);' in page, "the copy carries the signature"
+    assert '$("#draft-editor").dataset.model = a.draft;' in page, "the model's exact text stays the reference the panel syncs against"
+    assert "editor.value = sign(text);" in page, "an amended held text is signed in the copy too"
+    assert 'editor.querySelector("textarea").value = sign(p.params.reminder_text);' in page, "the amendment is pre-filled, for review"
+    assert "localStorage.setItem(SIGNATURE_KEY" in page and "SIGNATURE_KEY" not in page.split("async function call(")[1].split("\n      }")[0]
+    # the prompt the hundred were run with is not where the name goes (its bytes are also pinned by the
+    # served evaluation's fingerprint, `tests/test_acceptance_tools.py`)
+    prompt = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "adapters", "invoices-es", "prompt.md"), encoding="utf-8").read()
+    assert "firma" not in prompt.lower() and "quien escribe" not in prompt.lower()

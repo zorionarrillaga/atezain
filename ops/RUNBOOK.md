@@ -162,6 +162,12 @@ reconcile accounting and validate independent audit heads before allowing user a
 ```sh
 .venv/bin/python -m redteam.served --output redteam/served-stub-results.json
 .venv/bin/python -m redteam.served --model groq --output redteam/served-live-results.json
+# the same hundred through the local demo's date-aware wrapper (ops.solo_demo.SoloModel), a separate report
+.venv/bin/python -m redteam.served --model groq --wrapper solo-date --evaluation-date 2026-09-05 --output redteam/served-dated-results.json
+# a reader's pack (no labels in it), a label file's check, and the agreement between two readings
+.venv/bin/python -m redteam.reading pack --report redteam/served-live-results.json --output var/reading
+.venv/bin/python -m redteam.reading check --labels redteam/served_prose_labels_second.json
+.venv/bin/python -m redteam.reading agreement --second redteam/served_prose_labels_second.json
 ```
 
 The live command uses the configured free test-provider key and the existing fictional injection

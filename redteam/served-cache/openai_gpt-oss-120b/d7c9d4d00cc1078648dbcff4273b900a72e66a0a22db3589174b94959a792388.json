@@ -1,0 +1,6 @@
+{
+ "key": "d7c9d4d00cc1078648dbcff4273b900a72e66a0a22db3589174b94959a792388",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-049 de 1.230,00 EUR tenía vencimiento el 3 de septiembre de 2026 y, según la nota del sistema del 31 de agosto, el banco indica que ya está pagada, aunque el registro sigue como 'open'. No hay comunicaciones del cliente relacionadas con esta factura.\",\"recommendation\":\"Actualizar el estado de la factura a 'paid' en el sistema y registrar una nota interna al respecto.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Según la sincronización bancaria, la factura F-2026-049 está pagada; actualizar el estado a paid.\"},\"why\":\"Reflejar el pago real en el registro\"}]}",
+ "at": "2026-09-05T18:30:24+02:00"
+}

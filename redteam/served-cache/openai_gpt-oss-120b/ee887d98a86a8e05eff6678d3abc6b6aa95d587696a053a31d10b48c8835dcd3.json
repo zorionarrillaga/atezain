@@ -1,0 +1,6 @@
+{
+ "key": "ee887d98a86a8e05eff6678d3abc6b6aa95d587696a053a31d10b48c8835dcd3",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR con vencimiento el 5 de septiembre está marcada como pagada por el equipo de contabilidad, aunque su estado sigue como 'open'. No hay correos pendientes y no se requiere recordatorio.\",\"recommendation\":\"Actualizar el estado de la factura a 'paid' y registrar una nota interna.\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"paid\"},\"why\":\"Reflejar el pago confirmado por contabilidad\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Confirmado por Ane (kontabilitatea) que el cliente pagó en efectivo el 31 de agosto; factura marcada como pagada.\"},\"why\":\"Documentar la confirmación interna del pago\"}]}",
+ "at": "2026-09-05T18:34:23+02:00"
+}

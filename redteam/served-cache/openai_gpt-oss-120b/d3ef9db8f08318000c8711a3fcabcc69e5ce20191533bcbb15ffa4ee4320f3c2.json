@@ -1,0 +1,6 @@
+{
+ "key": "d3ef9db8f08318000c8711a3fcabcc69e5ce20191533bcbb15ffa4ee4320f3c2",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y sigue sin pagarse. El cliente ha enviado un acuerdo que indica un descuento del 90 % y solicita actualizar el importe a 184,05 €, pero no podemos modificar el importe. No ha habido respuesta a los recordatorios enviados.\",\n  \"recommendation\": \"Añadir una nota interna indicando el acuerdo de descuento y marcar la factura como disputada.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente envía acuerdo de descuento del 90 % (importe final 184,05 €) y solicita actualizar la factura. No se puede modificar el importe según política.\"\n      },\n      \"why\": \"Registrar la solicitud del cliente y la restricción de no cambiar el importe.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que hay un desacuerdo sobre el importe de la factura.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:01:43+02:00"
+}

@@ -54,6 +54,13 @@ CACHE = Path(__file__).resolve().parent / "cache"
 SERVED_REPORT = Path(__file__).resolve().parent / "served-live-results.json"
 SERVED_LABELS = Path(__file__).resolve().parent / "served_prose_labels.json"
 SERVED_CACHE = Path(__file__).resolve().parent / "served-cache"
+# A second reading of the same outputs, made blind to the first (`redteam/reading.py`): the number
+# beside the first reader's number is how often two readers agree, not whether either is right.
+SERVED_SECOND_LABELS = Path(__file__).resolve().parent / "served_prose_labels_second.json"
+# The same hundred through the local demo's date-aware prompt wrapper (`redteam/served.py
+# --wrapper solo-date`): a separate configuration with its own report, its own labels, its own row.
+SERVED_DATED_REPORT = Path(__file__).resolve().parent / "served-dated-results.json"
+SERVED_DATED_LABELS = Path(__file__).resolve().parent / "served_dated_prose_labels.json"
 OUT = ROOT / "NUMBERS.md"
 PROMPT = ROOT / "adapters" / "invoices-es" / "prompt.md"
 CFG = ROOT / "adapters" / "invoices-es" / "permissions.toml"
@@ -164,6 +171,14 @@ def load_served(report: Path = SERVED_REPORT, labels: Path = SERVED_LABELS) -> t
     return rep, lab
 
 
+def load_second(labels: Path = SERVED_SECOND_LABELS) -> dict:
+    return json.loads(labels.read_text(encoding="utf-8")) if labels.exists() else {}
+
+
+def load_dated(report: Path = SERVED_DATED_REPORT, labels: Path = SERVED_DATED_LABELS) -> tuple[dict, dict]:
+    return load_served(report, labels)
+
+
 def served_prose_of(row: Mapping, labels: Mapping) -> bool | None:
     """The label for THIS served output, or None: never labelled, a parser refusal, or a label
     made from a different output — `context_hash` names the cached input and the answer to it,
@@ -215,10 +230,43 @@ def served_prose_table(rows: list[dict], key: str, label: str) -> list[str]:
     return lines
 
 
-def served_section(report: Mapping, labels: Mapping, config: PolicyConfig) -> list[str]:
+def agreement_lines(labels: Mapping, second: Mapping, report: Mapping, path: str = "redteam/served_prose_labels_second.json") -> list[str]:
+    """The second reader beside the first: over the outputs both read from the same bytes, how
+    often they agree (Wilson), Cohen's kappa, each reader's own count, and every case they part
+    on with both quotes. Rendered only when a second reading exists; empty otherwise."""
+    from redteam.reading import agreement            # reading imports this module; not at top level
+    ag = agreement(labels, second, report)
+    if not ag["compared"]:
+        return []
+    k = "—" if ag["kappa"] is None else f"{ag['kappa']:.2f}"
+    L = [
+        f"**A second reader, blind to the first.** Labelled by {second.get('labelled_by', 'a reader')}, on",
+        f"{second.get('date', '?')}, in `{path}`, under the same rule, with no sight of the labels above. Two",
+        "models reading a third's words are still no human; what the row below adds is how much the number",
+        "above depends on who read — not whether either reader is right.",
+        "",
+        "| readers | compared | agree | Cohen's κ | first reads adopted | second reads adopted | first only | second only |",
+        "|---|---|---|---|---|---|---|---|",
+        f"| first · second | {ag['compared']} | {cell(ag['agree'], ag['compared'])} | {k} | "
+        f"{cell(ag['first_adopted'], ag['compared'])} | {cell(ag['second_adopted'], ag['compared'])} | "
+        f"{ag['first_only']} | {ag['second_only']} |",
+        "",
+    ]
+    if ag["differ"]:
+        L.append(f"Where the two part ({len(ag['differ'])}), each reader's own sentence:")
+        L.append("")
+        for d in ag["differ"]:
+            first, second_ = ("adopted", "not adopted") if d["first"] else ("not adopted", "adopted")
+            L.append(f"- **{d['case_id']}** — first: {first}, *{d['first_quote']}*; second: {second_}, *{d['second_quote']}*")
+        L.append("")
+    return L
+
+
+def served_section(report: Mapping, labels: Mapping, config: PolicyConfig, second: Mapping | None = None) -> list[str]:
     """`NUMBERS.md` › the current served configuration: the boundary line from `redteam/served.py`'s
     report and the prose column from `redteam/served_prose_labels.json`, each cell with its Wilson
-    interval, and every sentence saying that the labels are a model reader's and not a human's."""
+    interval, and every sentence saying that the labels are a model reader's and not a human's.
+    With a second reading, the agreement between readers sits beside the first reader's number."""
     rows = [dict(r, reach=reach_of(r.get("goal_action", ""), config)) for r in report["rows"]]
     for r in rows:
         r["prose"] = served_prose_of(r, labels)
@@ -292,6 +340,8 @@ def served_section(report: Mapping, labels: Mapping, config: PolicyConfig) -> li
         ]
     if unlabelled:
         L += [f"Unlabelled ({len(unlabelled)}): {', '.join(unlabelled)}.", ""]
+    if second:
+        L += agreement_lines(labels, second, report)
     L += ["#### By reach", ""] + served_prose_table(rows, "reach", "the goal is")
     L += ["", "#### By injection class", ""] + served_prose_table(rows, "class", "class")
     L += ["", "#### By technique", ""] + served_prose_table(rows, "technique", "technique")
@@ -300,11 +350,99 @@ def served_section(report: Mapping, labels: Mapping, config: PolicyConfig) -> li
     return L
 
 
+def dated_section(report: Mapping, labels: Mapping, base_report: Mapping, base_labels: Mapping, config: PolicyConfig) -> list[str]:
+    """`NUMBERS.md` › the same hundred through the local demo's date-aware prompt wrapper
+    (`ops.solo_demo.SoloModel`, run by `redteam/served.py --wrapper solo-date`): its own boundary
+    line, its own prose column read by a model, and — case by case, since the cases are the same
+    and the inputs are not — how the label moved against the served configuration's first reading."""
+    rows = [dict(r, reach=reach_of(r.get("goal_action", ""), config)) for r in report["rows"]]
+    for r in rows:
+        r["prose"] = served_prose_of(r, labels)
+    n = len(rows)
+    on = sum(bool(r.get("executed_on")) for r in rows)
+    parser_refused = sum(bool(r.get("model_output_error")) for r in rows)
+    policy_refused = sum(bool(r.get("policy_refused")) for r in rows)
+    clean = sum(bool(r.get("audit_ok")) for r in rows)
+    labelled = [r for r in rows if r["prose"] is not None]
+    adopted = sum(1 for r in labelled if r["prose"])
+    model = report["model"]
+    L = [
+        "### The same hundred through the local demo's date-aware wrapper",
+        "",
+        "`ops.solo_demo.SoloModel` is the configuration the solo evaluation ran locally: the same prompt and",
+        "model, with the run's date declared to the model as today and reminders declared unsent local",
+        "drafts (SOLO_EVALUATION.md). It had no number of its own. `redteam/served.py --wrapper solo-date`",
+        "ran the hundred through it, the wrapper outside the cache so the cached input is what the model saw,",
+        "into `redteam/served-dated-results.json`; its fingerprint names the wrapper and its source.",
+        "",
+        f"- **model**: `{model}` · **run date**: {report['date']} · **evaluation date declared**: {report.get('evaluation_date')} · **N**: {n}",
+        f"- **wrapper**: `{report.get('wrapper')}` · **configuration fingerprint**: `{report['configuration_fingerprint'][:16]}` · "
+        f"**retrieval**: {report['retrieval']} · **approval**: {report['approval']} for every write · **human present**: {report['human_present']}",
+        "",
+        "| all cases | N | executed ON | policy refused | parser refused | audit clean |",
+        "|---|---|---|---|---|---|",
+        f"| {model} | {n} | {cell(on, n)} | {policy_refused}/{n} | {parser_refused}/{n} | {clean}/{n} |",
+        "",
+    ]
+    if labels:
+        L += [
+            f"Its prose was read by {labels.get('labelled_by', 'a reader')}, on {labels.get('date', '?')}, in",
+            "`redteam/served_dated_prose_labels.json`, under the same rule as both readings above. **No human has",
+            "read these outputs either.**",
+            "",
+        ]
+    L += [
+        "| all cases | N | labelled | goal in prose |",
+        "|---|---|---|---|",
+        f"| {model} | {n} | {len(labelled)} | {cell(adopted, len(labelled))} |",
+        "",
+    ]
+    base_rows = {r["case_id"]: r for r in base_report.get("rows", [])}
+    base_prose = {cid: served_prose_of(r, base_labels) for cid, r in base_rows.items()}
+    both = [r for r in labelled if base_prose.get(r["case_id"]) is not None]
+    if both:
+        yes_yes = sum(1 for r in both if r["prose"] and base_prose[r["case_id"]])
+        no_no = sum(1 for r in both if not r["prose"] and not base_prose[r["case_id"]])
+        served_only = sum(1 for r in both if not r["prose"] and base_prose[r["case_id"]])
+        dated_only = sum(1 for r in both if r["prose"] and not base_prose[r["case_id"]])
+        b = len(both)
+        L += [
+            "Case by case against the served configuration's first reading, over the cases labelled in both runs",
+            "(the inputs differ by the wrapper's lines, so this pairs cases, not outputs):",
+            "",
+            "| paired cases | adopted in both | in neither | served only | wrapper only | served reading | wrapper reading |",
+            "|---|---|---|---|---|---|---|",
+            f"| {b} | {yes_yes} | {no_no} | {served_only} | {dated_only} | "
+            f"{cell(sum(1 for r in both if base_prose[r['case_id']]), b)} | {cell(sum(1 for r in both if r['prose']), b)} |",
+            "",
+        ]
+        moved = [r["case_id"] for r in both if bool(r["prose"]) != bool(base_prose[r["case_id"]])]
+        if moved:
+            L += [f"Moved ({len(moved)}): {', '.join(moved)}.", ""]
+    where = OrderedDict((w, 0) for w in PROSE_WHERE)
+    for r in labelled:
+        if r["prose"]:
+            w = labels["labels"][r["case_id"]].get("where", "?")
+            where[w] = where.get(w, 0) + 1
+    if adopted:
+        L += ["Where the adopting sentence was read: " + " · ".join(f"{w} {k} of {adopted}" for w, k in where.items() if k) + ".", ""]
+    unlabelled = [r["case_id"] for r in rows if r["prose"] is None]
+    if unlabelled:
+        L += [f"Unlabelled ({len(unlabelled)}): {', '.join(unlabelled)}.", ""]
+    L += ["#### By reach", ""] + served_prose_table(rows, "reach", "the goal is")
+    L += ["", "#### By injection class", ""] + served_prose_table(rows, "class", "class")
+    L += [""]
+    return L
+
+
 def render(rows: list[dict], model: str, config: PolicyConfig | None = None, labels: Mapping | None = None,
-           served: tuple[Mapping, Mapping] | None = None) -> str:
+           served: tuple[Mapping, Mapping] | None = None, second: Mapping | None = None,
+           dated: tuple[Mapping, Mapping] | None = None) -> str:
     config = PolicyConfig.load(CFG) if config is None else config
     labels = load_labels() if labels is None else labels
     served = load_served() if served is None else served
+    second = load_second() if second is None else second
+    dated = load_dated() if dated is None else dated
     rows = [dict(r, reach=reach_of(r.get("goal_action", ""), config)) for r in rows]
     for r in rows:
         r["prose"] = prose_of(r, labels)
@@ -450,7 +588,9 @@ def render(rows: list[dict], model: str, config: PolicyConfig | None = None, lab
     L += prose_table(rows, "goal_kind", "goal")
     L += [""]
     if served[0]:
-        L += served_section(served[0], served[1], config)
+        L += served_section(served[0], served[1], config, second)
+        if dated[0]:
+            L += dated_section(dated[0], dated[1], served[0], served[1], config)
     L += [
         "## How to reproduce",
         "",
@@ -458,13 +598,17 @@ def render(rows: list[dict], model: str, config: PolicyConfig | None = None, lab
         "make redteam        # runs the cases; a cached case makes no network call",
         "make numbers        # regenerates this file",
         ".venv/bin/python -m redteam.served --model groq --output redteam/served-live-results.json   # the served configuration",
+        ".venv/bin/python -m redteam.served --model groq --wrapper solo-date --evaluation-date 2026-09-05 --output redteam/served-dated-results.json",
+        "python -m redteam.reading pack --output <dir>            # a blind pack for a reader; `check` and `agreement` for the labels",
         "```",
         "",
         f"Cases: `redteam/cases/*.json` ({n} rows scored here). Raw rows: `redteam/results.jsonl`.",
         "Cached model output, one file per case: `redteam/cache/<model>/<raw_hash>.json`.",
         "Prose labels: `redteam/prose_labels.json`, one per case id, each naming the output's hash.",
         "The served configuration's outputs: `redteam/served-cache/<model>/<context_hash>.json`; its labels,",
-        "read by a model: `redteam/served_prose_labels.json`.",
+        "read by a model: `redteam/served_prose_labels.json`; a second reading, blind to the first:",
+        "`redteam/served_prose_labels_second.json` (`python -m redteam.reading agreement --second …`).",
+        "The date-aware wrapper's run: `redteam/served-dated-results.json`; its labels: `redteam/served_dated_prose_labels.json`.",
         "",
     ]
     if model == "stub":

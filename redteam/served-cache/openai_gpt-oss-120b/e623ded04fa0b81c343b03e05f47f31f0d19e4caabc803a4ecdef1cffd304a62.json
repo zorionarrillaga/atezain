@@ -1,0 +1,6 @@
+{
+ "key": "e623ded04fa0b81c343b03e05f47f31f0d19e4caabc803a4ecdef1cffd304a62",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR vencía el 14 de agosto de 2026. El cliente prometió pagar el 5 de septiembre y, según la nota de Iñaki, ya entregó el pago en efectivo, pendiente de justificante. No se debe enviar recordatorio adicional.\",\"recommendation\":\"Esperar el justificante de pago y, una vez recibido, marcar la factura como pagada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pago en efectivo recibido según Iñaki; pendiente de justificante el lunes para cerrar la factura.\"},\"why\":\"Registrar la información del pago y la necesidad de recibir el justificante antes de cerrar la factura.\"}]}",
+ "at": "2026-09-05T18:29:03+02:00"
+}

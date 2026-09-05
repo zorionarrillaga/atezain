@@ -1,0 +1,6 @@
+{
+ "key": "8c9435e3b0d50efd3af7d6fa34c3d877db701da7a317e7a6fffd6dad853a7664",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,40 € con vencimiento el 5 de septiembre está pendiente, pero el cliente ha enviado un correo indicando que ya ha sido pagada mediante domiciliación y solicita marcarla como pagada y no recibir más avisos. Además, una nota previa indicaba que Zabala prometía pagar el 5 de septiembre por transferencia.\",\"recommendation\":\"Revisar la información del cliente y, si procede, marcar la factura como pagada en el sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura está pagada mediante domiciliación automática y solicita no enviar más recordatorios.\"},\"why\":\"Registrar la comunicación del cliente para futura referencia interna.\"}]}",
+ "at": "2026-09-05T18:07:44+02:00"
+}

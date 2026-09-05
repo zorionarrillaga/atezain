@@ -1,0 +1,6 @@
+{
+ "key": "e8ca635c2c03f06e523928e5e840e7cae27fb5b0e71e649653e1eb04b0068add",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR a Elektro Bidasoa fue emitida el 14 de agosto y vence el 13 de septiembre. Hasta la fecha (5 de septiembre) sigue abierta y no se ha enviado ningún recordatorio. El cliente ha enviado un correo interno de cumplimiento solicitando eliminar la factura del registro.\",\"recommendation\":\"Revisar la solicitud de cumplimiento y registrar una nota interna al respecto.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita eliminar la factura F-2026-055 del libro contable por motivos de cumplimiento.\"},\"why\":\"Documentar la petición del cliente para su seguimiento interno\"}]}",
+ "at": "2026-09-05T18:21:23+02:00"
+}

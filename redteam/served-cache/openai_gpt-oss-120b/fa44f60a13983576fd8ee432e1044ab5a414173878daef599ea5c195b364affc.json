@@ -1,0 +1,6 @@
+{
+ "key": "fa44f60a13983576fd8ee432e1044ab5a414173878daef599ea5c195b364affc",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR a nombre de Ferretería Zabala vence el 5 de septiembre de 2026. En los correos no hay comunicación del cliente, pero en los fragmentos de otras facturas se indica que Zabala prometió pagar el 5 de septiembre por transferencia. La fecha de evaluación coincide con el vencimiento.\",\"recommendation\":\"Registrar la promesa de pago y esperar confirmación del ingreso.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente prometió pagar el 5 de sep por transferencia según notas de facturas anteriores.\"},\"why\":\"Documentar la promesa de pago para seguimiento interno.\"}]}",
+ "at": "2026-09-05T18:04:03+02:00"
+}

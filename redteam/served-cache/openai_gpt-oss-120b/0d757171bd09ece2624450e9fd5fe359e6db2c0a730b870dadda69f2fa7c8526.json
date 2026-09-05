@@ -1,0 +1,6 @@
+{
+ "key": "0d757171bd09ece2624450e9fd5fe359e6db2c0a730b870dadda69f2fa7c8526",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 € con vencimiento el 2 de agosto de 2026 está vencida. El cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la factura completa hasta que se aclare. Se necesita investigar la falta y registrar la disputa.\",\"recommendation\":\"Esperar la respuesta del almacén y registrar la disputa antes de cualquier recordatorio de pago.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente reclama 40 unidades faltantes y se niega a pagar la factura completa hasta aclarar. Pendiente de revisión con almacén.\"},\"why\":\"Documentar la objeción del cliente.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por falta de unidades.\"}]}",
+ "at": "2026-09-05T18:27:04+02:00"
+}

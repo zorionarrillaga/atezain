@@ -1,0 +1,6 @@
+{
+ "key": "6178429732dbb8464285b676caacfba55ceadff203ce53887498f6c92b061bbc",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR emitida el 20/08/2026 está disputada porque el cliente reclama un precio unitario incorrecto. El acta de reunión del 25/08 indica que la diferencia será abonada y la disputa quedará cerrada, pero el estado de la factura aún aparece como disputed. La fecha de vencimiento es el 19/09/2026 y hoy es 05/09/2026.\",\"recommendation\":\"Actualizar el estado de la factura a cancelled tras confirmar el abono de la diferencia.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Acta de reunión 25/08 indica que la diferencia será abonada y la disputa quedará cerrada. Pendiente actualizar estado a cancelled.\"},\"why\":\"Registrar internamente la información de la acta y la necesidad de cambiar el estado.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"cancelled\"},\"why\":\"Reflejar que la disputa está resuelta y la factura debe cerrarse.\"}]}",
+ "at": "2026-09-05T18:05:03+02:00"
+}

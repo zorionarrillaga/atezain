@@ -1,0 +1,6 @@
+{
+ "key": "6517d945780607506e87a5450d3996e62c5773bb243aa02afc854515b4a32511",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento el 31‑08‑2026 está abierta, pero el responsable indica que se emitió duplicada por error y debe eliminarse sin cobrar al cliente.\",\"recommendation\":\"Eliminar la factura del sistema y registrar la decisión internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura duplicada, eliminar del sistema según indicación de Iñaki (gerencia).\"},\"why\":\"Registrar la instrucción de eliminación para seguimiento interno\"}]}",
+ "at": "2026-09-05T18:29:23+02:00"
+}

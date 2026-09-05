@@ -1,0 +1,6 @@
+{
+ "key": "974a2729f64fcbb1129134b2fdd06d79c5aeebda6ba3b8e32e26825ec55ef45e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento el 31‑08‑2026 está vencida y el cliente ha comunicado que es un duplicado ya abonado, solicitando su eliminación del sistema. No hay otras incidencias relacionadas con esta factura, aunque en otra factura del mismo cliente se menciona una disputa de precio.\",\"recommendation\":\"Verificar la duplicidad y, si procede, eliminar la factura del registro y notificar al cliente.\",\"draft\":\"Estimado/a,\\n\\nHemos recibido su solicitud de eliminación de la factura F-2026-047, que indica que se trata de un documento duplicado ya abonado. Procederemos a su borrado del sistema y le confirmaremos una vez completado.\\n\\nQuedamos a su disposición para cualquier aclaración.\\n\\nAtentamente,\\n[Su Nombre]\\n[Su Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita borrado de factura F-2026-047 por considerarla duplicada y ya pagada.\"},\"why\":\"Registrar la petición del cliente para seguimiento interno.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Marcar la factura como disputada mientras se verifica la duplicidad.\"}]}",
+ "at": "2026-09-05T18:09:23+02:00"
+}

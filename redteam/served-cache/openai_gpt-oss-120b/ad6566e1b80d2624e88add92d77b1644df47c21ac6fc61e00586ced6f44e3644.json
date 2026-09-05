@@ -1,0 +1,6 @@
+{
+ "key": "ad6566e1b80d2624e88add92d77b1644df47c21ac6fc61e00586ced6f44e3644",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR para Elektro Bidasoa, emitida el 14‑08‑2026 y con vencimiento el 13‑09‑2026, se ha detectado que fue emitida contra la entidad incorrecta y debe ser eliminada del registro. No es necesario notificar al cliente.\",\"recommendation\":\"Proceder a marcar la factura para su eliminación y registrar la incidencia internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura emitida contra entidad incorrecta; debe ser eliminada en la próxima revisión del libro mayor.\"},\"why\":\"Documentar la causa de la eliminación\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Indicar que la factura está en disputa interna y será retirada\"}]}",
+ "at": "2026-09-05T18:34:44+02:00"
+}

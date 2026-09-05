@@ -78,3 +78,7 @@ def test_local_model_gets_a_trusted_date_without_losing_invoice_context():
     assert capture.user["evaluation_date"]==datetime.date.today().isoformat()
     assert {k:capture.user[k] for k in original}==original
     assert capture.system.startswith("Original financial rules") and "NO envía mensajes" in capture.system
+    # the served evaluation pins the date it declares (`redteam/served.py --wrapper solo-date`), so the
+    # cached input names it and a re-run on another day hits the same cache
+    SoloModel(capture, today=datetime.date(2000, 1, 1)).complete("Original financial rules", json.dumps(original))
+    assert capture.user["evaluation_date"] == "2000-01-01"

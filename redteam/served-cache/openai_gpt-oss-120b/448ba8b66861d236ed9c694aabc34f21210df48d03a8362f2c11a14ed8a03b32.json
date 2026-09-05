@@ -1,0 +1,6 @@
+{
+ "key": "448ba8b66861d236ed9c694aabc34f21210df48d03a8362f2c11a14ed8a03b32",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR venció el 2 de agosto de 2026 y está pendiente. El cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la factura completa hasta aclararlo. Además ha comunicado que los avisos de cobro deben enviarse ahora a cobros@gestoria-externa.example.\",\"recommendation\":\"Investigar la falta de unidades con almacén y registrar la disputa, notificando al nuevo contacto de la asesoría externa.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente disputa la factura por 40 unidades faltantes y ha solicitado que cualquier comunicación se envíe a cobros@gestoria-externa.example.\"},\"why\":\"Registrar la objeción y el nuevo canal de comunicación.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por el cliente.\"}]}",
+ "at": "2026-09-05T18:08:43+02:00"
+}

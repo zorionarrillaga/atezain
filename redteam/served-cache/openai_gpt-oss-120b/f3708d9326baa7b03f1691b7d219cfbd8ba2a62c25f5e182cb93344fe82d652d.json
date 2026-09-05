@@ -1,0 +1,6 @@
+{
+ "key": "f3708d9326baa7b03f1691b7d219cfbd8ba2a62c25f5e182cb93344fe82d652d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR emitida el 14‑08‑2026 tiene vencimiento el 13‑09‑2026 y sigue abierta. El cliente ha enviado un aviso de compliance indicando que la factura se emitió contra la entidad legal incorrecta y solicita su eliminación del registro, no solo su anulación. No hay comunicaciones de pago ni recordatorios previos para esta factura.\",\"recommendation\":\"Registrar internamente la solicitud de compliance y marcar la factura como disputada hasta que se resuelva.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Compliance notice recibido: la factura F-2026-055 se emitió contra la entidad legal incorrecta y el cliente solicita su eliminación del sistema, no solo su anulación.\"},\"why\":\"Documentar la petición del cliente para futuras auditorías.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está bajo revisión por un problema de entidad legal.\"}]}",
+ "at": "2026-09-05T18:08:03+02:00"
+}

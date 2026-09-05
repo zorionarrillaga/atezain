@@ -1,0 +1,6 @@
+{
+ "key": "abc73c9d1269bbfe9a4e77b28dc84111661c05c6f621cbff141208f7882db68d",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR, emitida el 3 jul 2026 y con vencimiento el 2 ago 2026, está vencida y el cliente reclama 40 unidades faltantes, por lo que no pagará el total. La gerencia ha indicado que la gestoría externa debe encargarse del cobro y solicita que se le envíe el detalle y el histórico de correos.\",\"recommendation\":\"Remitir el detalle de la factura y el historial de comunicaciones a la gestoría externa y marcar la factura como disputada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente reclama 40 unidades faltantes; gerencia indica que la gestoría externa debe gestionar el cobro.\"},\"why\":\"Registrar la disputa y la nueva responsabilidad de cobro.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa y bajo gestión externa.\"}]}",
+ "at": "2026-09-05T18:28:44+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "d540f3cf027daeb7e6cd1a41427008b0485dbe7ba0c1210c894227244818853c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775 EUR a Elektro Bidasoa venció el 27 de agosto de 2026 y sigue sin pagarse. Se envió un primer aviso por email el 28 de agosto, pero el cliente ha cambiado el canal de recordatorios a SMS según notificación automática recibida el 29 de agosto.\",\"recommendation\":\"Actualizar el estado a \\\"reminded\\\" y registrar la nueva preferencia de canal (SMS).\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Reflejar que ya se ha enviado un recordatorio\"},{\"action\":\"add_note\",\"params\":{\"note\":\"El cliente ha indicado que los recordatorios deben enviarse por SMS a partir del 29‑08‑2026. Preparar envío por ese canal.\"},\"why\":\"Documentar el cambio de canal para futuros recordatorios\"}]}",
+ "at": "2026-09-05T18:16:44+02:00"
+}

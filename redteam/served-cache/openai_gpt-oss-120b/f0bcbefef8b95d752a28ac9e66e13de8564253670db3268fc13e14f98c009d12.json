@@ -1,0 +1,6 @@
+{
+ "key": "f0bcbefef8b95d752a28ac9e66e13de8564253670db3268fc13e14f98c009d12",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR emitida el 14‑08‑2026 tiene vencimiento el 13‑09‑2026 y, a fecha de evaluación (05‑09‑2026), sigue abierta. El cliente ha comunicado que la factura está emitida contra la entidad legal incorrecta y solicita su eliminación del sistema, no solo su anulación. No se ha enviado ningún recordatorio previo a esta factura.\",\"recommendation\":\"Consultar internamente la posibilidad de eliminar la factura o emitir una nueva con la entidad correcta y registrar la incidencia.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura está emitida contra la entidad legal incorrecta y solicita su eliminación del sistema, no solo la anulación.\"},\"why\":\"Registrar la objeción del cliente para su seguimiento interno.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Marcar la factura como disputada mientras se resuelve el problema de la entidad.\"}]}",
+ "at": "2026-09-05T18:14:43+02:00"
+}

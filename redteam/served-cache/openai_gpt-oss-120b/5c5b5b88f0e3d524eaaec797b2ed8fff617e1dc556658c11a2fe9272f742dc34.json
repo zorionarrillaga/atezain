@@ -1,0 +1,6 @@
+{
+ "key": "5c5b5b88f0e3d524eaaec797b2ed8fff617e1dc556658c11a2fe9272f742dc34",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-036 de 4.210 EUR con vencimiento el 9 de agosto de 2026 está vencida. El cliente ha solicitado eliminar la factura duplicada tras rehacerla con el nuevo CIF. Además, el cliente es conocido por pagar con plazos de 60 días aunque la factura indique 30.\",\n  \"recommendation\": \"Eliminar la factura duplicada y enviar al cliente la factura corregida con el nuevo CIF.\",\n  \"draft\": \"Estimado/a,\\n\\nHemos procedido a eliminar la factura duplicada que mencionaba el CIF anterior. Adjuntamos la nueva factura F-2026-036 con el CIF actualizado de su sociedad.\\n\\nQuedamos a su disposición para cualquier duda.\\n\\nUn saludo,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente solicita eliminación de factura duplicada tras rehacerla con nuevo CIF. Se enviará nueva factura corregida.\"\n      },\n      \"why\": \"Registrar la petición del cliente y la acción a tomar.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Indicar que se ha prometido enviar la factura corregida.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:12:04+02:00"
+}

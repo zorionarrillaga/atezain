@@ -13,10 +13,19 @@ Unsupported hand edits still fail the pre-run document tests (CLAUDE.md rules 3 
 
 The `test` gauge is recorded as `test_dsn` when `ATEZAIN_TEST_DSN` is set, because that run has a
 different count (the Postgres arm runs instead of skipping) and both are quoted.
+
+Every record names the TREE it measured (`tree_id`: a content hash of every tracked and untracked,
+unignored file, `GAUGES.md` excepted because this script writes it). `write` refuses a required
+line measured on a tree other than the one it is writing for — on 2026-09-05 a `test` line from a
+run before the session's edits was carried into `GAUGES.md` and was only caught by a hand re-run —
+and the DSN line, which a clone without a database can only carry, names its tree beside its date.
+
+    tests/gauge_record.py tree                           print this tree's id, to compare with GAUGES.md
 """
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -45,6 +54,40 @@ LABEL = {
 }
 
 
+def tree_id() -> str | None:
+    """A 12-hex content hash of the working tree as git sees it — every tracked file and every
+    untracked file the ignore rules do not exclude, by path and content — with `GAUGES.md` left
+    out, since this script rewrites it from these very records. None where there is no git."""
+    try:
+        listed = subprocess.run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                                cwd=ROOT, capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    h = hashlib.sha256()
+    for rel in sorted(set(filter(None, listed.decode("utf-8", "surrogateescape").split("\0")))):
+        path = ROOT / rel
+        if rel == OUT.name or not path.is_file():
+            continue
+        h.update(rel.encode("utf-8", "surrogateescape") + b"\0" + hashlib.sha256(path.read_bytes()).digest())
+    return h.hexdigest()[:12]
+
+
+def head() -> str | None:
+    """The commit the tree stands on, `+` when the tree differs from it — for a reader's bearings."""
+    try:
+        rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, check=True, text=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, check=True, text=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return rev + ("+" if dirty else "")
+
+
+def describe(rec: dict) -> str:
+    """`tree 0123456789ab at 2e41ce1+` — or what the record does know."""
+    tree = rec.get("tree") or "unknown"
+    return f"tree {tree}" + (f" at {rec['head']}" if rec.get("head") else "")
+
+
 def run(gauge: str, cmd: list[str]) -> int:
     if gauge not in SUMMARY:
         print(f"gauge_record: unknown gauge {gauge!r}; one of {sorted(SUMMARY)}", file=sys.stderr)
@@ -65,8 +108,8 @@ def run(gauge: str, cmd: list[str]) -> int:
         print(f"gauge_record: {gauge} printed no summary line; nothing recorded", file=sys.stderr)
         return rc or 1
     VAR.mkdir(parents=True, exist_ok=True)
-    (VAR / f"{name}.json").write_text(json.dumps({"line": summary, "date": dt.date.today().isoformat(), "exit": rc}),
-                                      encoding="utf-8")
+    (VAR / f"{name}.json").write_text(json.dumps({"line": summary, "date": dt.date.today().isoformat(), "exit": rc,
+                                                  "tree": tree_id(), "head": head()}), encoding="utf-8")
     return rc
 
 
@@ -90,7 +133,24 @@ def _carried(label: str) -> str | None:
                  if l.startswith(f"| {label} |")), None)
 
 
-def render() -> str:
+def stale(current: str | None) -> list[str]:
+    """Every required line whose record was measured on a tree other than `current` — the lines
+    `make all` is about to write as this tree's. A record that names no tree is stale too: it was
+    made before records named one, and nothing says what it measured."""
+    out = []
+    for name in REQUIRED:
+        rec = _read(name)
+        if rec is None:
+            continue                                   # render() names the missing file
+        measured = rec.get("tree")                     # None: made before records named a tree
+        if measured != current:
+            out.append(f"the `{name}` line was measured on {describe(rec)}; this is tree {current or 'unknown'} — "
+                       f"run `make {name}` again, or `make all`")
+    return out
+
+
+def render(current: str | None = None) -> str:
+    current = tree_id() if current is None else current
     rows = []
     for name in ("test", "test_dsn", "mutate", "hostile", "sabotage"):
         rec = _read(name)
@@ -103,17 +163,22 @@ def render() -> str:
             continue
         if rec.get("exit"):
             raise SystemExit(f"gauge_record: the last `{name}` run exited {rec['exit']}; GAUGES.md is written from green runs only")
-        when = f" ({rec['date']})" if name == "test_dsn" else ""
+        # the DSN line is the one line allowed to be another tree's, so it says which, beside its date
+        when = f" ({rec['date']}, {describe(rec)})" if name == "test_dsn" else ""
         rows.append(f"| {LABEL[name]} | {rec['line']}{when} |")
     today = dt.date.today().isoformat()
+    where = f"tree `{current}`" if current else "a tree with no git to name it"
+    at = head()
     return (
         "# GAUGES.md\n\n"
-        f"Written by `make all` on {today} (`tests/gauge_record.py`) from the last line each gauge printed;\n"
-        "the only source of a gauge count in `README.md`, `WRITEUP.md` and `STATUS.md` — `tests/gauges.py`\n"
-        "holds them to it, and `make all` ends red if they disagree. Do not edit by hand. The `test` line\n"
-        "is the run without a database; the line with `ATEZAIN_TEST_DSN` is the last run that had one —\n"
-        "carried forward from this file, with its own date, when the working tree has no DSN run of its\n"
-        "own, so that a clone with no database can still reach a green `make all`.\n\n"
+        f"Written by `make all` on {today} (`tests/gauge_record.py`) from the last line each gauge printed,\n"
+        f"every line measured on {where}" + (f" at `{at}`" if at else "") + " (`tests/gauge_record.py tree` prints the\n"
+        "current one; `write` refuses a line measured on another). This is the only source of a gauge count in\n"
+        "`README.md`, `WRITEUP.md` and `STATUS.md` — `tests/gauges.py` holds them to it, and `make all` ends red\n"
+        "if they disagree. Do not edit by hand. The `test` line is the run without a database; the line with\n"
+        "`ATEZAIN_TEST_DSN` is the last run that had one, and names its own date and tree — carried forward\n"
+        "from this file when the working tree has no DSN run of its own, so that a clone with no database\n"
+        "can still reach a green `make all`.\n\n"
         "| gauge | result |\n|---|---|\n" + "\n".join(rows) + "\n"
     )
 
@@ -138,8 +203,15 @@ def sync_counts(document: str, previous: str, current: str) -> str:
 
 
 def write(sync=False) -> int:
+    tree = tree_id()
+    problems = stale(tree)
+    if problems:
+        print("gauge_record: GAUGES.md is written for one tree, and these lines are another's:")
+        for p in problems:
+            print("  " + p)
+        return 1
     previous = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
-    current = render()
+    current = render(tree)
     OUT.write_text(current, encoding="utf-8")
     if sync:
         for rel in ("README.md", "WRITEUP.md", "STATUS.md"):
@@ -168,6 +240,9 @@ def main(argv: list[str]) -> int:
         return run(argv[1], argv[i + 1:])
     if argv in (["write"], ["write", "--sync"]):
         return write(sync="--sync" in argv)
+    if argv == ["tree"]:
+        print(f"{tree_id() or 'unknown'}" + (f" at {head()}" if head() else ""))
+        return 0
     print(__doc__)
     return 2
 

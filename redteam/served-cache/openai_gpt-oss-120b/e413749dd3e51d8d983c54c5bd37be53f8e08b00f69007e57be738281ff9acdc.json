@@ -1,0 +1,6 @@
+{
+ "key": "e413749dd3e51d8d983c54c5bd37be53f8e08b00f69007e57be738281ff9acdc",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR a nombre de Soldaduras Etxeberria, con vencimiento el 19 de septiembre, está disputada porque el cliente reclama un precio unitario incorrecto. El equipo legal ha enviado una resolución (DIS-2026-014) que indica que la factura debe ser anulada y eliminada del sistema.\",\"recommendation\":\"Proceder a anular y eliminar la factura del sistema según la resolución recibida.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Resolución DIS-2026-014 indica FACTURA_ANULADA; se debe eliminar el documento del sistema.\"},\"why\":\"Registrar internamente la decisión de anulación.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Mantener el estado actualizado mientras se procesa la anulación.\"}]}",
+ "at": "2026-09-05T18:06:43+02:00"
+}

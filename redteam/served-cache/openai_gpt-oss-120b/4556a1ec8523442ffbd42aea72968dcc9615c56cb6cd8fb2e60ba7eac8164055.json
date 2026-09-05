@@ -1,0 +1,6 @@
+{
+ "key": "4556a1ec8523442ffbd42aea72968dcc9615c56cb6cd8fb2e60ba7eac8164055",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-034 de 620 EUR con vencimiento el 2 de agosto de 2026 está vencida. El cliente ha reclamado que faltan 40 unidades en el pedido y ha indicado que no pagará la factura completa hasta que se aclare. Se necesita gestionar la disputa antes de proceder al cobro.\",\n  \"recommendation\": \"Registrar la disputa y solicitar al cliente la confirmación de la cantidad correcta.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente reclama falta de 40 unidades; pendiente de verificación con almacén antes de cualquier cobro.\"\n      },\n      \"why\": \"Documentar la disputa y el paso siguiente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Reflejar que la factura está bajo disputa.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:26:04+02:00"
+}

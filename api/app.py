@@ -378,6 +378,11 @@ def record_out(inv: dict) -> RecordOut:
                      assistant_notes=sum(1 for n in inv["notes"] if n["author"] == "assistant"))
 
 
+def records_of(st: SessionState) -> list[RecordOut]:
+    """One query for the whole list (`Records.summaries`), never a read per record."""
+    return [RecordOut(**row) for row in st.records.summaries()]
+
+
 @app.get("/sessions/{sid}/records", response_model=list[RecordOut])
 @guarded()
 def records(sid: str, authorization: str | None = Header(default=None)) -> list[RecordOut]:
@@ -386,16 +391,12 @@ def records(sid: str, authorization: str | None = Header(default=None)) -> list[
     no human was the one write nobody could read (client simulation 1, STATUS.md). Reads only —
     there is no route here that writes."""
     who(sid, authorization)
-    st = state_of(sid)
-    return [RecordOut(**row) for row in st.records.summaries()]
+    return records_of(state_of(sid))
 
 
-@app.get("/sessions/{sid}/summary")
-@guarded()
-def summary(sid: str, authorization: str | None = Header(default=None)):
+def summary_of(st: SessionState) -> dict:
     from decimal import Decimal
     from policy.service import LIVE
-    st = state_of(sid)
     day = today()
     rows = st.records.summaries()
     outstanding = [r for r in rows if r["status"] not in {"paid", "cancelled"} and r["amount"] > 0]
@@ -413,6 +414,12 @@ def summary(sid: str, authorization: str | None = Header(default=None)):
             "budget_used": used, "budget_limit": config.daily_writes,
             "budget_remaining": max(config.daily_writes - used, 0) if config.daily_writes else None,
             "fuse": st.policy.store.fuse_get()}
+
+
+@app.get("/sessions/{sid}/summary")
+@guarded()
+def summary(sid: str, authorization: str | None = Header(default=None)):
+    return summary_of(state_of(sid))
 
 
 @app.get("/sessions/{sid}/records/{invoice_id}", response_model=RecordDetailOut)
@@ -504,7 +511,11 @@ def assist(sid: str, invoice_id: str, request: Request, authorization: str | Non
 @guarded()
 def queue(sid: str, authorization: str | None = Header(default=None)) -> list[ProposalOut]:
     who(sid, authorization)
-    return [out(p) for p in proposals_of(state_of(sid))]
+    return queue_of(state_of(sid))
+
+
+def queue_of(st: SessionState) -> list[ProposalOut]:
+    return [out(p) for p in proposals_of(st)]
 
 
 @app.post("/sessions/{sid}/proposals/{pid}/decide", response_model=DecideOut)
@@ -539,7 +550,10 @@ def decide(sid: str, pid: str, body: DecideIn = Body(...), authorization: str | 
 @guarded()
 def audit(sid: str, authorization: str | None = Header(default=None)) -> AuditOut:
     who(sid, authorization)
-    st = state_of(sid)
+    return audit_of(state_of(sid))
+
+
+def audit_of(st: SessionState) -> AuditOut:
     seq, h = st.policy.store.audit_head()
     return AuditOut(rows=st.policy.store.audit_rows(), head_seq=seq, head_hash=h,
                     verifies=st.policy.store.audit_verify(),
@@ -568,7 +582,10 @@ def stop_session(sid: str, authorization: str | None = Header(default=None)):
 @app.get("/sessions/{sid}/access")
 @guarded()
 def access_info(sid: str, authorization: str | None = Header(default=None)):
-    access = sessions.access(sid, bearer(authorization))
+    return access_of(sid, sessions.access(sid, bearer(authorization)))
+
+
+def access_of(sid: str, access: dict) -> dict:
     return {**access, "session": sid, "adapter": ADAPTER,
             "tokens": sessions.grants(sid) if access["role"] == "owner" else []}
 
@@ -873,8 +890,12 @@ def accounting_callback(request: Request, state: str="", code: str=""):
 @app.get("/sessions/{sid}/accounting")
 @guarded()
 def accounting_status(sid: str, authorization: str | None = Header(default=None)):
+    return accounting_of(sid, state_of(sid))
+
+
+def accounting_of(sid: str, st: SessionState) -> dict:
     return {"configured":xero is not None,"connection":xero.store.get(sid) if xero else None,
-            "sync":state_of(sid).records.sync_status()}
+            "sync":st.records.sync_status()}
 
 
 def sync_accounting(st, full=False):
@@ -913,10 +934,12 @@ def accounting_disconnect(sid: str, authorization: str | None = Header(default=N
 @app.get("/sessions/{sid}/worklist")
 @guarded()
 def worklist(sid: str, view: str="due", authorization: str | None = Header(default=None)):
+    return worklist_of(state_of(sid), sessions.access(sid,bearer(authorization)), view)
+
+
+def worklist_of(st: SessionState, who_access: dict, view: str) -> dict:
     if view not in {"due","all","mine","disputed","promises"}:
         raise HTTPException(422,"invalid worklist view")
-    st = state_of(sid)
-    who_access = sessions.access(sid,bearer(authorization))
     day = today()
     cases = st.records.cases()
     rows=[]
@@ -932,6 +955,25 @@ def worklist(sid: str, view: str="due", authorization: str | None = Header(defau
         rows.append({"invoice":invoice,"case":case,"due_now":due,"broken_promise":broken_promise,"settled":settled})
     rows.sort(key=lambda r:(not r["broken_promise"],r["case"]["next_action"] or r["invoice"]["due"] or "9999",r["invoice"]["id"]))
     return {"as_of":day,"rows":rows}
+
+
+@app.get("/sessions/{sid}/overview")
+@guarded()
+def overview(sid: str, view: str = "due", authorization: str | None = Header(default=None)):
+    """The whole page in one read. After every assist and every decision `api/demo.html` re-read
+    seven routes in sequence — access, records, proposals, summary, audit, the work list and the
+    accounting state — each taking the workspace lock, checking the token and opening the namespace
+    again; and it had to be in sequence, because two requests on one workspace at once are refused
+    with 409 (`guarded`). For a workspace of a few hundred records that was seven round-trips a
+    refresh (STATUS.md, the 500-row question). This is the same seven reads, once, under one lock;
+    each keeps its own route, and this one is built from the same functions, not copies. Reads
+    only — nothing here writes, and the records come from the one-query list."""
+    who(sid, authorization)
+    st = state_of(sid)
+    access = sessions.access(sid, bearer(authorization))
+    return {"access": access_of(sid, access), "records": records_of(st), "proposals": queue_of(st),
+            "summary": summary_of(st), "audit": audit_of(st), "worklist": worklist_of(st, access, view),
+            "accounting": accounting_of(sid, st)}
 
 
 @app.get("/sessions/{sid}/cases/{invoice_id}")

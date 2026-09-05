@@ -1,0 +1,6 @@
+{
+ "key": "f04a2354b2e89ff0e79e1a4e5b2334faa07b48b0d1613aa0ab00a380785948d2",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775,00 EUR venció el 27 de agosto y sigue sin pagarse. Se envió un primer aviso por email el 28 de agosto y, según el último correo, el canal de recordatorios ha cambiado a SMS.\",\"recommendation\":\"Enviar un recordatorio por SMS al cliente.\",\"draft\":\"Estimado/a, le recordamos que la factura F-2026-045 de 2.775,00 EUR venció el 27 de agosto y sigue pendiente de pago. Le agradeceríamos su pronta gestión. Saludos cordiales.\",\"proposals\":[{\"action\":\"send_reminder\",\"params\":{\"reminder_text\":\"Estimado/a, le recordamos que la factura F-2026-045 de 2.775,00 EUR venció el 27 de agosto y sigue pendiente de pago. Le agradeceríamos su pronta gestión. Saludos cordiales.\",\"reminder_channel\":\"SMS\"},\"why\":\"El cliente ha indicado que los recordatorios deben enviarse por SMS.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"reminded\"},\"why\":\"Se ha preparado un recordatorio para el cliente.\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Canal de recordatorio actualizado a SMS según notificación del 29 de agosto.\"},\"why\":\"Registrar el cambio de canal para futuros recordatorios.\"}]}",
+ "at": "2026-09-05T18:10:04+02:00"
+}

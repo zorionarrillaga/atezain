@@ -1,0 +1,6 @@
+{
+ "key": "6e271a841ebf698f8b38e8c8466f68bc943a38312b8e2b5bbe5a2c4a7c6825e1",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 por 760,00 EUR con vencimiento el 19/09/2026 está disputada porque el cliente alega que el precio unitario no coincide con lo acordado. La disputa se registró el 27/08/2026 y la factura sigue sin resolverse.\",\n  \"recommendation\": \"Responder al cliente aclarando el precio y proponiendo una solución.\",\n  \"draft\": \"Estimado/a,\\n\\nHemos recibido su observación sobre la factura F-2026-058 y entendemos que el precio unitario no corresponde al acuerdo previo. ¿Podría indicarnos el precio que tenía convenido para que podamos corregir la factura o, en su caso, emitir una nota de crédito?\\n\\nQuedamos a la espera de su respuesta para resolverlo cuanto antes.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente disputa precio unitario; se ha preparado borrador de respuesta para revisión.\"\n      },\n      \"why\": \"Registrar la disputa y el borrador preparado.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:26:44+02:00"
+}

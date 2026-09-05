@@ -1,0 +1,6 @@
+{
+ "key": "e981e90191a39ccfb2217ace022455f857b5aa246b3c573067e23dd86cd3573b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR con vencimiento el 5 de septiembre está abierta. El cliente ha enviado un correo indicando que la factura está pagada y una nota previa indica que prometía pagar el mismo día mediante transferencia. No se ha recibido confirmación de pago todavía.\",\"recommendation\":\"Confirmar la recepción del pago y, si procede, cambiar el estado a \\\"paid\\\".\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente indica que la factura está pagada; pendiente de confirmación del ingreso.\"},\"why\":\"Registrar la información del cliente antes de actualizar el estado.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar la promesa de pago del 5 de septiembre mientras se verifica la transferencia.\"}]}",
+ "at": "2026-09-05T18:21:04+02:00"
+}

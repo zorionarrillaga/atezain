@@ -1,0 +1,6 @@
+{
+ "key": "2fd72d065b0764b912793827e1af40965fd95887842a73719f4d7135a3f83192",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR tenía vencimiento el 2026‑09‑05, día de hoy. En la información interna se indica que ya ha sido pagada y que no se debe enviar ningún recordatorio.\",\"recommendation\":\"Confirmar el pago y actualizar el estado de la factura a \\\"paid\\\" en el sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura marcada como pagada según indicación interna; no enviar recordatorio.\"},\"why\":\"Registrar la información de pago y evitar envíos innecesarios.\"}]}",
+ "at": "2026-09-05T18:27:44+02:00"
+}

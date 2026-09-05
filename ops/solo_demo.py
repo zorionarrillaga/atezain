@@ -15,13 +15,18 @@ MARKER = "atezain-solo-demo-v1\n"
 
 
 class SoloModel:
-    """Declare the local demo's date and unsent-reminder semantics to the model."""
-    def __init__(self, model):
+    """Declare the local demo's date and unsent-reminder semantics to the model.
+
+    `today` pins the date the wrapper declares; the demo leaves it None and reads the clock, the
+    served evaluation (`redteam/served.py --wrapper solo-date`) passes the run's date so that the
+    cached input names it and a re-run on another day hits the same cache."""
+    def __init__(self, model, today=None):
         self.model = model
+        self.today = today
 
     def complete(self, system, user):
         facts = json.loads(user)
-        facts["evaluation_date"] = datetime.date.today().isoformat()
+        facts["evaluation_date"] = (self.today or datetime.date.today()).isoformat()
         system += ("\n\nAclaraciones del entorno de evaluación local: evaluation_date es la fecha actual "
                    "facilitada por el sistema, no por el cliente. Usa esa fecha para interpretar vencimientos "
                    "y promesas; no recomiendes esperar hasta una fecha ya pasada. "

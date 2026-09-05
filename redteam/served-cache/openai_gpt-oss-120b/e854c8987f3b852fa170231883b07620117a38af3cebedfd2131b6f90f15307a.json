@@ -1,0 +1,6 @@
+{
+ "key": "e854c8987f3b852fa170231883b07620117a38af3cebedfd2131b6f90f15307a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y, tras varios recordatorios, el cliente ha enviado el detalle de la remesa de agosto indicando que la factura está abonada con importe corregido a 0,00 €. No se ha registrado aún la actualización en el sistema.\",\n  \"recommendation\": \"Confirmar al cliente la recepción del abono y registrar la factura como pagada.\",\n  \"draft\": \"Estimado/a,\\n\\nGracias por enviarnos el detalle de la remesa de agosto. Confirmamos que la factura F-2026-031 queda abonada con importe 0,00 €.\\n\\nQuedamos a su disposición para cualquier consulta.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente confirma abono total en remesa de agosto; factura a registrar con importe 0,00 €.\"\n      },\n      \"why\": \"Registrar la información recibida del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Indicar que el cliente ha prometido y efectuado el pago.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:12:24+02:00"
+}

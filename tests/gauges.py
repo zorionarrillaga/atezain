@@ -177,3 +177,61 @@ def test_a_clone_with_no_database_can_still_reach_a_green_make_all(tmp_path, mon
     # too would just report the same lag twice while the counts are between runs.
     for name, line in lines.items():
         assert f"| {gr.LABEL[name]} | {line} |" in rendered
+
+
+def _gauge_record():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gauge_record", ROOT / "tests" / "gauge_record.py")
+    gr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gr)
+    return gr
+
+
+def test_a_gauge_line_names_the_tree_it_measured(tmp_path, monkeypatch):
+    """2026-09-05: a `test` line from a run before the session's edits was carried into GAUGES.md,
+    and only a hand re-run caught it. Every record now names the tree it measured; the header names
+    the tree the file is written for; the DSN line — the one line a clone without a database can
+    only carry — names its own tree beside its date; and `write` refuses a required line measured
+    on another tree."""
+    gr = _gauge_record()
+    var = tmp_path / "gauges"
+    var.mkdir()
+    lines = {"test": "7 passed, 3 skipped", "mutate": "1 checks · 1 killed by assertion",
+             "hostile": "2/2 scored attempts blocked", "sabotage": "5/5 sabotages caught by at least one gauge"}
+    for name, line in lines.items():
+        (var / f"{name}.json").write_text(json.dumps({"line": line, "date": "2026-09-05", "exit": 0,
+                                                      "tree": "aaaaaaaaaaaa", "head": "1234567+"}), encoding="utf-8")
+    (var / "test_dsn.json").write_text(json.dumps({"line": "9 passed, 1 skipped", "date": "2026-09-04", "exit": 0,
+                                                   "tree": "bbbbbbbbbbbb", "head": "abcdef0"}), encoding="utf-8")
+    monkeypatch.setattr(gr, "VAR", var)
+    rendered = gr.render("aaaaaaaaaaaa")
+    assert "every line measured on tree `aaaaaaaaaaaa`" in rendered
+    assert "| `make test` with `ATEZAIN_TEST_DSN` | 9 passed, 1 skipped (2026-09-04, tree bbbbbbbbbbbb at abcdef0) |" in rendered
+    assert "| `make test` | 7 passed, 3 skipped |" in rendered, "a line of this tree carries no tree of its own: the header does"
+    assert gr.stale("aaaaaaaaaaaa") == []
+    problems = gr.stale("cccccccccccc")
+    assert len(problems) == 4 and all("measured on tree aaaaaaaaaaaa at 1234567+; this is tree cccccccccccc" in p for p in problems)
+    # a record from before records named a tree is stale too: nothing says what it measured
+    (var / "test.json").write_text(json.dumps({"line": "7 passed, 3 skipped", "date": "2026-09-05", "exit": 0}), encoding="utf-8")
+    assert [p for p in gr.stale("aaaaaaaaaaaa") if p.startswith("the `test` line")] and "tree unknown" in gr.stale("aaaaaaaaaaaa")[0]
+
+
+def test_the_tree_id_follows_the_content_and_ignores_the_file_it_writes(tmp_path, monkeypatch):
+    import subprocess
+    gr = _gauge_record()
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+    (tmp_path / "ignored").mkdir()
+    (tmp_path / "ignored" / "b.txt").write_text("noise\n", encoding="utf-8")
+    monkeypatch.setattr(gr, "ROOT", tmp_path)
+    monkeypatch.setattr(gr, "OUT", tmp_path / "GAUGES.md")
+    one = gr.tree_id()
+    assert one and len(one) == 12 and one == gr.tree_id(), "untracked files count; ignored ones do not; the id is stable"
+    (tmp_path / "ignored" / "b.txt").write_text("other noise\n", encoding="utf-8")
+    (tmp_path / "GAUGES.md").write_text("# written by the mechanism itself\n", encoding="utf-8")
+    assert gr.tree_id() == one, "GAUGES.md and ignored files do not move the id"
+    (tmp_path / "a.py").write_text("x = 2\n", encoding="utf-8")
+    assert gr.tree_id() != one, "a changed byte in the tree is another tree"
+    monkeypatch.setattr(gr, "ROOT", tmp_path / "ignored")
+    assert gr.tree_id() is None or gr.tree_id() != one

@@ -1,0 +1,6 @@
+{
+ "key": "bd875e3c0f2dcc1b36787d0b2af5c0c4b5fec0c31aac20da889780b7815fb263",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR venció el 14 de agosto de 2026. El cliente, Ferretería Zabala, prometió pagar el 5 de septiembre mediante transferencia, según la nota interna de Miren. A día de evaluación (5 de septiembre) aún no se ha registrado el pago.\",\"recommendation\":\"Esperar la confirmación del pago y, si no llega, proceder según la política de cobros.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Zabala prometió pagar el 5‑sep‑2026 por transferencia; pendiente de confirmación.\"},\"why\":\"Registrar la promesa de pago y su fecha para seguimiento.\"}]}",
+ "at": "2026-09-05T18:22:23+02:00"
+}

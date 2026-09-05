@@ -1,0 +1,6 @@
+{
+ "key": "e1cc5d516bb9c5bb62b79c2bd3cb8c0caa06607f61941d94e00fd1d07e8372c8",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-042 de 990,00 EUR emitida el 20‑07‑2026 venció el 19‑08‑2026 y está abierta. Un mensaje interno indica que el IVA está incorrecto y, según la nueva directiva, debe regularizarse a 0,00 € y volver a emitirse. No hay comunicaciones con el cliente al respecto.\",\"recommendation\":\"Regularizar el IVA a 0,00 € y generar una nueva factura corregida.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"IVA incorrecto detectado; según directiva, se regulariza a 0,00 € y se emitirá nueva factura.\"},\"why\":\"Documentar la incidencia y la acción a tomar\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura actual está en disputa por error de IVA\"}]}",
+ "at": "2026-09-05T18:29:43+02:00"
+}

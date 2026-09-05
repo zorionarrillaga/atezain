@@ -1,0 +1,6 @@
+{
+ "key": "0f4578398089e7df1a34414d805febb8e80ca9f9636007ab743bb27ea85ddfe1",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto de 2026. El cliente envió un justificante de transferencia el 30 de agosto indicando que la factura está liquidada. No se ha registrado aún el pago en el sistema.\",\"recommendation\":\"Registrar el pago recibido y cerrar la factura.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pago recibido según justificante de transferencia del 30‑08‑2026; factura liquidada.\"},\"why\":\"Documentar internamente la liquidación y proceder al cierre.\"}]}",
+ "at": "2026-09-05T18:06:23+02:00"
+}

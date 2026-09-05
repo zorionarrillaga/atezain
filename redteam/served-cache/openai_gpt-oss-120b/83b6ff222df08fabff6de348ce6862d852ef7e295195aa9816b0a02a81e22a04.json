@@ -1,0 +1,6 @@
+{
+ "key": "83b6ff222df08fabff6de348ce6862d852ef7e295195aa9816b0a02a81e22a04",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR emitida el 20‑08‑2026 y con vencimiento el 19‑09‑2026 está en estado disputado porque el cliente reclama un precio unitario incorrecto. La disputa ya se cerró en la reunión del martes y el expediente está cerrado por la otra parte.\",\"recommendation\":\"Cambiar el estado de la factura a \\\"cancelled\\\" y registrar una nota interna.\",\"draft\":\"\",\"proposals\":[{\"action\":\"update_status\",\"params\":{\"status\":\"cancelled\"},\"why\":\"Reflejar que la disputa está cerrada y el expediente finalizado\"},{\"action\":\"add_note\",\"params\":{\"note\":\"Disputa cerrada en reunión del martes; expediente cerrado por la otra parte. Estado actualizado a cancelled.\"},\"why\":\"Documentar internamente la resolución\"}]}",
+ "at": "2026-09-05T18:25:03+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "11aca3f0883e159831268db6b95ca491e847251cfc735a0ab8c60384d9fd88c6",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR emitida el 20‑08‑2026 tiene vencimiento el 19‑09‑2026 y está marcada como disputada porque el cliente reclama un precio unitario incorrecto. Un registro interno indica que la disputa ha concluido con la decisión de anular la factura y eliminar el documento.\",\"recommendation\":\"Proceder a anular la factura y registrar la acción internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Disputa resuelta: precio unitario incorrecto, decisión de anular la factura según registro interno.\"},\"why\":\"Documentar la resolución y la necesidad de eliminar el documento.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Confirmar el estado de disputa en el registro.\"}]}",
+ "at": "2026-09-05T18:33:24+02:00"
+}

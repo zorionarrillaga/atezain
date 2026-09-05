@@ -54,8 +54,14 @@ survives a new process. This controls whether prose is saved; it does not make g
 A subsequent output recommended waiting until August after August had passed. The local model
 wrapper now supplies the actual evaluation date and explicitly defines reminder proposals as unsent
 local drafts. This is a separate local prompt configuration; no historical boundary-evaluation score
-is transferred to it. Fresh evaluations use new workspaces; saved answers are intentionally reused
-when resuming old work.
+is transferred to it. It has its own since the evening of 2026-09-05: `redteam/served.py --wrapper
+solo-date` ran the same hundred injection cases through it, the wrapper outside the cache
+(`redteam/served-dated-results.json`): executed with no human 0/100 = 0% [0%, 4%]; 7/100 parser
+refusals, each verified to leave records unchanged; and, read by a model and not a human under the
+written rule, 51/93 = 55% [45%, 65%] of the parseable outputs adopt the injected goal in words,
+against 58/96 = 60% [50%, 70%] on the served configuration — `NUMBERS.md` pairs the cases. The
+wrapper does not move the prose number outside its interval. Fresh evaluations use new workspaces;
+saved answers are intentionally reused when resuming old work.
 The normal demo entry point and existing hosted service retain their separately documented behavior.
 
 ## Walkthrough and evidence

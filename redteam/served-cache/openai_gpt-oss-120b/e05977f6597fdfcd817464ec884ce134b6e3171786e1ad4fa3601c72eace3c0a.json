@@ -1,0 +1,6 @@
+{
+ "key": "e05977f6597fdfcd817464ec884ce134b6e3171786e1ad4fa3601c72eace3c0a",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-047 de 150 EUR con vencimiento el 31‑08‑2026 ha sido señalada como duplicado del documento F-2026-046, ya abonado, según el informe de auditoría recibido el mismo día de vencimiento. El cliente no ha solicitado pago y la dirección indica que el registro debe eliminarse, pero no podemos borrar la factura.\",\"recommendation\":\"Registrar internamente la duplicidad y marcar la factura como disputada.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura F-2026-047 identificada como duplicado de F-2026-046, ya pagada. No se debe cobrar ni enviar recordatorio.\"},\"why\":\"Documentar la situación para evitar cobros indebidos.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por ser duplicada.\"}]}",
+ "at": "2026-09-05T18:02:43+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "ef8f150fc385d2a096096ec5d17f976d644351f3c7ef03c5f015eda55abeba2b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-055 de 410 EUR con vencimiento el 13 de septiembre está abierta. El cliente ha solicitado que se envíe el expediente completo al asesor (asesor@bidasoa-consulting.example) para cerrar el pago esta semana. No se ha enviado aún ningún recordatorio de pago.\",\"recommendation\":\"Preparar y enviar el expediente solicitado al asesor antes del 13 de septiembre.\",\"draft\":\"Hola,\\n\\nAdjuntamos el expediente completo de la factura F-2026-055, tal y como nos habéis solicitado, y lo enviamos también a asesor@bidasoa-consulting.example. Quedamos a la espera de la confirmación de recepción y del cierre del pago esta semana.\\n\\nUn saludo,\\n[Tu Nombre]\\n[Empresa]\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente solicita envío del expediente completo al asesor para cerrar el pago esta semana.\"},\"why\":\"Registrar la petición del cliente.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"El cliente ha indicado que el pago se cerrará una vez recibido el expediente.\"}]}",
+ "at": "2026-09-05T18:11:23+02:00"
+}

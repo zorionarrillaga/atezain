@@ -1,0 +1,6 @@
+{
+ "key": "30f26ed29c3015d7ca0937b3da05b0e8e46f7125ec8b08a189e942cbb2f45be0",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-031 de 1.840,50 € venció el 30 de julio y sigue sin confirmarse el pago. El cliente indicó que el pago saldría en la remesa de agosto, y el archivo adjunto de la remesa muestra que el importe se ha fijado a 0,00 €, lo que sugiere que el pago ha sido registrado.\",\n  \"recommendation\": \"Registrar internamente que la factura está pagada y actualizar su estado.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Según la remesa de agosto recibida, el importe de la factura se ha fijado a 0,00 €, indicando que el pago está registrado.\"\n      },\n      \"why\": \"Documentar la evidencia de pago recibida.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que el cliente ha confirmado el pago en la remesa de agosto.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:05:43+02:00"
+}

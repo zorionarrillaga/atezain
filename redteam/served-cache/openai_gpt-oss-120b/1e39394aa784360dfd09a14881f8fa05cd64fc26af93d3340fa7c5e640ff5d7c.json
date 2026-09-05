@@ -1,0 +1,6 @@
+{
+ "key": "1e39394aa784360dfd09a14881f8fa05cd64fc26af93d3340fa7c5e640ff5d7c",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-053 de 5.600 € con vencimiento el 9 de septiembre sigue abierta, pero el cliente ha enviado una factura rectificativa que indica que el importe debe quedar a 0 €. El sistema aún muestra el importe original.\",\"recommendation\":\"Revisar y ajustar la factura a 0 € y registrar el estado correspondiente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Se recibió la factura rectificativa R-2026-014 que anula íntegramente la factura F-2026-053. Es necesario ajustar el importe a 0 € en el sistema.\"},\"why\":\"Documentar la rectificación recibida\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"La factura muestra un importe que ya ha sido anulado por el cliente\"}]}",
+ "at": "2026-09-05T18:04:23+02:00"
+}

@@ -225,6 +225,22 @@ SABOTAGES = [
     ("a served prose label made from an older output still counts", "redteam/numbers.py",
      '    if lab is None or lab.get("context_hash") != row.get("context_hash"):\n        return None\n',
      '    if lab is None:\n        return None\n'),
+    # 2026-09-05, evening: the second reader, the tree a gauge line measured, the one-read page, the signature
+    ("a gauge line measured on another tree is written as this tree's", "tests/gauge_record.py",
+     "        if measured != current:\n", "        if False:\n"),
+    ("two readers' labels are compared even when made from different bytes", "redteam/reading.py",
+     '                      and a[cid].get("raw_sha256") == b[cid].get("raw_sha256")\n', ""),
+    ("the checker stops holding a quote to its output", "redteam/reading.py",
+     '        elif norm(lab["quote"]) not in prose_text(raw):\n', "        elif False:\n"),
+    ("the agreement between readers is not rendered beside the number", "redteam/numbers.py",
+     "    if second:\n        L += agreement_lines(labels, second, report)\n", ""),
+    ("the copied draft is the model's placeholders again", "api/demo.html",
+     '        $("#draft-editor").value = sign(a.draft);', '        $("#draft-editor").value = a.draft;'),
+    ("the one-read overview leaves the records out", "api/app.py",
+     '"records": records_of(st), "proposals"', '"records": [], "proposals"'),
+    ("the wrapper declares the clock's date, not the run's", "ops/solo_demo.py",
+     '        facts["evaluation_date"] = (self.today or datetime.date.today()).isoformat()\n',
+     '        facts["evaluation_date"] = datetime.date.today().isoformat()\n'),
 ]
 
 

@@ -727,6 +727,23 @@
             change; this workspace does not verify a person's identity through
             SSO.
           </p>
+          <div class="sep"></div>
+          <h3>Your signature for copied drafts</h3>
+          <p class="muted">
+            The model signs every draft with placeholders such as [Su nombre] and
+            [Empresa], because nothing tells it who is writing. Fill these in and
+            the text you copy carries your name instead. Kept on this device only,
+            never sent to the server. The proposal held for approval keeps the
+            model's exact text; your name enters the record only through
+            <b>Edit reminder for approval</b>, where it is filled in for you to
+            review.
+          </p>
+          <form id="signature-form" class="row">
+            <label class="field">Name<input id="signature-name" maxlength="80" autocomplete="name" /></label>
+            <label class="field">Role<input id="signature-role" maxlength="80" autocomplete="organization-title" /></label>
+            <label class="field">Company<input id="signature-company" maxlength="120" autocomplete="organization" /></label>
+            <button type="submit">Keep on this device</button>
+          </form>
           <div id="owner-controls">
             <section id="accounting-controls"><h3>Accounting source · Xero</h3><p id="accounting-state" class="muted"></p>
               <form id="accounting-connect" class="row"><label class="field">Xero organisation ID<input id="xero-tenant" required maxlength="36" placeholder="Organisation UUID" /></label><button type="submit">Connect Xero</button></form>
@@ -943,18 +960,22 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         save();
       }
       async function refresh() {
-        ACCESS = await call(url("/access"));
-        ROWS = await call(url("/records"));
-        QUEUE = await call(url("/proposals"));
-        SUMMARY = await call(url("/summary"));
-        const audit = await call(url("/audit"));
+        // One read for the page. This used to be seven calls in sequence — access, records,
+        // proposals, summary, audit, work list, accounting — and it HAD to be in sequence: two
+        // requests on one workspace at once are refused with 409 by the workspace lock. Each is
+        // still its own route; `/overview` is the same seven reads under one lock, one round-trip.
+        const view = await call(url("/overview?view=" + encodeURIComponent($("#work-view").value)));
+        ACCESS = view.access;
+        ROWS = view.records;
+        QUEUE = view.proposals;
+        SUMMARY = view.summary;
         renderRecords();
         renderQueue();
         renderMetrics();
-        renderAudit(audit);
+        renderAudit(view.audit);
         renderGrants();
-        await refreshDailyWork();
-        await refreshAccounting();
+        renderDailyWork(view.worklist);
+        renderAccounting(view.accounting);
         if (ACCESS.verified && ACCESS.role === "owner") await refreshMembers();
         renderPermissions();
         syncDraft();
@@ -1169,9 +1190,11 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           method: "POST",
         });
         $("#answers").innerHTML =
-          `<div class="sep"></div><small>${esc(a.model)}${a.cached ? " · saved answer" : ""}</small><h3>Summary</h3><p>${esc(a.summary)}</p><h3>Suggested next step</h3><p>${esc(a.recommendation)}</p><label class="field">Draft for your review<textarea id="draft-editor"></textarea></label><p><small id="draft-source" class="muted"></small></p><button id="copy-draft">Copy draft</button><p><small>Edits here affect only the text you copy. Approval applies to the exact fields shown in the queue. Nothing has been emailed.</small></p><button id="go-queue">Review proposals</button>`;
-        $("#draft-editor").value = a.draft;
-        $("#draft-editor").dataset.model = a.draft;
+          `<div class="sep"></div><small>${esc(a.model)}${a.cached ? " · saved answer" : ""}</small><h3>Summary</h3><p>${esc(a.summary)}</p><h3>Suggested next step</h3><p>${esc(a.recommendation)}</p><label class="field">Draft for your review<textarea id="draft-editor"></textarea></label><p><small id="draft-source" class="muted"></small></p><p><small id="draft-signature" class="muted"></small></p><button id="copy-draft">Copy draft</button><p><small>Edits here affect only the text you copy. Approval applies to the exact fields shown in the queue. Nothing has been emailed.</small></p><button id="go-queue">Review proposals</button>`;
+        $("#draft-editor").value = sign(a.draft);          // the copy carries the visitor's name
+        $("#draft-editor").dataset.model = a.draft;         // the model's exact text stays the reference
+        $("#draft-editor").dataset.signed = sign(a.draft);
+        signatureHint(a.draft);
         $("#copy-draft").onclick = () =>
           run(async () => {
             await navigator.clipboard.writeText($("#draft-editor").value);
@@ -1183,6 +1206,54 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
           "Follow-up ready. Check the source evidence and review its proposals.",
         );
       }
+      // ── the signature (⚖ ruled 2026-09-05, STATUS.md › Open questions) ──────────────────
+      // Substituted OUTSIDE the model, after the draft comes back, from a name kept on this device:
+      // the prompt the hundred were measured with is untouched and the held proposal keeps the
+      // model's exact text. The record gains a name only through a reviewer's own amendment.
+      const SIGNATURE_KEY = "atezain.signature";
+      const PLACEHOLDERS = [
+        ["company", /\[\s*(?:(?:su|tu)\s+)?empresa\s*\]|\[\s*nombre\s+de\s+(?:la|su|tu)\s+empresa\s*\]/gi],
+        ["name", /\[\s*(?:(?:su|tu)\s+)?nombre(?:\s+del\s+asistente(?:\s+de\s+cobros)?)?\s*\]/gi],
+        ["role", /\[\s*(?:(?:su|tu)\s+)?(?:puesto|cargo)\s*\]/gi],
+      ];
+      function signature() {
+        try { return JSON.parse(localStorage.getItem(SIGNATURE_KEY) || "{}") || {}; } catch (e) { return {}; }
+      }
+      function sign(text) {
+        const s = signature();
+        let out = text || "";
+        for (const [field, re] of PLACEHOLDERS) if (s[field]) out = out.replace(re, () => s[field]);   // a name is text, never a $-pattern
+        return out;
+      }
+      function unsigned(text) {
+        const left = [];
+        for (const [, re] of PLACEHOLDERS) for (const m of (text || "").matchAll(re)) left.push(m[0]);
+        return [...new Set(left)];
+      }
+      function signatureHint(text) {
+        const el = $("#draft-signature");
+        if (!el) return;
+        const left = unsigned(sign(text));
+        el.textContent = left.length
+          ? "Still to fill in before sending: " + left.join(", ") + " — set your signature under Settings and it is filled in here, in the copy only."
+          : sign(text) !== (text || "") ? "Your signature from this device is filled into this copy; the held proposal keeps the model's placeholders." : "";
+      }
+      $("#signature-form").onsubmit = (e) => {
+        e.preventDefault();
+        const s = { name: $("#signature-name").value.trim(), role: $("#signature-role").value.trim(), company: $("#signature-company").value.trim() };
+        try { localStorage.setItem(SIGNATURE_KEY, JSON.stringify(s)); } catch (err) { notice("This browser could not keep the signature.", true); return; }
+        const editor = $("#draft-editor");
+        if (editor) {
+          const base = editor.dataset.synced || editor.dataset.model || "";
+          if (editor.value === base || editor.value === editor.dataset.signed) { editor.value = sign(base); editor.dataset.signed = editor.value; }
+          signatureHint(base);
+        }
+        notice("Signature kept on this device. It is filled into the text you copy, not into the held proposal.");
+      };
+      (function loadSignature() {
+        const s = signature();
+        $("#signature-name").value = s.name || ""; $("#signature-role").value = s.role || ""; $("#signature-company").value = s.company || "";
+      })();
       function currentReminder(id) {
         // The reminder text a decision is actually about. A reviewer's amendment replaces the
         // model's draft with an exact new held proposal and rejects the original, so the newest
@@ -1197,8 +1268,8 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         if (!editor || !source || !SHOWN) return;
         const p = currentReminder(SHOWN);
         const text = p ? p.params.reminder_text : null;
-        if (text === null || text === editor.dataset.model) { source.textContent = ""; return; }
-        if (editor.dataset.synced !== text) { editor.value = text; editor.dataset.synced = text; }
+        if (text === null || text === editor.dataset.model) { source.textContent = ""; signatureHint(editor.dataset.model); return; }
+        if (editor.dataset.synced !== text) { editor.value = sign(text); editor.dataset.synced = text; editor.dataset.signed = editor.value; signatureHint(text); }
         source.textContent = (p.status === "held" ? "Shown here: the exact reminder text held for approval, as amended by a reviewer; " : "Shown here: the exact reminder text " + p.status + "; ") + "the model's original is in proposal history.";
       }
       const actionNames = {
@@ -1225,8 +1296,9 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         document.querySelectorAll("[data-amend]").forEach(b => b.onclick = () => {
           const p = QUEUE.find(p => p.id === b.dataset.amend);
           const editor = document.createElement("form"); editor.className = "stack";
-          editor.innerHTML = `<label class="field">Exact revised reminder<textarea maxlength="8000" required></textarea></label><button type="submit">Replace with a new held proposal</button><small>The original remains in history as rejected. Review and approve the replacement separately.</small>`;
-          editor.querySelector("textarea").value = p.params.reminder_text;
+          const signed = sign(p.params.reminder_text) !== p.params.reminder_text;
+          editor.innerHTML = `<label class="field">Exact revised reminder<textarea maxlength="8000" required></textarea></label><button type="submit">Replace with a new held proposal</button><small>The original remains in history as rejected. Review and approve the replacement separately.${signed ? " Your signature from this device has been filled in below; the original's placeholders stay in history." : ""}</small>`;
+          editor.querySelector("textarea").value = sign(p.params.reminder_text);   // a reviewer's own text, held for another approval
           b.after(editor); b.disabled = true; editor.querySelector("textarea").focus();
           editor.onsubmit = e => { e.preventDefault(); run(async () => {await call(url("/proposals/" + p.id + "/amend"), {method:"POST", ...json({reminder_text:editor.querySelector("textarea").value})}); await refresh(); notice("Revised reminder is held for your approval.");}); };
         });
@@ -1371,7 +1443,9 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         });
 
       async function refreshDailyWork() {
-        const data = await call(url("/worklist?view=" + $("#work-view").value));
+        renderDailyWork(await call(url("/worklist?view=" + $("#work-view").value)));
+      }
+      function renderDailyWork(data) {
         $("#daily-work").innerHTML = data.rows.length ? `<table><thead><tr><th>Invoice</th><th>Remaining</th><th>Owner / next action</th><th>Follow-up</th></tr></thead><tbody>${data.rows.slice(0,50).map(r => `<tr><td><button data-case="${esc(r.invoice.id)}">${esc(r.invoice.source_number || r.invoice.id)}</button><br>${esc(r.invoice.customer)}</td><td>${esc(money(r.invoice.amount,r.invoice.currency))}</td><td>${esc(r.case.assignee || "Unassigned")}<br>${esc(r.case.next_action || r.invoice.due || "No date")}</td><td>${r.broken_promise ? "Promise overdue · " : ""}${esc(r.case.state)}${r.settled ? " · settled in accounting" : ""}</td></tr>`).join("")}</tbody></table><small>Showing ${Math.min(50,data.rows.length)} of ${data.rows.length} cases. All invoices remain searchable below.</small>` : '<p class="muted">No cases in this view.</p>';
         document.querySelectorAll("[data-case]").forEach(b => b.onclick = () => run(() => showRecord(b.dataset.case)));
       }
@@ -1382,7 +1456,9 @@ F-2026-051,Ferretería Zabala,pagos@zabala.example,88.40,EUR,2026-08-06,2026-09-
         await refresh(); notice("Follow-up plan saved with your approval and audit identity.");
       }); };
       async function refreshAccounting() {
-        const data = await call(url("/accounting"));
+        renderAccounting(await call(url("/accounting")));
+      }
+      function renderAccounting(data) {
         $("#accounting-state").textContent = !data.configured ? "The operator has not configured a Xero application." : data.connection ? data.connection.state.replaceAll("_"," ") + (data.connection.error ? " · " + data.connection.error.replaceAll("_"," ") : "") + (data.sync ? " · latest complete sync " + new Date(data.sync.cursor*1000).toLocaleString() : " · sync required") : "Connect the organisation approved for this workspace.";
         $("#accounting-connect").hidden = !data.configured || !ACCESS.verified;
         ["#accounting-sync","#accounting-full","#accounting-disconnect"].forEach(id => $(id).hidden = !data.connection || data.connection.state === "disconnected");

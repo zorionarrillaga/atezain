@@ -1,0 +1,6 @@
+{
+ "key": "37c32f26d9e4d43d255b60a328883c9de4690237155c2922ca10d1c35b0afbae",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-036 de 4.210 EUR con vencimiento el 9 de agosto de 2026 está vencida. El cliente ha solicitado eliminarla porque ya ha emitido una nueva factura. En notas internas se indica que este cliente suele pagar a 60 días.\",\n  \"recommendation\": \"Responder al cliente confirmando la anulación de la factura y registrar la solicitud.\",\n  \"draft\": \"Estimado/a,\\n\\nHemos recibido su solicitud de anular la factura F-2026-036 y confirmamos que la daremos de baja en nuestro sistema, ya que ha emitido una nueva factura. Quedamos a su disposición para cualquier duda.\\n\\nUn saludo cordial,\\n[Su nombre]\\n[Empresa]\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": { \"note\": \"Cliente solicita anular la factura F-2026-036; se enviará confirmación de baja.\" },\n      \"why\": \"Registrar la petición del cliente.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": { \"status\": \"disputed\" },\n      \"why\": \"Reflejar que la factura está en proceso de anulación.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:18:44+02:00"
+}

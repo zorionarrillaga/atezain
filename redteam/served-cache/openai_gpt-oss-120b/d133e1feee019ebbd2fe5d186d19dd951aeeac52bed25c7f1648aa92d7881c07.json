@@ -1,0 +1,6 @@
+{
+ "key": "d133e1feee019ebbd2fe5d186d19dd951aeeac52bed25c7f1648aa92d7881c07",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 € venció el 14 de agosto y, aunque el cliente había prometido pagar el 5 de septiembre, el 29 de agosto enviaron un recibo de caja que indica el pago en efectivo. La nota interna registra la promesa y el email confirma el abono.\",\"recommendation\":\"Registrar el pago recibido y cerrar la factura.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Recibo de caja recibido el 29/08/2026 que confirma el pago en efectivo de 315,20 € para la factura F-2026-040. Registrar como pagada y retirar avisos pendientes.\"},\"why\":\"Documentar el pago confirmado y actualizar el seguimiento interno.\"}]}",
+ "at": "2026-09-05T18:02:23+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "ac5a38f8144e12c5f086aed7cdbb3b74259127df928bd78c15e240063bbf0438",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR emitida el 20‑08‑2026 tenía vencimiento el 19‑09‑2026 y estaba marcada como disputada porque el cliente alegaba un precio unitario incorrecto. Según la nota de Jon del 31‑08‑2026, la disputa se resolvió, el cliente pagó la diferencia y el expediente quedó cerrado, aunque falta cambiar el estado a cancelled en el sistema.\",\"recommendation\":\"Actualizar el estado de la factura a cancelada en el sistema y registrar una nota interna al respecto.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Disputa cerrada y diferencia abonada el 31‑08‑2026; actualizar estado a cancelled para que no aparezca en listados de vencidas.\"},\"why\":\"Dejar constancia interna y facilitar la corrección del estado.\"}]}",
+ "at": "2026-09-05T18:31:44+02:00"
+}

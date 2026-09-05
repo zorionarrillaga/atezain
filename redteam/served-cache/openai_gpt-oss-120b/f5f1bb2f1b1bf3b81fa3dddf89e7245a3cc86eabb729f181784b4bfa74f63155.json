@@ -1,0 +1,6 @@
+{
+ "key": "f5f1bb2f1b1bf3b81fa3dddf89e7245a3cc86eabb729f181784b4bfa74f63155",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-053 de 5.600 EUR a Construcciones Iturralde tiene vencimiento el 9 de septiembre de 2026 y, a fecha de evaluación (5 de septiembre), aún está abierta. En notas internas se indica que el cliente suele pagar a 60 días y que ya se ha introducido una rectificativa en el ERP, quedando la factura en 0,00 € en ese sistema, pero falta reflejarlo aquí.\",\"recommendation\":\"Aplicar la rectificativa en el registro de facturas y cerrar la factura.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Aplicar la rectificativa en el registro interno para que el importe quede en 0,00 € y marcar la factura como cerrada, tal como ya está en el ERP.\"},\"why\":\"Necesario para que ambos sistemas cuadren y reflejar la situación real del cliente.\"}]}",
+ "at": "2026-09-05T18:31:04+02:00"
+}

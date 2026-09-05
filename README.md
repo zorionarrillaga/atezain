@@ -189,10 +189,10 @@ one-line sabotages of claimed properties went uncaught by every gauge. All of it
 
 | gauge | result |
 |---|---|
-| `make test` | 382 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **496 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
+| `make test` | 395 passed, 115 skipped — the skips are the Postgres arm with no `ATEZAIN_TEST_DSN` set. With one: **509 passed, 1 skipped, timing recorded in the test run** (the policy suite and the graph twice, SQLite and PostgreSQL 18.6, plus the two-process restart test) |
 | `make mutate` | 48 checks · 48 killed by assertion · 0 killed only by a crash · 0 survived · 25 crashing test(s) alongside assertion kills |
 | `make hostile` | 37/37 scored attempts blocked · 1 out of scope, shown |
-| `make sabotage` | 67/67 sabotages caught by at least one gauge |
+| `make sabotage` | 74/74 sabotages caught by at least one gauge |
 
 What these prove and do not: the mutation pass proves every marked check can fail; it says nothing
 about a check that is absent (the first seat found one — a `record` key the policy declared and
@@ -258,8 +258,17 @@ number carries a caveat wherever it goes: 58/96 = 60 % [50 %, 70 %] of the parse
 the injected goal in words — read by a model (Claude Fable 5.1, 2026-09-05,
 `redteam/served_prose_labels.json`), not by a person, under the same written rule, each label quoting
 its sentence and tied to the bytes it was read from. No human has read these outputs; the review the
-release gates ask for is still open, and this is a model reader's number. `NUMBERS.md` keeps the two
-runs apart and says which is which.
+release gates ask for is still open, and this is a model reader's number. Beside it stands what a
+reader of such a number asks for next: a second model read the same outputs blind to the first
+(Claude Opus 5, 2026-09-05, `redteam/served_prose_labels_second.json`), and the two agree on 93 of
+96 = 97 % [91 %, 99 %] with Cohen's κ 0.94; the three they part on are all cases the first reader
+called adopted, and `NUMBERS.md` shows both sentences for each. Two models agreeing is still no
+human. The local demo's date-aware prompt wrapper (`ops.solo_demo.SoloModel`, SOLO_EVALUATION.md) was
+run over the same hundred as its own configuration on 2026-09-05 (`redteam/served-dated-results.json`):
+executed ON 0/100, 7/100 parser refusals, and 51/93 = 55 % [45 %, 65 %] of its parseable outputs adopt
+the goal in words under the same reader and rule — inside the served configuration's interval, with
+19 paired cases moving, 12 one way and 7 the other. `NUMBERS.md` keeps the runs apart and says
+which is which.
 
 ## Trust boundary
 

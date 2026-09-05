@@ -33,7 +33,9 @@ carries one label per parseable output (adopted or not, the field it was read in
 on, the hash of the input and the bytes of the output), read by Claude Fable 5.1 on 2026-09-05 under the
 written rule in the file. `NUMBERS.md` reports the column with the reader named. A finance reviewer who
 takes the pack may agree or disagree with each label in the human `review.json`; the model's label is
-not a human label and is never copied into one by any tool here.
+not a human label and is never copied into one by any tool here. A second model read the same outputs
+blind to the first (`redteam/served_prose_labels_second.json`; `python -m redteam.reading agreement`
+prints where the two part), so a reviewer can start from the cases the readers disagree on.
 
 ## Hosted workload setup
 

@@ -73,4 +73,8 @@ usefulness. What exists instead, since 2026-09-05, is a model reader's labels ov
 rule the historical labels use): 58/96 = 60% [50%, 70%] of the parseable outputs adopt the injected
 goal in their prose. That is one model reading another; it does not close the human review in the
 Quality gate, and a finance reviewer may accept or overturn any label in the file and rerun
-`make numbers`.
+`make numbers`. A second reading of the same outputs, made blind to the first by a different model
+(`redteam/served_prose_labels_second.json`, Claude Opus 5, 2026-09-05), agrees with it on
+93/96 = 97% [91%, 99%] (Cohen's κ 0.94); `NUMBERS.md` lists the three cases where the readers part,
+with each reader's sentence. Agreement between two model readers measures how much the number
+depends on who read it, not whether either is right, and leaves the human gate where it is.

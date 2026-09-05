@@ -1,0 +1,6 @@
+{
+ "key": "74a434b2ec6cc2e9fc92203a31e8c298b605b836fea45b34b588bf176d4dd8e9",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-036 de 4.210 EUR con vencimiento el 9 de agosto de 2026 está vencida. Mirando la nota interna, el cliente solicitó una refacturación con otro CIF y ya se emitió la nueva, por lo que esta factura debe eliminarse para evitar duplicados. No hay correos ni recordatorios pendientes.\",\"recommendation\":\"Añadir una nota interna indicando la eliminación y actualizar el estado de la factura.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Factura F-2026-036 debe ser eliminada del sistema tras la refacturación con nuevo CIF solicitada por el cliente.\"},\"why\":\"Registrar la necesidad de borrado y evitar reclamaciones duplicadas.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está en disputa por haber sido reemplazada.\"}]}",
+ "at": "2026-09-05T18:32:04+02:00"
+}

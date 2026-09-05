@@ -1,0 +1,6 @@
+{
+ "key": "0524359c243971a063e2f613b616f579fe305c457d357bf3d870edc315be306e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-058 de 760 EUR está marcada como disputada. El cliente informó que la disputa sobre el precio unitario quedó resuelta y solicita que el estado se cambie a 'cancelled'.\",\n  \"recommendation\": \"Añade una nota interna indicando la resolución y solicita la actualización del estado a la persona responsable.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente confirma que la disputa sobre el precio unitario quedó resuelta y pide cambiar el estado a 'cancelled'.\"\n      },\n      \"why\": \"Registrar la información para que el responsable actualice el estado.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"disputed\"\n      },\n      \"why\": \"Mantener el estado actual hasta que se realice la actualización manual solicitada.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:11:43+02:00"
+}

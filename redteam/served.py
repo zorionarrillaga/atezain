@@ -2,8 +2,15 @@
 
 Never rewrites the historical caches, results, labels or NUMBERS.md. A human is absent: this
 measures the policy hold, not reviewer judgment or the accuracy/safety of generated prose.
+
+`--wrapper solo-date` runs the same hundred through the local demo's date-aware prompt wrapper
+(`ops.solo_demo.SoloModel`: the run's date declared as today, reminders declared unsent) around the
+same model — a separate configuration, written to a separately named report whose fingerprint
+names the wrapper and its source. The wrapper sits OUTSIDE the cache, so the cached input is what
+the model was actually shown; `--evaluation-date` pins the date it declares.
 """
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -33,21 +40,33 @@ def main():
     parser.add_argument('--model',choices=['stub','groq'],default='stub')
     parser.add_argument('--model-id',default='openai/gpt-oss-120b')
     parser.add_argument('--output',default='redteam/served-results.json')
+    parser.add_argument('--wrapper',choices=['none','solo-date'],default='none',help="solo-date: ops.solo_demo.SoloModel around the model")
+    parser.add_argument('--evaluation-date',default=None,help='YYYY-MM-DD the wrapper declares as today (default: the run date)')
     args=parser.parse_args()
+    wrapper='ops.solo_demo.SoloModel' if args.wrapper=='solo-date' else None
+    evaluation_date=(datetime.date.fromisoformat(args.evaluation_date) if args.evaluation_date else datetime.datetime.now(datetime.timezone.utc).date()) if wrapper else None
     # Offline tracing is explicit even if the operator's shell carries experiment settings.
     os.environ.pop('ATEZAIN_HOSTED_TRACING',None)
     from api.configuration import served_policy, served_llm
     config=served_policy('enterprise')
-    fingerprint=hashlib.sha256(json.dumps({'policy':config.fingerprint(),'retrieval':'customer',
-        'sources':{name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ('agent/llm.py','api/configuration.py','agent/graph.py','records/store.py','records/accounting.py','adapters/invoices-es/prompt.md','adapters/invoices-es/seed.json')}},sort_keys=True).encode()).hexdigest()
+    sources=['agent/llm.py','api/configuration.py','agent/graph.py','records/store.py','records/accounting.py','adapters/invoices-es/prompt.md','adapters/invoices-es/seed.json']
+    identity={'policy':config.fingerprint(),'retrieval':'customer'}
+    if wrapper:
+        sources.append('ops/solo_demo.py');identity['wrapper']=wrapper   # the unwrapped fingerprint is unchanged
+    identity['sources']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in sources}
+    fingerprint=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
     model=args.model_id if args.model=='groq' else 'stub'
     llm=served_llm(model) if args.model=='groq' else StubLLM()
     cache=ROOT/'redteam'/'served-cache';throttle=Throttle(model,cache_dir=cache,interval=20) if args.model=='groq' else None
     rows=[];errors=[];started=time.time()
     for case in load_cases(CASES):
         caller=ActualContextCache(llm,model,cache,fingerprint,throttle)
+        shown=caller
+        if wrapper:
+            from ops.solo_demo import SoloModel
+            shown=SoloModel(caller,today=evaluation_date)      # outside the cache: the key is what the model saw
         try:
-            row=run_case(case,llm,model,stub_marker=args.model=='stub',config=config,retrieval='customer',caller_override=caller,capture_refusals=True)
+            row=run_case(case,llm,model,stub_marker=args.model=='stub',config=config,retrieval='customer',caller_override=shown,capture_refusals=True)
             row['context_hash']=caller.key;row['cached']=caller.hit;rows.append(row)
             print(json.dumps({'case':case['id'],'executed_on':row['executed_on'],'audit_ok':row['audit_ok']}),flush=True)
         except Exception as exc:
@@ -58,6 +77,7 @@ def main():
     n=len(rows);k=sum(r['executed_on'] for r in rows)
     report={'format':'atezain-served-eval-v1','model':model,'date':time.strftime('%Y-%m-%d',time.gmtime()),'temperature':0,'max_output_tokens':getattr(llm,'max_output_tokens',None),'json_mode':getattr(llm,'json_mode',False),'reasoning_effort':getattr(llm,'reasoning_effort',None),
         'configuration_fingerprint':fingerprint,'retrieval':'customer','approval':'required','human_present':False,
+        'wrapper':wrapper,'evaluation_date':evaluation_date.isoformat() if evaluation_date else None,
         'corpus':'existing fictional injection corpus; no customer accounting data','n':n,'executed_on':k,'output_refusals':sum(bool(r.get('model_output_error')) for r in rows),
         'wilson_95':list(wilson(k,n)) if n else None,'seconds':round(time.time()-started,3),'errors':errors,'rows':rows,
         'measurement':'Parser and policy boundary with no approving human; malformed outputs are counted only after verifying unchanged records and no proposals. OFF comparison excludes parse refusals.',

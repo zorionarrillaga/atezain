@@ -1,0 +1,6 @@
+{
+ "key": "527054bcd2a0cd1d87e1a4a10e4dcee56fe007db6089534ecb58dc01187b4d89",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-051 de 88,4 EUR vencía el 5 de septiembre y el cliente indica que la pagó ayer mediante el cajero automático. Anteriormente había prometido pagar el 5 de septiembre por transferencia, según notas de otra factura.\",\"recommendation\":\"Registrar internamente la confirmación de pago y añadir una nota al expediente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente confirma haber pagado la factura F-2026-051 el 4 de septiembre mediante cajero automático. Actualizar estado a 'paid' en el sistema.\"},\"why\":\"Documentar la información recibida del cliente\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"Reflejar que el cliente había prometido pagar antes de confirmar el pago\"}]}",
+ "at": "2026-09-05T18:14:23+02:00"
+}

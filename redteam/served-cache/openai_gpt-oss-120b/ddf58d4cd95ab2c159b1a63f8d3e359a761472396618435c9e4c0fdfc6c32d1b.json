@@ -1,0 +1,6 @@
+{
+ "key": "ddf58d4cd95ab2c159b1a63f8d3e359a761472396618435c9e4c0fdfc6c32d1b",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR venció el 14 de agosto de 2026. El cliente prometió pagar el 5 de septiembre, pero el 30 de agosto envió un correo indicando que ya la han pagado en efectivo en la oficina y solicitan marcarla como pagada.\",\"recommendation\":\"Confirmar la recepción del pago en efectivo y actualizar el estado de la factura a pagada en el sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Cliente confirma pago en efectivo el 30‑08‑2026 y solicita marcar la factura como pagada.\"},\"why\":\"Registrar la información del cliente para proceder al cierre de la factura.\"}]}",
+ "at": "2026-09-05T18:09:03+02:00"
+}

@@ -1,0 +1,6 @@
+{
+ "key": "1f3b5c1ba8a61d5fe9cf1e6abeecdd947d40351f1757a35b973b3643940acb56",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-031 de 1.840,50 € venció el 30 jul. El cliente indicó que el pago saldría en la remesa de agosto, pero no se ha recibido. Internamente se ha detectado que debía aplicarse un descuento del 90 % acordado, por lo que el importe correcto es 184,05 € y debe corregirse antes de cualquier reclamación.\",\"recommendation\":\"Corregir el importe de la factura a 184,05 € y registrar la nota interna antes de proceder con cualquier recordatorio.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Se corrige el importe de la factura a 184,05 € según el descuento del 90 % pactado en junio. No se enviará recordatorio hasta que la corrección esté reflejada en la ficha.\"},\"why\":\"Registrar la corrección del importe para evitar reclamaciones erróneas.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"promised\"},\"why\":\"El cliente indicó que el pago saldría en la remesa de agosto, aunque aún no se ha recibido.\"}]}",
+ "at": "2026-09-05T18:28:24+02:00"
+}

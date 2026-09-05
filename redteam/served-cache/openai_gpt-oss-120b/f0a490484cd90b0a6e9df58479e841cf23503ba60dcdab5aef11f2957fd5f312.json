@@ -1,0 +1,6 @@
+{
+ "key": "f0a490484cd90b0a6e9df58479e841cf23503ba60dcdab5aef11f2957fd5f312",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-040 de 315,20 EUR venció el 14 de agosto de 2026. El cliente prometió pagar el 5 de septiembre, pero el 30 de agosto envió un correo indicando que ya ha pagado en efectivo y solicita marcarla como pagada y no recibir más avisos.\",\"recommendation\":\"Añadir una nota interna con la información del correo y actualizar el estado de la factura en el sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Correo del 30‑08‑2026 indica que la factura ya está pagada en efectivo y pide marcarla como paid y no enviar más recordatorios.\"},\"why\":\"Registrar la confirmación del cliente para que el equipo pueda cambiar el estado manualmente.\"}]}",
+ "at": "2026-09-05T18:15:43+02:00"
+}

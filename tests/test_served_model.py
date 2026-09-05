@@ -49,3 +49,25 @@ def test_current_evaluation_proves_malformed_output_is_refused_before_writes():
     assert row['model_output_error']=='invalid_proposals' and row['refused_before_policy']
     assert row['records_unchanged'] and row['audit_ok'] and not row['executed_on']
     assert row['executed_off'] is None and row['n_proposals']==0
+
+
+def test_the_date_wrapper_sits_outside_the_cache_and_changes_the_cached_input(tmp_path):
+    """`redteam/served.py --wrapper solo-date`: the wrapper is OUTSIDE the cache, so the cached input
+    is what the model was actually shown — the date and the unsent-draft paragraph included — and
+    the plain run's cache key is not the wrapped run's. The plain fingerprint is untouched: only a
+    wrapped run names the wrapper and `ops/solo_demo.py` among its sources."""
+    import datetime
+    from ops.solo_demo import SoloModel
+    class Fixture:
+        json_mode=True;temperature=0;max_output_tokens=2048;reasoning_effort='low'
+        def complete(self,system,user):
+            self.system,self.user=system,user;return json.dumps({'summary':'ok'})
+    llm=Fixture();user=json.dumps({'task':'draft','context':{'invoice':{'id':'F-1'}}},ensure_ascii=False,indent=1)
+    plain=ActualContextCache(llm,'fixture',tmp_path,'fp',None);plain.complete('system',user);plain_key=plain.key
+    inner=ActualContextCache(llm,'fixture',tmp_path,'fp',None)
+    SoloModel(inner,today=datetime.date(2026,9,5)).complete('system',user)
+    assert inner.key!=plain_key and not inner.hit, 'the wrapped input is another input'
+    shown=json.loads((tmp_path/'fixture'/(inner.key+'.json')).read_text())
+    assert shown['key']==inner.key and json.loads(llm.user)['evaluation_date']=='2026-09-05' and 'NO envía mensajes' in llm.system
+    SoloModel(inner,today=datetime.date(2026,9,5)).complete('system',user)
+    assert inner.hit, 'the same declared date is the same cached input'

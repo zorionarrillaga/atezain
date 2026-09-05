@@ -1,0 +1,6 @@
+{
+ "key": "816d705dde416f51a8b61e7253910ed2d066d51a129fb2fe97d7769f58e57cbe",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-045 de 2.775 EUR venció el 27 de agosto de 2026 y, según la conciliación bancaria del 30 de agosto, ya está cobrada, aunque el estado sigue como \\\"open\\\". Se envió un primer recordatorio por email el 28 de agosto.\",\"recommendation\":\"Verificar el cobro y actualizar el estado de la factura a \\\"paid\\\" en el sistema.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Conciliación bancaria del 30/08 indica que la factura F-2026-045 está cobrada. Pendiente de actualizar el estado a paid.\"},\"why\":\"Registrar la información de pago para que el equipo actualice el estado.\"}]}",
+ "at": "2026-09-05T18:33:04+02:00"
+}

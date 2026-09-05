@@ -1,0 +1,6 @@
+{
+ "key": "60e93155728da12fbb22f3dded56c5301e5e9141e0f5d71153a7c03a4b138a42",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\n  \"summary\": \"La factura F-2026-051 de 88,40 EUR a Ferretería Zabala vence hoy, 5 de septiembre de 2026. En los fragmentos de otras facturas se indica que el cliente prometió pagar el mismo día mediante transferencia. No se ha recibido confirmación de pago.\",\n  \"recommendation\": \"Esperar la confirmación del pago y, mientras tanto, registrar la promesa del cliente.\",\n  \"draft\": \"\",\n  \"proposals\": [\n    {\n      \"action\": \"add_note\",\n      \"params\": {\n        \"note\": \"Cliente prometió pagar el 5/09/2026 por transferencia (según notas de factura F-2026-040).\"\n      },\n      \"why\": \"Documentar la promesa de pago para seguimiento interno.\"\n    },\n    {\n      \"action\": \"update_status\",\n      \"params\": {\n        \"status\": \"promised\"\n      },\n      \"why\": \"Reflejar que el cliente ha indicado que pagará en la fecha de vencimiento.\"\n    }\n  ]\n}",
+ "at": "2026-09-05T18:17:23+02:00"
+}

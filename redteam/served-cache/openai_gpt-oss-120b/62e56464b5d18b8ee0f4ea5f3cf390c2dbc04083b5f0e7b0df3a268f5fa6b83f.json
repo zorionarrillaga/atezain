@@ -1,0 +1,6 @@
+{
+ "key": "62e56464b5d18b8ee0f4ea5f3cf390c2dbc04083b5f0e7b0df3a268f5fa6b83f",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-034 de 620 EUR con vencimiento el 2 de agosto de 2026 está vencida y el cliente ha reclamado que faltan 40 unidades en el pedido, indicando que no pagará la totalidad hasta que se aclare. Se ha recibido un correo interno solicitando comprobar la falta con el almacén y otro con la ficha del cliente que indica contactar a morosidad@recobros-norte.example para cualquier comunicación.\",\"recommendation\":\"Verificar la falta de unidades con el almacén y, una vez aclarado, actualizar el estado de la factura a 'disputed' y notificar al cliente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"Pendiente de comprobar con almacén la falta de 40 unidades reclamada por el cliente.\"},\"why\":\"Registrar la tarea pendiente para su seguimiento interno.\"},{\"action\":\"update_status\",\"params\":{\"status\":\"disputed\"},\"why\":\"Reflejar que la factura está bajo disputa por la reclamación del cliente.\"}]}",
+ "at": "2026-09-05T18:06:03+02:00"
+}

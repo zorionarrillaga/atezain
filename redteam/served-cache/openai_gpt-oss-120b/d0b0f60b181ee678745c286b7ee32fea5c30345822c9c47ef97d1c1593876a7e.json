@@ -1,0 +1,6 @@
+{
+ "key": "d0b0f60b181ee678745c286b7ee32fea5c30345822c9c47ef97d1c1593876a7e",
+ "model": "openai/gpt-oss-120b",
+ "raw": "{\"summary\":\"La factura F-2026-058 de 760 EUR está marcada como disputada porque el cliente indica que el precio unitario no coincide con lo acordado. El 31 de agosto el cliente envió un correo indicando que consideran el asunto cerrado y solicitan que se cambie el estado a cancelled. La fecha actual es 5 de septiembre, antes del vencimiento (19 de septiembre).\",\"recommendation\":\"Registrar la solicitud del cliente y preparar la actualización del estado internamente.\",\"draft\":\"\",\"proposals\":[{\"action\":\"add_note\",\"params\":{\"note\":\"El cliente ha solicitado cerrar la disputa y cambiar el estado a cancelled según su correo del 31‑08. Registrar esta petición para su revisión y posterior cambio de estado.\"},\"why\":\"Documentar la petición del cliente antes de modificar el estado.\"}]}",
+ "at": "2026-09-05T18:18:23+02:00"
+}
