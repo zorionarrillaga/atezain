@@ -1,5 +1,12 @@
 # atezain — the build plan, step by step, for whoever builds next
 
+## Current direction — 2026-09-15
+
+Read [PROJECT_PURPOSE.md](PROJECT_PURPOSE.md) first. Preserve and present the engineering
+artifact for its original contracting purpose. Product expansion is paused pending a
+reasoned value, adoption and integration case. The enterprise and solo plans below are
+historical context; they do not independently authorize resuming development.
+
 ## Immediate solo evaluation (2026-09-05)
 
 The owner selected the resource-limited milestone in SOLO_EVALUATION.md: prepare and exercise a

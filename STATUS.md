@@ -1,5 +1,29 @@
 # Status
 
+## Contracting purpose restored; product expansion paused (2026-09-15)
+
+The owner identified that the manual invoice workflow had not been justified by its net
+value to users and that the project had lost its connection to contracting after folder
+separation. `PROJECT_PURPOSE.md` now governs the next decision; `CASE_STUDY.md` presents
+the implemented engineering without claiming adoption. README, PLAN, PRODUCT_RELEASE and
+agent entry instructions point to that decision. Shared Work lessons, a purpose/history map
+and a contracting gap record were saved in the parent workspace, with links in both directions.
+
+A cross-project check also found that README still called the outreach integration unfinished.
+The private contracting session record dated 2026-09-03 documents the implementation and
+scratch-copy tests; README now distinguishes that work from unestablished routine use.
+
+Product expansion is paused pending a reasoned use/buy, integration and adoption case.
+The implemented engineering remains useful portfolio evidence; the actual-user gap remains
+open. GitHub visibility was changed to PUBLIC and verified on 2026-09-15 under the owner's
+conditional publication instruction. The existing demo health endpoint responded successfully.
+`PUBLICATION.md` records the review and outcome. No application
+behavior changed. Verification results are maintained by `make all` in `GAUGES.md`.
+
+SKIPPED: new customer acceptance, live-model evaluation and production deployment; none is
+needed for this documentation and portfolio decision. Private Work records stay outside this
+repository. The historical sections below retain their original dates and scope.
+
 ## Authorized deployment of eaa7505 (2026-09-05, night)
 
 On the owner's *push* and then *deploy*, both given in the session after the commit, `eaa7505` was

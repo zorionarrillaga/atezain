@@ -4,6 +4,16 @@ This is `atezain`: a policy layer between an LLM agent and a customer's records,
 over it, and a red-team that measures it. `README.md` says what it is; `STATUS.md` says what exists;
 `PLAN.md` says what to build next and exactly how. Read those three before touching anything.
 
+## Current purpose and continuity
+
+Read `PROJECT_PURPOSE.md` before the older plans. The 2026-09-15 owner instruction restores
+contracting as the parent purpose and pauses product expansion pending a reasoned user-value
+case. In the Work checkout also read the parent `AGENTS.md`, `PURPOSE.md` and `LESSONS.md`.
+A public clone does not need those private records; the project purpose is self-contained.
+Publication for portfolio usefulness was authorized conditionally in that session; consult
+`PUBLICATION.md` for the actual decision and outcome. No blanket future publication or
+customer-release authority is inferred.
+
 ## The rules (they bind regardless of which model you are)
 
 1. **Never publish, deploy, or make this public.** The owner says so in writing, that day, or it does

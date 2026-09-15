@@ -1,5 +1,15 @@
 # atezain
 
+## Start here
+
+[Engineering case study](CASE_STUDY.md) · [Purpose and current decision](PROJECT_PURPOSE.md)
+
+Atezain was built to demonstrate a deployed AI workflow for contracting opportunities.
+It is engineering portfolio evidence; outside user adoption remains unfulfilled.
+As of 2026-09-15, product expansion is paused: the manual collections workflow needs a
+convincing user-value and integration case before more features are justified. The technical
+candidate and historical release criteria below remain documented, not a promise to proceed.
+
 *Atezain* is Basque for goalkeeper. Built in September 2026 by Zorion Arrillaga, mostly by
 directing coding models, on rules paid for by an earlier system of his own (`PROVENANCE.md`).
 
@@ -98,7 +108,7 @@ model, not by a person (*The model, the date, the numbers*, below).
   letters: a draft is a record, `send` means *write down that this letter went out*, and there is
   no verb anywhere in the tool that opens a connection to a mail server. He sends by hand and types
   the approval himself; the CLI holds the proposal until he does, records what the store observed
-  afterwards, and prints the audit head for the day. The wiring into his own pipeline is not done.
+  afterwards, and prints the audit head for the day. Integration into his private contracting workflow was implemented and tested there on 2026-09-03; that fixture-based verification does not establish sustained use or outside adoption.
 - `agent/tracing.py` + `traces/export.py` — the model call, which the chain does not carry and is
   not meant to: what the model was shown, what it answered, how long it took. Spans are collected in
   the process whatever is configured, and the export writes one JSON per proposal beside that

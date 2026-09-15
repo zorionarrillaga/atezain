@@ -1,5 +1,12 @@
 # Supervised collections release
 
+## Current decision — 2026-09-15
+
+[PROJECT_PURPOSE.md](PROJECT_PURPOSE.md) supersedes the development direction below.
+Product expansion is paused; this project currently serves as engineering portfolio evidence.
+The following criteria remain conditional requirements for a future customer release, not
+an instruction to build further or a claim of customer demand.
+
 ## Immediate milestone: solo evaluation
 
 On 2026-09-05 the owner selected [SOLO_EVALUATION.md](SOLO_EVALUATION.md) as the immediate milestone:
